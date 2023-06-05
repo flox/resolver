@@ -39,7 +39,7 @@
   libExt            = stdenv.hostPlatform.extensions.sharedLibrary;
   nativeBuildInputs = [pkg-config];
   buildInputs       = [
-    sqlite.dev nlohmann_json argparse nix.dev boost
+    sqlite.dev nlohmann_json nix.dev boost
   ];
   makeFlags = [
     "boost_CFLAGS=-I${boost}/include"
