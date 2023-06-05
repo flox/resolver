@@ -39,10 +39,10 @@ struct FloxInstallableCommand : nix::InstallableCommand {
   nix::Installables parseInstallables( nix::ref<nix::Store> store
                                      , std::vector<std::string> ss
                                      );
-  nix::ref<nix::Installable> parseInstallable(
-          nix::ref<nix::Store>   store
-  , const std::string          & installable
-  );
+  //nix::ref<nix::Installable> parseInstallable(
+  //        nix::ref<nix::Store>   store
+  //, const std::string          & installable
+  //);
   nix::Strings getDefaultFlakeAttrPaths();
   nix::Strings getDefaultFlakeAttrPathPrefixes();
   void         completeInstallable( std::string_view prefix );
@@ -51,15 +51,15 @@ struct FloxInstallableCommand : nix::InstallableCommand {
 
 /* -------------------------------------------------------------------------- */
 
-  void completeFloxRef( nix::ref<nix::Store> store, std::string_view prefix );
+void completeFloxRef( nix::ref<nix::Store> store, std::string_view prefix );
 
-  void completeFlakeRefWithFragment(
-          nix::ref<nix::EvalState>   evalState
-  ,       nix::flake::LockFlags      lockFlags
-  ,       nix::Strings               attrPathPrefixes
-  , const nix::Strings             & defaultFlakeAttrPaths
-  ,       std::string_view           prefix
-  );
+void completeFloxRefWithFragment(
+        nix::ref<nix::EvalState>   evalState
+,       nix::flake::LockFlags      lockFlags
+,       nix::Strings               attrPathPrefixes
+, const nix::Strings             & defaultFlakeAttrPaths
+,       std::string_view           prefix
+);
 
 
 /* -------------------------------------------------------------------------- */
