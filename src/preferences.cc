@@ -4,6 +4,7 @@
  *
  * -------------------------------------------------------------------------- */
 
+#include <string>
 #include <variant>
 #include <vector>
 #include <optional>
@@ -37,7 +38,7 @@ Preferences::Preferences( const nlohmann::json & j )
         {
           for ( auto & [input, order] : value.items() )
             {
-              this->prefixes.emplace( input, order );
+              this->stabilities.emplace( input, order );
             }
         }
       else if ( key == "semver" )

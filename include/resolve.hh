@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include <list>
+#include <vector>
 #include <optional>
 #include <nlohmann/json.hpp>
 #include <nix/fetchers.hh>
@@ -29,20 +29,20 @@ struct FloxInput : public nix::fetchers::Input {
 
 /* -------------------------------------------------------------------------- */
 
-static const std::list<std::string> defaultCatalogStabilities = {
+static const std::vector<std::string> defaultCatalogStabilities = {
   "stable", "staging", "unstable"
 };
 
-static const std::list<std::string> defaultAttrPathPrefixes = {
+static const std::vector<std::string> defaultAttrPathPrefixes = {
   "catalog", "packages", "legacyPackages"
 };
 
 
 struct Preferences {
-  std::list<std::string> inputs;
+  std::vector<std::string> inputs;
 
-  std::unordered_map<std::string, std::list<std::string>> stabilities;
-  std::unordered_map<std::string, std::list<std::string>> prefixes;
+  std::unordered_map<std::string, std::vector<std::string>> stabilities;
+  std::unordered_map<std::string, std::vector<std::string>> prefixes;
 
   bool semverPreferPreReleases = false;
   bool allowUnfree             = true;
@@ -64,7 +64,7 @@ void to_json(         nlohmann::json & j, const Preferences & p );
 
 struct Resolved {
   FloxInput              input;
-  std::list<std::string> path;
+  std::vector<std::string> path;
   std::string            uri;
   nlohmann::json         info;
 
@@ -82,14 +82,14 @@ void to_json(         nlohmann::json & j, const Resolved & p );
 
 /* -------------------------------------------------------------------------- */
 
-/* Return a ranked list of satisfactory resolutions. */
-std::list<Resolved> resolve( const std::list<FloxInput> & inputs
+/* Return a ranked vector of satisfactory resolutions. */
+std::vector<Resolved> resolve( const std::vector<FloxInput> & inputs
                            , const Preferences          & preferences
                            , const Descriptor           & desc
                            );
 
 /* Return the highest ranking resolution, or `std::nullopt'. */
-std::optional<Resolved> resolveOne( const std::list<FloxInput> & inputs
+std::optional<Resolved> resolveOne( const std::vector<FloxInput> & inputs
                                   , const Preferences          & preferences
                                   , const Descriptor           & desc
                                   );
