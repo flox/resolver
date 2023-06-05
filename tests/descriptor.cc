@@ -18,7 +18,7 @@ using namespace nlohmann::literals;
 /* -------------------------------------------------------------------------- */
 
   bool
-test_DescriptorFromJSON()
+test_DescriptorFromJSON1()
 {
   nlohmann::json desc = R"(
     {
@@ -34,8 +34,44 @@ test_DescriptorFromJSON()
 
 /* -------------------------------------------------------------------------- */
 
+/* Expect error if `flake' and `catalog' are set to ids */
   bool
-test_DescriptorToJSON()
+test_DescriptorFromJSON2()
+{
+  nlohmann::json desc = R"(
+    {
+      "flake":   "foo"
+    , "catalog": "bar"
+    }
+  )"_json;
+  bool rsl = false;
+  try { Descriptor d( desc ); } catch( ... ) { rsl = true; }
+  return rsl;
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+/* Expect error if flakes and catalogs cannot be searched. */
+  bool
+test_DescriptorFromJSON3()
+{
+  nlohmann::json desc = R"(
+    {
+      "flake":   false
+    , "catalog": false
+    }
+  )"_json;
+  bool rsl = false;
+  try { Descriptor d( desc ); } catch( ... ) { rsl = true; }
+  return rsl;
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+  bool
+test_DescriptorToJSON1()
 {
   nlohmann::json desc = R"(
     {
@@ -55,37 +91,52 @@ test_DescriptorToJSON()
 
 /* -------------------------------------------------------------------------- */
 
+  bool
+test_DescriptorToJSON2()
+{
+  nlohmann::json desc = R"(
+    {
+      "name":    "hello"
+    , "flake":   true
+    , "catalog": true
+    , "input":   "foo"
+    }
+  )"_json;
+  Descriptor d( desc );
+  nlohmann::json j = d.toJSON();
+
+  return ( j["input"].get<std::string_view>() == "foo" ) &&
+         j["flake"].get<bool>() &&
+         j["catalog"].get<bool>();
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+#define RUN_TEST( _NAME )                                              \
+  try                                                                  \
+    {                                                                  \
+      if ( ! test_ ##_NAME () )                                        \
+        {                                                              \
+          ec = EXIT_FAILURE;                                           \
+          std::cerr << "  fail: " # _NAME << std::endl;                \
+        }                                                              \
+    }                                                                  \
+  catch( std::exception & e )                                          \
+    {                                                                  \
+      ec = EXIT_FAILURE;                                               \
+      std::cerr << "  ERROR: " # _NAME ": " << e.what() << std::endl;  \
+    }
+
+
   int
 main( int argc, char * argv[], char ** envp )
 {
   int ec = EXIT_SUCCESS;
-  try
-    {
-      if ( ! test_DescriptorFromJSON() )
-        {
-          ec = EXIT_FAILURE;
-          std::cerr << "  fail: DescriptorFromJSON" << std::endl;
-        }
-    }
-  catch( std::exception & e )
-    {
-      std::cerr << "  ERROR: DescriptorFromJSON: " << e.what() << std::endl;
-      ec = EXIT_FAILURE;
-    }
-
-  try
-    {
-      if ( ! test_DescriptorToJSON() )
-        {
-          ec = EXIT_FAILURE;
-          std::cerr << "  fail: DescriptorToJSON" << std::endl;
-        }
-    }
-  catch( std::exception & e )
-    {
-      std::cerr << "  ERROR: DescriptorToJSON: " << e.what() << std::endl;
-      ec = EXIT_FAILURE;
-    }
+  RUN_TEST( DescriptorFromJSON1 );
+  RUN_TEST( DescriptorFromJSON2 );
+  RUN_TEST( DescriptorToJSON1 );
+  RUN_TEST( DescriptorToJSON2 );
 
   return ec;
 }

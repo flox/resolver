@@ -56,6 +56,7 @@ Descriptor::Descriptor( std::string_view desc )
 
 Descriptor::Descriptor( const nlohmann::json & desc )
 {
+  bool canSearchAny = true;
   for ( auto & [key, value] : desc.items() )
     {
       if ( key == "path" )
@@ -92,6 +93,10 @@ Descriptor::Descriptor( const nlohmann::json & desc )
                 }
             }
         }
+      else if ( key == "input" )
+        {
+          this->inputId = value;
+        }
       else if ( key == "name" )
         {
           this->name = value;
@@ -118,21 +123,50 @@ Descriptor::Descriptor( const nlohmann::json & desc )
         {
           if ( value.is_boolean() )
             {
+              if ( value && ( ! canSearchAny ) )
+                {
+                  throw ( "Descriptor field for `catalog' conflicts with "
+                          "previous `flake' field." );
+                }
               this->searchCatalogs = value;
             }
           else if ( value.is_string() )
             {
+              if ( ! canSearchAny )
+                {
+                  throw ( "Descriptor field for `catalog' conflicts with "
+                          "previous `flake' field." );
+                }
+              if ( this->inputId.has_value() )
+                {
+                  throw
+                    "Descriptors may not set `inputId' related fields twice";
+                }
+              canSearchAny         = false;
               this->searchCatalogs = true;
-              this->catalogId      = value;
+              this->searchFlakes   = false;
+              this->inputId        = value;
             }
           else if ( value.is_object() )
             {
+              if ( ! canSearchAny )
+                {
+                  throw ( "Descriptor field for `catalog' conflicts with "
+                          "previous `flake' field." );
+                }
+              canSearchAny         = false;
               this->searchCatalogs = true;
+              this->searchFlakes   = false;
               for ( auto & [ckey, cvalue] : value.items() )
                 {
                   if ( ckey == "id" )
                     {
-                      this->catalogId = cvalue;
+                      if ( this->inputId.has_value() )
+                        {
+                          throw ( "Descriptors may not set `inputId' related "
+                                  "fields twice" );
+                        }
+                      this->inputId = cvalue;
                     }
                   else if ( ckey == "stability" )
                     {
@@ -149,21 +183,50 @@ Descriptor::Descriptor( const nlohmann::json & desc )
         {
           if ( value.is_boolean() )
             {
+              if ( value && ( ! canSearchAny ) )
+                {
+                  throw ( "Descriptor field for `flake' conflicts with "
+                          "previous `catalog' field." );
+                }
               this->searchFlakes = value;
             }
           else if ( value.is_string() )
             {
-              this->searchFlakes = true;
-              this->flakeId      = value;
+              if ( ! canSearchAny )
+                {
+                  throw ( "Descriptor field for `flake' conflicts with "
+                          "previous `catalog' field." );
+                }
+              if ( this->inputId.has_value() )
+                {
+                  throw
+                    "Descriptors may not set `inputId' related fields twice";
+                }
+              canSearchAny         = false;
+              this->searchFlakes   = true;
+              this->searchCatalogs = false;
+              this->inputId        = value;
             }
           else if ( value.is_object() )
             {
-              this->searchFlakes = true;
+              if ( ! canSearchAny )
+                {
+                  throw ( "Descriptor field for `flake' conflicts with "
+                          "previous `catalog' field." );
+                }
+              canSearchAny         = false;
+              this->searchFlakes   = true;
+              this->searchCatalogs = false;
               for ( auto & [fkey, fvalue] : value.items() )
                 {
                   if ( fkey == "id" )
                     {
-                      this->flakeId = fvalue;
+                      if ( this->inputId.has_value() )
+                        {
+                          throw ( "Descriptors may not set `inputId' related "
+                                  "fields twice" );
+                        }
+                      this->inputId = fvalue;
                     }
                 }
             }
@@ -172,6 +235,10 @@ Descriptor::Descriptor( const nlohmann::json & desc )
               throw "Flake field must be a string, boolean, or attr-set.";
             }
         }
+    }
+  if ( ! ( this->searchCatalogs || this->searchFlakes ) )
+    {
+      throw "Descriptor must be able to search in either flakes or catalogs";
     }
 }
 
@@ -223,17 +290,19 @@ Descriptor::toJSON() const
       j.emplace( "semver", this->semver.value() );
     }
 
-  if ( this->catalogId.has_value() || this->catalogStability.has_value() )
+  if ( this->catalogStability.has_value() )
     {
       nlohmann::json c = nlohmann::json::object();
-      if ( this->catalogId.has_value() )
+      c.emplace( "stability", this->catalogStability.value() );
+      if ( ( this->inputId.has_value() ) && ( ! this->searchFlakes ) )
         {
-          c.emplace( "id", this->catalogId.value() );
+          j.emplace( "id", this->inputId.value() );
         }
-      if ( this->catalogStability.has_value() )
-        {
-          c.emplace( "stability", this->catalogStability.value() );
-        }
+      j.emplace( "catalog", c );
+    }
+  else if ( this->inputId.has_value() && ( ! this->searchFlakes ) )
+    {
+      nlohmann::json c = nlohmann::json( { { "id", this->inputId.value() } } );
       j.emplace( "catalog", c );
     }
   else
@@ -241,14 +310,19 @@ Descriptor::toJSON() const
       j.emplace( "catalog", this->searchCatalogs );
     }
 
-  if ( this->flakeId.has_value() )
+  if ( this->inputId.has_value() && ( ! this->searchCatalogs ) )
     {
-      nlohmann::json f = nlohmann::json( { { "id", this->flakeId.value() } } );
+      nlohmann::json f = nlohmann::json( { { "id", this->inputId.value() } } );
       j.emplace( "flake", f );
     }
   else
     {
       j.emplace( "flake", this->searchFlakes );
+    }
+
+  if ( this->inputId.has_value() && this->searchCatalogs && this->searchFlakes )
+    {
+      j.emplace( "input", this->inputId.value() );
     }
   return j;
 }
