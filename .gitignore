@@ -5,3 +5,5 @@ tmp/
 result
 result-*
 *.o
+resolver
+*.so

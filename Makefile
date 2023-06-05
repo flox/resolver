@@ -47,11 +47,11 @@ INCLUDEDIR ?= $(PREFIX)/include
 
 # ---------------------------------------------------------------------------- #
 
-LIBFLOXRESOLVE = libfloxresolve$(libExt)
+LIBFLOXRESOLVE = libflox-resolve$(libExt)
 
-BINS           =  flox-resolve
+BINS           =  resolver
 LIBS           =  $(LIBFLOXRESOLVE)
-COMMON_HEADERS =  resolve.hh
+COMMON_HEADERS =  resolve.hh flox-installables.hh
 TESTS          =  $(wildcard tests/*.cc)
 
 
@@ -77,7 +77,7 @@ nix_CFLAGS +=                                                                 \
 nix_LDFLAGS =  $(shell $(PKG_CONFIG) --libs nix-main nix-cmd nix-expr nix-store)
 nix_LDFLAGS += -lnixfetchers
 
-floxresolve_LDFLAGS =  '-L$(MAKEFILE_DIR)/lib' -lfloxresolve
+floxresolve_LDFLAGS =  '-L$(MAKEFILE_DIR)/lib' -lflox-resolve
 floxresolve_LDFLAGS += -Wl,--enable-new-dtags '-Wl,-rpath,$$ORIGIN/../lib'
 
 
@@ -103,8 +103,9 @@ clean: FORCE
 
 # ---------------------------------------------------------------------------- #
 
-src/resolve.o: $(addprefix include/,resolve.hh)
-src/main.o: $(addprefix include/,resolve.hh)
+src/installables.o: $(addprefix include/,resolve.hh flox-installables.hh)
+src/resolve.o: $(addprefix include/,resolve.hh flox-installables.hh)
+src/main.o: $(addprefix include/,resolve.hh flox-installables.hh)
 
 
 # ---------------------------------------------------------------------------- #
@@ -119,17 +120,17 @@ lib/$(LIBFLOXRESOLVE): LDFLAGS  += $(lib_LDFLAGS)
 lib/$(LIBFLOXRESOLVE): LDFLAGS  += -Wl,--as-needed
 lib/$(LIBFLOXRESOLVE): LDFLAGS  += $(nix_LDFLAGS) $(sqlite3_LDFLAGS)
 lib/$(LIBFLOXRESOLVE): LDFLAGS  += -Wl,--no-as-needed
-lib/$(LIBFLOXRESOLVE): $(addprefix src/,resolve.o)
+lib/$(LIBFLOXRESOLVE): $(addprefix src/,resolve.o installables.o)
 	$(CXX) $^ $(LDFLAGS) -o "$@"
 
 
 
 # ---------------------------------------------------------------------------- #
 
-bin/resolve: CXXFLAGS += $(sqlite3_CFLAGS) $(nljson_CFLAGS) $(nix_CFLAGS)
-bin/resolve: LDFLAGS  += $(sqlite3_LDFLAGS) $(nix_LDFLAGS)
-bin/resolve: LDFLAGS  += $(floxresolve_LDFLAGS)
-bin/resolve: src/main.cc lib/$(LIBFLOXRESOLVE)
+bin/resolver: CXXFLAGS += $(sqlite3_CFLAGS) $(nljson_CFLAGS) $(nix_CFLAGS)
+bin/resolver: LDFLAGS  += $(sqlite3_LDFLAGS) $(nix_LDFLAGS)
+bin/resolver: LDFLAGS  += $(floxresolve_LDFLAGS)
+bin/resolver: src/main.cc lib/$(LIBFLOXRESOLVE)
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) "$<" -o "$@"
 
 
