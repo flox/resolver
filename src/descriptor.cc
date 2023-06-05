@@ -248,6 +248,15 @@ Descriptor::Descriptor( const nlohmann::json & desc )
   nlohmann::json
 Descriptor::toJSON() const
 {
+  if ( ! ( this->searchCatalogs || this->searchFlakes ) )
+    {
+      throw "Descriptor must be able to search in either flakes or catalogs";
+    }
+  if ( this->catalogStability.has_value() && this->searchFlakes )
+    {
+      throw "Descriptor `catalog.stability' field is incompatible with flakes";
+    }
+
   nlohmann::json j = nlohmann::json::object();
   if ( this->relAttrPath.has_value() && this->absAttrPath.has_value() )
     {

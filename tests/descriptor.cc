@@ -70,6 +70,24 @@ test_DescriptorFromJSON3()
 
 /* -------------------------------------------------------------------------- */
 
+/* Expect error if flakes are allowed when `catalog.stability' is set. */
+  bool
+test_DescriptorFromJSON4()
+{
+  nlohmann::json desc = R"(
+    {
+      "flake":   true
+    , "catalog": { "stability": "stable" }
+    }
+  )"_json;
+  bool rsl = false;
+  try { Descriptor d( desc ); } catch( ... ) { rsl = true; }
+  return rsl;
+}
+
+
+/* -------------------------------------------------------------------------- */
+
   bool
 test_DescriptorToJSON1()
 {
@@ -135,6 +153,8 @@ main( int argc, char * argv[], char ** envp )
   int ec = EXIT_SUCCESS;
   RUN_TEST( DescriptorFromJSON1 );
   RUN_TEST( DescriptorFromJSON2 );
+  RUN_TEST( DescriptorFromJSON3 );
+  RUN_TEST( DescriptorFromJSON4 );
   RUN_TEST( DescriptorToJSON1 );
   RUN_TEST( DescriptorToJSON2 );
 
