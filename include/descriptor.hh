@@ -6,13 +6,14 @@
 
 #pragma once
 
-#include <list>
+#include <vector>
 #include <optional>
 #include <nlohmann/json.hpp>
 #include <nix/fetchers.hh>
 #include <unordered_map>
 #include <unordered_set>
 #include <nix/eval-cache.hh>
+#include <variant>
 
 
 /* -------------------------------------------------------------------------- */
@@ -22,11 +23,19 @@ namespace flox {
 
 /* -------------------------------------------------------------------------- */
 
+typedef std::variant<std::nullptr_t, std::string>  attr_part;
+
+
+/* -------------------------------------------------------------------------- */
+
 struct Descriptor {
-  std::optional<std::list<std::string>> path;
-  std::optional<std::string>            name;
-  std::optional<std::string>            version;
-  std::optional<std::string>            semver;
+  /* ["python3", "pkgs", "pip"] */
+  std::optional<std::vector<std::string>> relAttrPath;
+  /* ["packages", null, "hello"] */
+  std::optional<std::vector<attr_part>> absAttrPath;
+  std::optional<std::string>          name;
+  std::optional<std::string>          version;
+  std::optional<std::string>          semver;
 
   bool                       searchCatalogs;
   std::optional<std::string> catalogId;

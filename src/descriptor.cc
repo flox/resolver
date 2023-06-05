@@ -4,6 +4,10 @@
  *
  * -------------------------------------------------------------------------- */
 
+#include <variant>
+#include <vector>
+#include <optional>
+#include <nlohmann/json.hpp>
 #include "descriptor.hh"
 
 
@@ -14,7 +18,265 @@ namespace flox {
 
 /* -------------------------------------------------------------------------- */
 
+  std::optional<bool>
+isAbsAttrPath( const nlohmann::json & j )
+{
+  if ( ! j.is_array() )
+    {
+      throw "AttrPaths must be lists of strings or null.";
+    }
 
+  std::vector<nlohmann::json> path = j;
+  if ( path.empty() )
+    {
+      return std::nullopt;
+    }
+
+  if ( path[0].is_null() )
+    {
+      throw "AttrPaths may only contain `null' as their second member.";
+    }
+  std::string_view first = path[0].get<std::string_view>();
+
+  return ( first == "packages" ) ||
+         ( first == "legacyPackages" ) ||
+         ( first == "catalog" );
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+Descriptor::Descriptor( std::string_view desc )
+{
+  // TODO
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+Descriptor::Descriptor( const nlohmann::json & desc )
+{
+  for ( auto & [key, value] : desc.items() )
+    {
+      if ( key == "path" )
+        {
+          if ( value.empty() )
+            {
+              continue;
+            }
+          if ( isAbsAttrPath( value ) )
+            {
+              if ( value.size() < 3 )
+                {
+                  throw "Absolute AttrPaths must be at least 3 elements long.";
+                }
+              this->absAttrPath = std::vector<attr_part>( value.size() );
+              for ( auto & p : value )
+                {
+                  if ( p.is_null() )
+                    {
+                      this->absAttrPath.value().push_back( nullptr );
+                    }
+                  else
+                    {
+                      this->absAttrPath.value().push_back( p );
+                    }
+                }
+            }
+          else
+            {
+              this->relAttrPath = std::vector<std::string>( value.size() );
+              for ( auto & p : value )
+                {
+                  this->relAttrPath.value().push_back( p );
+                }
+            }
+        }
+      else if ( key == "name" )
+        {
+          this->name = value;
+        }
+      else if ( key == "version" )
+        {
+          if ( this->semver.has_value() )
+            {
+              throw ( "Descriptor fields `semver' and `version' are "
+                      "mutually exclusive." );
+            }
+          this->version = value;
+        }
+      else if ( key == "semver" )
+        {
+          if ( this->version.has_value() )
+            {
+              throw ( "Descriptor fields `semver' and `version' are "
+                      "mutually exclusive." );
+            }
+          this->semver = value;
+        }
+      else if ( key == "catalog" )
+        {
+          if ( value.is_boolean() )
+            {
+              this->searchCatalogs = value;
+            }
+          else if ( value.is_string() )
+            {
+              this->searchCatalogs = true;
+              this->catalogId      = value;
+            }
+          else if ( value.is_object() )
+            {
+              this->searchCatalogs = true;
+              for ( auto & [ckey, cvalue] : value.items() )
+                {
+                  if ( ckey == "id" )
+                    {
+                      this->catalogId = cvalue;
+                    }
+                  else if ( ckey == "stability" )
+                    {
+                      this->catalogStability = cvalue;
+                    }
+                }
+            }
+          else
+            {
+              throw "Catalog field must be a string, boolean, or attr-set.";
+            }
+        }
+      else if ( key == "flake" )
+        {
+          if ( value.is_boolean() )
+            {
+              this->searchFlakes = value;
+            }
+          else if ( value.is_string() )
+            {
+              this->searchFlakes = true;
+              this->flakeId      = value;
+            }
+          else if ( value.is_object() )
+            {
+              this->searchFlakes = true;
+              for ( auto & [fkey, fvalue] : value.items() )
+                {
+                  if ( fkey == "id" )
+                    {
+                      this->flakeId = fvalue;
+                    }
+                }
+            }
+          else
+            {
+              throw "Flake field must be a string, boolean, or attr-set.";
+            }
+        }
+    }
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+  nlohmann::json
+Descriptor::toJSON() const
+{
+  nlohmann::json j = nlohmann::json::object();
+  if ( this->relAttrPath.has_value() && this->absAttrPath.has_value() )
+    {
+      throw ( "Descriptor fields `absAttrPath' and `relAttrPath' are "
+              "mutually exclusive." );
+    }
+  if ( this->relAttrPath.has_value() )
+    {
+      j.emplace( "path", this->relAttrPath.value() );
+    }
+  else if ( this->absAttrPath.has_value() )
+    {
+      nlohmann::json path;
+      for ( auto & p : this->absAttrPath.value() )
+        {
+          if ( std::holds_alternative<std::nullptr_t>( p ) )
+            {
+              path.push_back( nlohmann::json() );
+            }
+          else
+            {
+              path.push_back( std::get<std::string>( p ) );
+            }
+        }
+      j.emplace( "path", path );
+    }
+
+  if ( this->name.has_value() )
+    {
+      j.emplace( "name", this->name.value() );
+    }
+
+  /* These fields are mutually exclusive */
+  if ( this->version.has_value() )
+    {
+      j.emplace( "version", this->version.value() );
+    }
+  else if ( this->semver.has_value() )
+    {
+      j.emplace( "semver", this->semver.value() );
+    }
+
+  if ( this->catalogId.has_value() || this->catalogStability.has_value() )
+    {
+      nlohmann::json c = nlohmann::json::object();
+      if ( this->catalogId.has_value() )
+        {
+          c.emplace( "id", this->catalogId.value() );
+        }
+      if ( this->catalogStability.has_value() )
+        {
+          c.emplace( "stability", this->catalogStability.value() );
+        }
+      j.emplace( "catalog", c );
+    }
+  else
+    {
+      j.emplace( "catalog", this->searchCatalogs );
+    }
+
+  if ( this->flakeId.has_value() )
+    {
+      nlohmann::json f = nlohmann::json( { { "id", this->flakeId.value() } } );
+      j.emplace( "flake", f );
+    }
+  else
+    {
+      j.emplace( "flake", this->searchFlakes );
+    }
+  return j;
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+  void
+from_json( const nlohmann::json & j, Descriptor & d )
+{
+  d = Descriptor( j );
+}
+
+
+  void
+to_json( nlohmann::json & j, const Descriptor & d )
+{
+  j = d.toJSON();
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+  std::string
+Descriptor::toString() const
+{
+  return "";
+}
 
 
 /* -------------------------------------------------------------------------- */
