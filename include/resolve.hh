@@ -36,6 +36,7 @@ static const std::list<std::string> defaultAttrPathPrefixes = {
   "catalog", "packages", "legacyPackages"
 };
 
+
 struct Preferences {
   std::list<std::string> inputs = { "nixpkgs", "nixpkgs-flox" };
 
@@ -47,8 +48,15 @@ struct Preferences {
   bool allowBroken             = false;
 
   std::optional<std::unordered_set<std::string>> allowedLicenses;
+
+  Preferences( const nlohmann::json & desc );
+
+  nlohmann::json toJSON() const;
 };
 
+
+void from_json( const nlohmann::json & j,       Preferences & p );
+void to_json(         nlohmann::json & j, const Preferences & p );
 
 
 /* -------------------------------------------------------------------------- */
@@ -65,18 +73,37 @@ struct Descriptor {
 
   bool                       searchFlakes;
   std::optional<std::string> flakeId;
+
+  Descriptor( const std::string_view   desc );
+  Descriptor( const nlohmann::json   & desc );
+
+  nlohmann::json toJSON()   const;
+  std::string    toString() const;
 };
+
+
+void from_json( const nlohmann::json & j,       Descriptor & p );
+void to_json(         nlohmann::json & j, const Descriptor & p );
 
 
 /* -------------------------------------------------------------------------- */
 
 struct Resolved {
-  /* unsigned int           rank; */
   FloxInput              input;
   std::list<std::string> path;
   std::string            uri;
   nlohmann::json         info;
+
+  Resolved( const std::string_view   desc );
+  Resolved( const nlohmann::json   & desc );
+
+  nlohmann::json toJSON()   const;
+  std::string    toString() const;
 };
+
+
+void from_json( const nlohmann::json & j,       Resolved & p );
+void to_json(         nlohmann::json & j, const Resolved & p );
 
 
 /* -------------------------------------------------------------------------- */
