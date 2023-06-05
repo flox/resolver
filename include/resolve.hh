@@ -39,10 +39,10 @@ static const std::list<std::string> defaultAttrPathPrefixes = {
 
 
 struct Preferences {
-  std::list<std::string> inputs = { "nixpkgs", "nixpkgs-flox" };
+  std::list<std::string> inputs;
 
-  std::unordered_map<std::string, std::list<std::string>> catalogStabilities;
-  std::unordered_map<std::string, std::list<std::string>> attrPathPrefixes;
+  std::unordered_map<std::string, std::list<std::string>> stabilities;
+  std::unordered_map<std::string, std::list<std::string>> prefixes;
 
   bool semverPreferPreReleases = false;
   bool allowUnfree             = true;
@@ -50,7 +50,7 @@ struct Preferences {
 
   std::optional<std::unordered_set<std::string>> allowedLicenses;
 
-  Preferences( const nlohmann::json & desc );
+  Preferences( const nlohmann::json & j );
 
   nlohmann::json toJSON() const;
 };

@@ -103,7 +103,8 @@ clean: FORCE
 
 # ---------------------------------------------------------------------------- #
 
-src/installables.o: $(addprefix include/,resolve.hh descriptor.hh)
+src/descriptor.o: $(addprefix include/,resolve.hh descriptor.hh)
+src/preferences.o: $(addprefix include/,resolve.hh)
 src/resolve.o: $(addprefix include/,resolve.hh descriptor.hh)
 src/main.o: $(addprefix include/,resolve.hh descriptor.hh)
 
@@ -120,7 +121,7 @@ lib/$(LIBFLOXRESOLVE): LDFLAGS  += $(lib_LDFLAGS)
 lib/$(LIBFLOXRESOLVE): LDFLAGS  += -Wl,--as-needed
 lib/$(LIBFLOXRESOLVE): LDFLAGS  += $(nix_LDFLAGS) $(sqlite3_LDFLAGS)
 lib/$(LIBFLOXRESOLVE): LDFLAGS  += -Wl,--no-as-needed
-lib/$(LIBFLOXRESOLVE): $(addprefix src/,resolve.o descriptor.o)
+lib/$(LIBFLOXRESOLVE): $(addprefix src/,resolve.o descriptor.o preferences.o)
 	$(CXX) $^ $(LDFLAGS) -o "$@"
 
 

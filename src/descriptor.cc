@@ -355,6 +355,7 @@ to_json( nlohmann::json & j, const Descriptor & d )
 
 /* -------------------------------------------------------------------------- */
 
+/* TODO */
   std::string
 Descriptor::toString() const
 {
