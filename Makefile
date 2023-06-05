@@ -51,7 +51,7 @@ LIBFLOXRESOLVE = libflox-resolve$(libExt)
 
 BINS           =  resolver
 LIBS           =  $(LIBFLOXRESOLVE)
-COMMON_HEADERS =  resolve.hh flox-installables.hh
+COMMON_HEADERS =  resolve.hh descriptor.hh
 TESTS          =  $(wildcard tests/*.cc)
 
 
@@ -103,9 +103,9 @@ clean: FORCE
 
 # ---------------------------------------------------------------------------- #
 
-src/installables.o: $(addprefix include/,resolve.hh flox-installables.hh)
-src/resolve.o: $(addprefix include/,resolve.hh flox-installables.hh)
-src/main.o: $(addprefix include/,resolve.hh flox-installables.hh)
+src/installables.o: $(addprefix include/,resolve.hh descriptor.hh)
+src/resolve.o: $(addprefix include/,resolve.hh descriptor.hh)
+src/main.o: $(addprefix include/,resolve.hh descriptor.hh)
 
 
 # ---------------------------------------------------------------------------- #
@@ -120,7 +120,7 @@ lib/$(LIBFLOXRESOLVE): LDFLAGS  += $(lib_LDFLAGS)
 lib/$(LIBFLOXRESOLVE): LDFLAGS  += -Wl,--as-needed
 lib/$(LIBFLOXRESOLVE): LDFLAGS  += $(nix_LDFLAGS) $(sqlite3_LDFLAGS)
 lib/$(LIBFLOXRESOLVE): LDFLAGS  += -Wl,--no-as-needed
-lib/$(LIBFLOXRESOLVE): $(addprefix src/,resolve.o installables.o)
+lib/$(LIBFLOXRESOLVE): $(addprefix src/,resolve.o descriptor.o)
 	$(CXX) $^ $(LDFLAGS) -o "$@"
 
 

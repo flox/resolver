@@ -12,6 +12,7 @@
 #include <nix/fetchers.hh>
 #include <unordered_map>
 #include <unordered_set>
+#include "descriptor.hh"
 
 
 /* -------------------------------------------------------------------------- */
@@ -57,33 +58,6 @@ struct Preferences {
 
 void from_json( const nlohmann::json & j,       Preferences & p );
 void to_json(         nlohmann::json & j, const Preferences & p );
-
-
-/* -------------------------------------------------------------------------- */
-
-struct Descriptor {
-  std::optional<std::list<std::string>> path;
-  std::optional<std::string>            name;
-  std::optional<std::string>            version;
-  std::optional<std::string>            semver;
-
-  bool                       searchCatalogs;
-  std::optional<std::string> catalogId;
-  std::optional<std::string> catalogStability;
-
-  bool                       searchFlakes;
-  std::optional<std::string> flakeId;
-
-  Descriptor( const std::string_view   desc );
-  Descriptor( const nlohmann::json   & desc );
-
-  nlohmann::json toJSON()   const;
-  std::string    toString() const;
-};
-
-
-void from_json( const nlohmann::json & j,       Descriptor & p );
-void to_json(         nlohmann::json & j, const Descriptor & p );
 
 
 /* -------------------------------------------------------------------------- */
