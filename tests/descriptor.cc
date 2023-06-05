@@ -134,7 +134,7 @@ test_DescriptorToJSON2()
 #define RUN_TEST( _NAME )                                              \
   try                                                                  \
     {                                                                  \
-      if ( ! test_ ##_NAME () )                                        \
+      if ( ! test_ ## _NAME () )                                       \
         {                                                              \
           ec = EXIT_FAILURE;                                           \
           std::cerr << "  fail: " # _NAME << std::endl;                \

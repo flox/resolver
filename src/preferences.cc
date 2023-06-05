@@ -81,12 +81,7 @@ Preferences::toJSON() const
   nlohmann::json j;
   if ( ! this->inputs.empty() )
     {
-      nlohmann::json inputs;
-      for ( auto & i : this->inputs )
-        {
-          inputs.push_back( i );
-        }
-      j.emplace( "inputs", inputs );
+      j.emplace( "inputs", this->inputs );
     }
 
   if ( ! this->stabilities.empty() )
@@ -94,12 +89,7 @@ Preferences::toJSON() const
       nlohmann::json stabilities;
       for ( auto & [input, order] : this->stabilities )
         {
-          nlohmann::json o;
-          for ( auto & s : order )
-            {
-              o.push_back( s );
-            }
-          stabilities.emplace( input, o );
+          stabilities.emplace( input, order );
         }
       j.emplace( "stabilities", stabilities );
     }
@@ -109,12 +99,7 @@ Preferences::toJSON() const
       nlohmann::json prefixes;
       for ( auto & [input, order] : this->prefixes )
         {
-          nlohmann::json o;
-          for ( auto & p : order )
-            {
-              o.push_back( p );
-            }
-          prefixes.emplace( input, o );
+          prefixes.emplace( input, order );
         }
       j.emplace( "prefixes", prefixes );
     }
@@ -131,12 +116,7 @@ Preferences::toJSON() const
 
   if ( this->allowedLicenses.has_value() )
     {
-      nlohmann::json licenses;
-      for ( auto & l : this->allowedLicenses.value() )
-        {
-          licenses.push_back( l );
-        }
-      allow.emplace( "licenses", licenses );
+      allow.emplace( "licenses", this->allowedLicenses.value() );
     }
 
   j.emplace( "allow", allow );

@@ -63,10 +63,10 @@ void to_json(         nlohmann::json & j, const Preferences & p );
 /* -------------------------------------------------------------------------- */
 
 struct Resolved {
-  FloxInput              input;
+  FloxInput                input;
   std::vector<std::string> path;
-  std::string            uri;
-  nlohmann::json         info;
+  std::string              uri;
+  nlohmann::json           info;
 
   Resolved( const std::string_view   desc );
   Resolved( const nlohmann::json   & desc );
