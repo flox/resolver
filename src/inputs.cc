@@ -5,11 +5,7 @@
  * -------------------------------------------------------------------------- */
 
 #include <nlohmann/json.hpp>
-#include <nix/shared.hh>
-#include <nix/eval.hh>
-#include <nix/eval-inline.hh>
 #include <nix/flake/flake.hh>
-#include <nix/store-api.hh>
 #include <nix/fetchers.hh>
 #include <unordered_map>
 #include "resolve.hh"
