@@ -33,16 +33,16 @@ class Inputs {
   private:
     std::unordered_map<std::string, FloxFlakeRef> inputs;
 
+    void init( const nlohmann::json & j );
+
   public:
     Inputs( const nlohmann::json & j ) { this->init( j ); }
 
-    void init( const nlohmann::json & j );
-    bool has( std::string_view id ) const;
-
-    FloxFlakeRef get( std::string_view id ) const;
-
-    nlohmann::json toJSON()       const;
+    bool           has( std::string_view id ) const;
+    FloxFlakeRef   get( std::string_view id ) const;
+    nlohmann::json toJSON()                   const;
 };
+
 
 void from_json( const nlohmann::json & j,       Inputs & i );
 void to_json(         nlohmann::json & j, const Inputs & i );
