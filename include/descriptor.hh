@@ -28,36 +28,52 @@ typedef std::variant<std::nullptr_t, std::string>  attr_part;
 
 /* -------------------------------------------------------------------------- */
 
-struct Descriptor {
-  /* ["python3", "pkgs", "pip"] */
-  std::optional<std::vector<std::string>> relAttrPath;
-  /* ["packages", null, "hello"] */
-  std::optional<std::vector<attr_part>> absAttrPath;
+class DescriptorException : public std::exception {
+  private:
+    std::string msg;
+  public:
+    DescriptorException( std::string_view msg ) : msg( msg ) {}
+    const char * what() const noexcept { return this->msg.c_str(); }
+};
 
-  std::optional<std::string> name;
-  std::optional<std::string> version;
-  std::optional<std::string> semver;
 
-  std::optional<std::string> catalogStability;
+/* -------------------------------------------------------------------------- */
 
-  bool searchCatalogs;
-  bool searchFlakes;
+class Descriptor {
+  private:
+    /* Check validity of fields, possibly returning an error message. */
+    bool audit( std::string & msg ) const;
 
-  std::optional<std::string> inputId;
+  public:
+    /* ["python3", "pkgs", "pip"] */
+    std::optional<std::vector<std::string>> relAttrPath;
+    /* ["packages", null, "hello"] */
+    std::optional<std::vector<attr_part>> absAttrPath;
 
-  Descriptor( const nlohmann::json   & desc );
-  /**
-   * "hello"                  -> { name: "hello" }
-   * "hello@18"               -> { name: "hello", semver: "18" }
-   * "hello@=18"              -> { name: "hello", version: "18" }
-   * "packages.*.hello"       -> { path: ["packages", null, "hello"] }
-   * "nixpkgs#hello"          -> { flake.id: "nixpkgs", name: "hello" }
-   * "catalog:floxpkgs#hello" -> { catalog.id: "floxpkgs", name: "hello" }
-   */
-  Descriptor( const std::string_view   desc );
+    std::optional<std::string> name;
+    std::optional<std::string> version;
+    std::optional<std::string> semver;
 
-  nlohmann::json toJSON()   const;
-  std::string    toString() const;
+    std::optional<std::string> catalogStability;
+
+    bool searchCatalogs;
+    bool searchFlakes;
+
+    std::optional<std::string> inputId;
+
+    Descriptor( const nlohmann::json   & desc );
+    /**
+     * "hello"                  -> { name: "hello" }
+     * "hello@18"               -> { name: "hello", semver: "18" }
+     * "hello@=18"              -> { name: "hello", version: "18" }
+     * "packages.*.hello"       -> { path: ["packages", null, "hello"] }
+     * "nixpkgs#hello"          -> { flake.id: "nixpkgs", name: "hello" }
+     * "catalog:floxpkgs#hello" -> { catalog.id: "floxpkgs", name: "hello" }
+     */
+    Descriptor( const std::string_view   desc );
+
+    nlohmann::json toJSON()   const;
+    std::string    toString() const;
 };
 
 

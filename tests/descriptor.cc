@@ -34,14 +34,13 @@ test_DescriptorFromJSON1()
 
 /* -------------------------------------------------------------------------- */
 
-/* Expect error if `flake' and `catalog' are set to ids */
+/* Expect error if `null' appears in path in any position other than 2nd. */
   bool
 test_DescriptorFromJSON2()
 {
   nlohmann::json desc = R"(
     {
-      "flake":   "foo"
-    , "catalog": "bar"
+      "path": ["foo", "bar", null]
     }
   )"_json;
   bool rsl = false;
