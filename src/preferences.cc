@@ -86,22 +86,12 @@ Preferences::toJSON() const
 
   if ( ! this->stabilities.empty() )
     {
-      nlohmann::json stabilities;
-      for ( auto & [input, order] : this->stabilities )
-        {
-          stabilities.emplace( input, order );
-        }
-      j.emplace( "stabilities", stabilities );
+      j.emplace( "stabilities", this->stabilities );
     }
 
   if ( ! this->prefixes.empty() )
     {
-      nlohmann::json prefixes;
-      for ( auto & [input, order] : this->prefixes )
-        {
-          prefixes.emplace( input, order );
-        }
-      j.emplace( "prefixes", prefixes );
+      j.emplace( "prefixes", this->prefixes );
     }
 
   nlohmann::json semver = {
