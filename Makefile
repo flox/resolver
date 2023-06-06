@@ -51,7 +51,7 @@ LIBFLOXRESOLVE = libflox-resolve$(libExt)
 
 BINS           =  resolver
 LIBS           =  $(LIBFLOXRESOLVE)
-COMMON_HEADERS =  resolve.hh descriptor.hh
+COMMON_HEADERS =  resolve.hh descriptor.hh flox/exception.hh
 TESTS          =  $(wildcard tests/*.cc)
 
 
@@ -103,10 +103,7 @@ clean: FORCE
 
 # ---------------------------------------------------------------------------- #
 
-src/descriptor.o: $(addprefix include/,resolve.hh descriptor.hh)
-src/preferences.o: $(addprefix include/,resolve.hh)
-src/resolve.o: $(addprefix include/,resolve.hh descriptor.hh)
-src/main.o: $(addprefix include/,resolve.hh descriptor.hh)
+src/%.o: $(addprefix include/,$(COMMON_HEADERS))
 
 
 # ---------------------------------------------------------------------------- #
@@ -141,7 +138,7 @@ bin/resolver: src/main.cc lib/$(LIBFLOXRESOLVE)
 install: install-dirs install-bin install-lib install-include
 
 install-dirs: FORCE
-	$(MKDIR_P) $(BINDIR) $(LIBDIR) $(INCLUDEDIR)
+	$(MKDIR_P) $(BINDIR) $(LIBDIR) $(INCLUDEDIR)/flox
 
 $(INCLUDEDIR)/%: include/% | install-dirs
 	$(CP) -- "$<" "$@"

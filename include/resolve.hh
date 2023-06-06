@@ -12,6 +12,7 @@
 #include <nix/fetchers.hh>
 #include <unordered_map>
 #include <unordered_set>
+#include "flox/exceptions.hh"
 #include "descriptor.hh"
 
 
@@ -22,9 +23,7 @@ namespace flox {
 
 /* -------------------------------------------------------------------------- */
 
-struct FloxInput : public nix::fetchers::Input {
-  std::optional<bool> catalog;
-};
+typedef nix::fetchers::Input  FloxInput;
 
 
 /* -------------------------------------------------------------------------- */

@@ -24,7 +24,7 @@ isAbsAttrPath( const nlohmann::json & j )
   if ( ! j.is_array() )
     {
       throw DescriptorException(
-        "AttrPaths must be lists of strings or null."
+        "Descriptor `path' field must be lists of strings or null."
       );
     }
 
@@ -37,7 +37,7 @@ isAbsAttrPath( const nlohmann::json & j )
   if ( path[0].is_null() )
     {
       throw DescriptorException(
-        "AttrPaths may only contain `null' as their second member."
+        "Descriptor `path' field may only contain `null' as its second member."
       );
     }
   std::string_view first = path[0].get<std::string_view>();

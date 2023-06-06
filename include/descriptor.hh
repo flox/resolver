@@ -14,6 +14,7 @@
 #include <unordered_set>
 #include <nix/eval-cache.hh>
 #include <variant>
+#include "flox/exceptions.hh"
 
 
 /* -------------------------------------------------------------------------- */
@@ -24,17 +25,6 @@ namespace flox {
 /* -------------------------------------------------------------------------- */
 
 typedef std::variant<std::nullptr_t, std::string>  attr_part;
-
-
-/* -------------------------------------------------------------------------- */
-
-class DescriptorException : public std::exception {
-  private:
-    std::string msg;
-  public:
-    DescriptorException( std::string_view msg ) : msg( msg ) {}
-    const char * what() const noexcept { return this->msg.c_str(); }
-};
 
 
 /* -------------------------------------------------------------------------- */
