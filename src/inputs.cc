@@ -47,63 +47,30 @@ Inputs::init( const nlohmann::json & j )
 
 /* -------------------------------------------------------------------------- */
 
-  void
-Inputs::lockOne( std::string_view id )
-{
-
-}
-
-
-/* -------------------------------------------------------------------------- */
-
-  void
-Inputs::lockAll()
-{
-
-}
-
-
-/* -------------------------------------------------------------------------- */
-
   bool
 Inputs::has( std::string_view id ) const
 {
-  return false; // TODO
+  return this->inputs.find( std::string( id ) ) != this->inputs.end();
 }
 
 
-//  FloxFlakeInput
-//Inputs::get( std::string_view id ) const
-//{
-//
-//}
-
-
-//  FloxFlakeInput
-//Inputs::getLocked( std::string_view id ) const
-//{
-//
-//}
+  FloxFlakeRef
+Inputs::get( std::string_view id ) const
+{
+  return this->inputs.at( std::string( id ) );
+}
 
 
 /* -------------------------------------------------------------------------- */
 
-// TODO
   nlohmann::json
 Inputs::toJSON() const
 {
   nlohmann::json j;
-  return j;
-}
-
-
-/* -------------------------------------------------------------------------- */
-
-// TODO
-  nlohmann::json
-Inputs::lockedToJSON()
-{
-  nlohmann::json j;
+  for ( auto & [id, input] : this->inputs )
+    {
+      j.emplace( id, nix::fetchers::attrsToJSON( input.toAttrs() ) );
+    }
   return j;
 }
 

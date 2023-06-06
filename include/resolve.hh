@@ -31,28 +31,17 @@ typedef nix::FlakeRef  FloxFlakeRef;
 
 class Inputs {
   private:
-    nix::EvalState & state;
-
     std::unordered_map<std::string, FloxFlakeRef> inputs;
 
-    void lockOne( std::string_view id );
-
   public:
-    Inputs( const nlohmann::json & j, nix::EvalState && state )
-      : state( state )
-    {
-      this->init( j );
-    }
+    Inputs( const nlohmann::json & j ) { this->init( j ); }
 
     void init( const nlohmann::json & j );
-    void lockAll();
     bool has( std::string_view id ) const;
 
-    // FloxFlakeRef get( std::string_view id )       const;
-    // FloxFlakeRef getLocked( std::string_view id ) const;
+    FloxFlakeRef get( std::string_view id ) const;
 
     nlohmann::json toJSON()       const;
-    nlohmann::json lockedToJSON();
 };
 
 void from_json( const nlohmann::json & j,       Inputs & i );
