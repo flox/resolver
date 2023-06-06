@@ -83,17 +83,19 @@ void to_json(         nlohmann::json & j, const Preferences & p );
 
 /* -------------------------------------------------------------------------- */
 
-struct Resolved {
-  FloxFlakeRef             input;
-  std::vector<std::string> path;
-  std::string              uri;
-  nlohmann::json           info;
+class Resolved {
+  private:
+    FloxFlakeRef             input;
+    std::vector<std::string> path;
+    std::string              uri;
+    nlohmann::json           info;
 
-  Resolved( const std::string_view   desc );
-  Resolved( const nlohmann::json   & desc );
+  public:
+    Resolved(       std::string_view   uri );
+    Resolved( const nlohmann::json   & attrs );
 
-  nlohmann::json toJSON()   const;
-  std::string    toString() const;
+    nlohmann::json toJSON()   const;
+    std::string    toString() const;
 };
 
 
