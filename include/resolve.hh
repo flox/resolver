@@ -9,6 +9,7 @@
 #include <vector>
 #include <optional>
 #include <nlohmann/json.hpp>
+#include <nix/flake/flake.hh>
 #include <nix/fetchers.hh>
 #include <unordered_map>
 #include <unordered_set>
@@ -23,7 +24,39 @@ namespace flox {
 
 /* -------------------------------------------------------------------------- */
 
-typedef nix::fetchers::Input  FloxInput;
+typedef nix::FlakeRef  FloxFlakeRef;
+
+
+/* -------------------------------------------------------------------------- */
+
+class Inputs {
+  private:
+    nix::EvalState & state;
+
+    std::unordered_map<std::string, FloxFlakeRef> inputs;
+
+    void lockOne( std::string_view id );
+
+  public:
+    Inputs( const nlohmann::json & j, nix::EvalState && state )
+      : state( state )
+    {
+      this->init( j );
+    }
+
+    void init( const nlohmann::json & j );
+    void lockAll();
+    bool has( std::string_view id ) const;
+
+    // FloxFlakeRef get( std::string_view id )       const;
+    // FloxFlakeRef getLocked( std::string_view id ) const;
+
+    nlohmann::json toJSON()       const;
+    nlohmann::json lockedToJSON();
+};
+
+void from_json( const nlohmann::json & j,       Inputs & i );
+void to_json(         nlohmann::json & j, const Inputs & i );
 
 
 /* -------------------------------------------------------------------------- */
@@ -62,7 +95,7 @@ void to_json(         nlohmann::json & j, const Preferences & p );
 /* -------------------------------------------------------------------------- */
 
 struct Resolved {
-  FloxInput                input;
+  FloxFlakeRef             input;
   std::vector<std::string> path;
   std::string              uri;
   nlohmann::json           info;
@@ -82,15 +115,15 @@ void to_json(         nlohmann::json & j, const Resolved & p );
 /* -------------------------------------------------------------------------- */
 
 /* Return a ranked vector of satisfactory resolutions. */
-std::vector<Resolved> resolve( const std::vector<FloxInput> & inputs
-                           , const Preferences          & preferences
-                           , const Descriptor           & desc
-                           );
+std::vector<Resolved> resolve( const Inputs      & inputs
+                             , const Preferences & preferences
+                             , const Descriptor  & desc
+                             );
 
 /* Return the highest ranking resolution, or `std::nullopt'. */
-std::optional<Resolved> resolveOne( const std::vector<FloxInput> & inputs
-                                  , const Preferences          & preferences
-                                  , const Descriptor           & desc
+std::optional<Resolved> resolveOne( const Inputs      & inputs
+                                  , const Preferences & preferences
+                                  , const Descriptor  & desc
                                   );
 
 
