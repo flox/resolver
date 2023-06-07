@@ -306,10 +306,19 @@ test_shouldRecur1( nix::EvalState & state )
 
   bool rsl = funk.shouldRecur( * root, {} );
 
-  rsl &= funk.shouldRecur(
-    * root->getAttr( "legacyPackages" )
-  , { "legacyPackages" }
-  )
+  nix::ref<nix::eval_cache::AttrCursor> cur = root->getAttr( "legacyPackages" );
+  std::vector<nix::Symbol>              path;
+  path.push_back( state.symbols.create( "packages" ) );
+
+  rsl &= funk.shouldRecur( * cur, path );
+
+  cur = cur->getAttr( "x86_64-linux" );
+  path.push_back( state.symbols.create( "x86_64-linux" ) );
+  rsl &= funk.shouldRecur( * cur, path );
+
+  cur = cur->getAttr( "hello" );
+  path.push_back( state.symbols.create( "hello" ) );
+  rsl &= ! funk.shouldRecur( * cur, path );
 
   return rsl;
 }
