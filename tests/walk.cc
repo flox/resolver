@@ -85,24 +85,24 @@ test_isAbsAttrPath5()
   bool
 test_isAbsAttrPathJSON1()
 {
-  std::vector<attr_part> path = { "hello" };
-  std::optional<bool>    opt  = isAbsAttrPath( path );
-  bool                   rsl  = opt.has_value() && ( ! opt.value() );
+  nlohmann::json      path = R"(["hello"])"_json;
+  std::optional<bool> opt  = isAbsAttrPathJSON( path );
+  bool                rsl  = opt.has_value() && ( ! opt.value() );
 
-  path =  { "packages", nullptr, "hello" };
-  opt  =  isAbsAttrPath( path );
+  path =  R"(["packages",null,"hello"])"_json;
+  opt  =  isAbsAttrPathJSON( path );
   rsl  &= opt.has_value() && opt.value();
 
-  path =  { "packages", nullptr };
-  opt  =  isAbsAttrPath( path );
+  path =  R"(["packages",null])"_json;
+  opt  =  isAbsAttrPathJSON( path );
   rsl  &= opt.has_value() && opt.value();
 
-  path =  { "packages" };
-  opt  =  isAbsAttrPath( path );
+  path =  R"(["packages"])"_json;
+  opt  =  isAbsAttrPathJSON( path );
   rsl  &= opt.has_value() && opt.value();
 
-  path =  {};
-  opt  =  isAbsAttrPath( path );
+  path =  R"([])"_json;
+  opt  =  isAbsAttrPathJSON( path );
   rsl  &= ! opt.has_value();
 
   return rsl;
