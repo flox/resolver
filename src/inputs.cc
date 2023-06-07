@@ -76,7 +76,7 @@ Inputs::toJSON() const
   void
 from_json( const nlohmann::json & j, Inputs & i )
 {
-  i.init( j );
+  i = Inputs( j );
 }
 
 

@@ -13,19 +13,14 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <nix/eval-cache.hh>
-#include <variant>
 #include "flox/exceptions.hh"
+#include "flox/types.hh"
 
 
 /* -------------------------------------------------------------------------- */
 
 namespace flox {
   namespace resolve {
-
-/* -------------------------------------------------------------------------- */
-
-typedef std::variant<std::nullptr_t, std::string>  attr_part;
-
 
 /* -------------------------------------------------------------------------- */
 
@@ -73,22 +68,25 @@ void to_json(         nlohmann::json & j, const Descriptor & p );
 
 /* -------------------------------------------------------------------------- */
 
-class Preferences;
-
-
 class DescriptorFunctor {
   private:
-    Descriptor * descriptor;
+    nix::EvalState      * state;
+    Preferences         * prefs;
+    Descriptor          * desc;
+    std::list<Resolved>   results;
 
   public:
-    bool shouldRecur(       nix::EvalState              & state
-                    , const Preferences                 & prefs
-                    ,       nix::eval_cache::AttrCursor & pos
+    DescriptorFunctor( nix::EvalState & state
+                     , Preferences    & prefs
+                     , Descriptor     & desc
+                     )
+      : state( & state ), prefs( & prefs ), desc( & desc )
+    {}
+
+    bool shouldRecur(       nix::eval_cache::AttrCursor & pos
                     , const std::vector<nix::Symbol>    & path
                     );
-    bool packagePredicate(       nix::EvalState              & state
-                         , const Preferences                 & prefs
-                         , const nix::eval_cache::AttrCursor & pos
+    bool packagePredicate( const nix::eval_cache::AttrCursor & pos
                          , const std::vector<nix::Symbol>    & path
                          );
 };

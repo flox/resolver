@@ -44,23 +44,6 @@ shouldSearchSystem( std::string_view system )
 }
 
 
-  static inline std::optional<std::string>
-getSystemFromAttrPath( const nix::EvalState           & state
-                     , const std::vector<nix::Symbol> & path
-                     )
-{
-  if ( path.size() < 2 )
-    {
-      return std::nullopt;
-    }
-  std::vector<nix::SymbolStr> pathS = state.symbols.resolve( path );
-  std::string s = pathS[1];
-
-  return ( s == "{{system}}" ) ? std::nullopt
-                               : std::optional<std::string> { s };
-}
-
-
 /* -------------------------------------------------------------------------- */
 
   static inline bool
@@ -75,26 +58,23 @@ isPkgsSubtree( std::string_view attrName )
 /* -------------------------------------------------------------------------- */
 
   bool
-DescriptorFunctor::shouldRecur(
-        nix::EvalState              & state
-, const Preferences                 & prefs
-,       nix::eval_cache::AttrCursor & pos
-, const std::vector<nix::Symbol>    & path
-)
+DescriptorFunctor::shouldRecur(       nix::eval_cache::AttrCursor & pos
+                              , const std::vector<nix::Symbol>    & path
+                              )
 {
   if ( path.size() < 1 ) { return true; }
 
-  std::vector<nix::SymbolStr> pathS = state.symbols.resolve( path );
+  std::vector<nix::SymbolStr> pathS = this->state->symbols.resolve( path );
 
   /* Handle prefixes. */
   if ( path.size() == 1 )
     {
       if ( ! isPkgsSubtree( pathS[0] ) ) { return false; }
-      if ( ( ! this->descriptor->searchCatalogs ) && ( pathS[0] == "catalog" ) )
+      if ( ( ! this->desc->searchCatalogs ) && ( pathS[0] == "catalog" ) )
         {
           return false;
         }
-      if ( ( ! this->descriptor->searchFlakes ) &&
+      if ( ( ! this->desc->searchFlakes ) &&
            ( ( pathS[0] == "packages" ) || ( pathS[0] == "legacyPackages" ) )
          )
         {
@@ -108,8 +88,8 @@ DescriptorFunctor::shouldRecur(
 
   /* Handle stability. */
   if ( ( path.size() == 3 ) && ( pathS[0] == "catalog" ) &&
-       ( this->descriptor->catalogStability.has_value() ) &&
-       ( this->descriptor->catalogStability.value() !=
+       ( this->desc->catalogStability.has_value() ) &&
+       ( this->desc->catalogStability.value() !=
          std::string_view( pathS[2] )
        )
      )
@@ -132,13 +112,13 @@ DescriptorFunctor::shouldRecur(
 }
 
 
+/* -------------------------------------------------------------------------- */
+
+
   bool
-DescriptorFunctor::packagePredicate(
-        nix::EvalState              & state
-, const Preferences                 & prefs
-, const nix::eval_cache::AttrCursor & pos
-, const std::vector<nix::Symbol>    & path
-)
+DescriptorFunctor::packagePredicate( const nix::eval_cache::AttrCursor & pos
+                                   , const std::vector<nix::Symbol>    & path
+                                   )
 {
   return false;
 }

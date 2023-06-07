@@ -51,7 +51,7 @@ LIBFLOXRESOLVE = libflox-resolve$(libExt)
 
 BINS           =  resolver
 LIBS           =  $(LIBFLOXRESOLVE)
-COMMON_HEADERS =  resolve.hh descriptor.hh flox/exception.hh
+COMMON_HEADERS =  resolve.hh descriptor.hh flox/exception.hh flox/types.hh
 TESTS          =  $(wildcard tests/*.cc)
 
 
