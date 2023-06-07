@@ -41,6 +41,44 @@ Resolved::Resolved( const nlohmann::json & attrs )
 
 /* -------------------------------------------------------------------------- */
 
+Resolved::Resolved( const FloxFlakeRef           & input
+                  , const std::vector<attr_part> & path
+                  , const nlohmann::json         & info
+                  )
+  : input( input ), path( path ), info( info )
+{
+  this->uri = this->input.to_string() + "#";
+  bool first = true;
+  for ( auto & p : this->path )
+    {
+      if ( std::holds_alternative<std::nullptr_t>( p ) )
+        {
+          if ( first )
+            {
+              throw ResolverException(
+                "Resolved `path' may only contain `null' as its second member."
+              );
+            }
+          this->uri += ".{{system}}";
+        }
+      else
+        {
+          if ( first )
+            {
+              first = false;
+            }
+          else
+            {
+              this->uri += ".";
+            }
+          this->uri += std::get<std::string>( p );
+        }
+    }
+}
+
+
+/* -------------------------------------------------------------------------- */
+
   nlohmann::json
 Resolved::toJSON() const
 {
