@@ -55,7 +55,7 @@ class Descriptor {
      * "nixpkgs#hello"          -> { flake.id: "nixpkgs", name: "hello" }
      * "catalog:floxpkgs#hello" -> { catalog.id: "floxpkgs", name: "hello" }
      */
-    Descriptor( const std::string_view   desc );
+    Descriptor( const std::string_view desc );
 
     nlohmann::json toJSON()   const;
     std::string    toString() const;
@@ -86,7 +86,7 @@ class DescriptorFunctor {
     bool shouldRecur(       nix::eval_cache::AttrCursor & pos
                     , const std::vector<nix::Symbol>    & path
                     );
-    bool packagePredicate( const nix::eval_cache::AttrCursor & pos
+    bool packagePredicate(       nix::eval_cache::AttrCursor & pos
                          , const std::vector<nix::Symbol>    & path
                          );
 };

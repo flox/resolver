@@ -19,6 +19,7 @@
 #include <nix/flake/flake.hh>
 #include <nix/shared.hh>
 #include <nix/store-api.hh>
+#include <nix/names.hh>
 #include <nix/command.hh>
 #include <string>
 #include <nlohmann/json.hpp>
@@ -228,11 +229,89 @@ DescriptorFunctor::shouldRecur(       nix::eval_cache::AttrCursor & pos
 
 /* -------------------------------------------------------------------------- */
 
+/* AttrName, <drv>.pname, [parseDrvName( <drv>.name ).name] */
+  PkgNameVersion
+nameVersionAt( std::string_view attrName, nix::eval_cache::AttrCursor & pos )
+{
+  std::string  name        = pos.getAttr( "name" )->getString();
+  nix::DrvName parsed( name );
+
+  PkgNameVersion pnv = {
+    .name          = name
+  , .attrName      = std::string( attrName )
+  , .parsedName    = parsed.name
+  , .parsedVersion = parsed.version
+  };
+
+  std::shared_ptr<nix::eval_cache::AttrCursor> attr =
+    pos.maybeGetAttr( "pname" );
+  if ( attr != nullptr ) { pnv.pname = attr->getString(); }
+
+  attr = pos.maybeGetAttr( "version" );
+  if ( attr != nullptr ) { pnv.version = attr->getString(); }
+
+  return pnv;
+}
+
+
+/* -------------------------------------------------------------------------- */
+
   bool
-DescriptorFunctor::packagePredicate( const nix::eval_cache::AttrCursor & pos
+DescriptorFunctor::packagePredicate(       nix::eval_cache::AttrCursor & pos
                                    , const std::vector<nix::Symbol>    & path
                                    )
 {
+  std::vector<nix::SymbolStr> pathS = this->state->symbols.resolve( path );
+
+  PkgNameVersion pnv = nameVersionAt( pathS[path.size() - 1], pos );
+
+  if ( ! pos.isDerivation() )
+    {
+      throw DescriptorException(
+        "`packagePredicate()' must be run on a derivation."
+      );
+    }
+
+  /* Check name */
+  if ( this->desc->name.has_value() )
+    {
+      if ( ! ( ( this->desc->name == pnv.name ) ||
+               ( this->desc->name == pnv.pname ) ||
+               ( this->desc->name == pnv.attrName ) ||
+               ( this->desc->name == pnv.attrName ) )
+         )
+        {
+          return false;
+        }
+    }
+
+  if ( this->desc->version.has_value() )
+    {
+      if ( ! ( this->desc->version == pnv.version ) )
+        {
+          return false;
+        }
+    }
+
+  // TODO: semver
+
+  if ( this->desc->absAttrPath.has_value() )
+    {
+      if ( ! isMatchingAttrPath( this->desc->absAttrPath.value(), pathS ) )
+        {
+          return false;
+        }
+    }
+  if ( this->desc->relAttrPath.has_value() )
+    {
+      std::vector<attr_part> fuzz;
+      for ( auto & p : this->desc->relAttrPath.value() )
+        {
+          fuzz.push_back( p );
+        }
+      if ( ! isMatchingAttrPath( fuzz, pathS ) ) { return false; }
+    }
+
   return false;
 }
 

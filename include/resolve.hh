@@ -11,6 +11,8 @@
 #include <nlohmann/json.hpp>
 #include <nix/flake/flake.hh>
 #include <nix/fetchers.hh>
+#include <nix/eval-inline.hh>
+#include <nix/eval.hh>
 #include <unordered_map>
 #include <unordered_set>
 #include "flox/exceptions.hh"
@@ -38,6 +40,27 @@ bool isMatchingAttrPathPrefix( const std::vector<attr_part>      & prefix
 bool isMatchingAttrPath( const std::vector<attr_part>      & prefix
                        , const std::vector<nix::SymbolStr> & path
                        );
+
+
+/* -------------------------------------------------------------------------- */
+
+struct PkgNameVersion {
+  std::string                name;
+  std::string                attrName;
+  std::string                parsedName;
+  std::string                parsedVersion;
+  std::optional<std::string> pname;
+  std::optional<std::string> version;
+  // TODO
+  // std::optional<std::string> semver;
+  // bool isSemver() const { return this->semver.has_value(); }
+};
+
+/* AttrName, <drv>.pname, [parseDrvName( <drv>.name ).name] */
+PkgNameVersion nameVersionAt( std::string_view              attrName
+                            , nix::eval_cache::AttrCursor & pos
+                            );
+
 
 /* -------------------------------------------------------------------------- */
 
