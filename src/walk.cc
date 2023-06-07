@@ -157,14 +157,14 @@ isMatchingAttrPath( const std::vector<attr_part>      & prefix
 
   /* If we have a relative prefix, make `path' relative. */
   std::optional<bool> isAbsPrefix = isAbsAttrPath( prefix );
-  bool                isAbsPath   = isPkgsSubtree( path[0] );
   /* Terminate early if sizes differ. */
-  if ( ( isAbsPrefix.has_value() && ( isAbsPrefix.value() != isAbsPath ) &&
-         ( path.size() != ( prefix.size() + 2 ) )
-       ) || ( prefix.size() != path.size() )
-     )
+  if ( isAbsPrefix.has_value() && ( ! isAbsPrefix.value() ) )
     {
-      return false;
+      if ( ( prefix.size() + 2 ) != path.size() ) { return false; }
+    }
+  else
+    {
+      if ( prefix.size() != path.size() ) { return false; }
     }
   return isMatchingAttrPathPrefix( prefix, path );
 }

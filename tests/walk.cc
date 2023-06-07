@@ -209,6 +209,76 @@ test_isMatchingAttrPathPrefix5( nix::EvalState & state )
 
 /* -------------------------------------------------------------------------- */
 
+/* Absolute ppath with globs should work. */
+  bool
+test_isMatchingAttrPath1( nix::EvalState & state )
+{
+  std::vector<attr_part>   prefix = { "packages", nullptr, "hello" };
+  std::vector<nix::Symbol> parsed;
+  parsed.push_back( state.symbols.create( "packages" ) );
+  parsed.push_back( state.symbols.create( "x86_64-linux" ) );
+  parsed.push_back( state.symbols.create( "hello" ) );
+
+  std::vector<nix::SymbolStr> path = state.symbols.resolve( parsed );
+
+  return isMatchingAttrPath( prefix, path );
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+/* Absolute path without globs should work. */
+  bool
+test_isMatchingAttrPath2( nix::EvalState & state )
+{
+  std::vector<attr_part>   prefix = { "packages", "x86_64-linux", "hello" };
+  std::vector<nix::Symbol> parsed;
+  parsed.push_back( state.symbols.create( "packages" ) );
+  parsed.push_back( state.symbols.create( "x86_64-linux" ) );
+  parsed.push_back( state.symbols.create( "hello" ) );
+
+  std::vector<nix::SymbolStr> path = state.symbols.resolve( parsed );
+
+  return isMatchingAttrPath( prefix, path );
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+/* Empty should work. */
+  bool
+test_isMatchingAttrPath3( nix::EvalState & state )
+{
+  std::vector<attr_part>   prefix = {};
+  std::vector<nix::Symbol> parsed;
+  std::vector<nix::SymbolStr> path = state.symbols.resolve( parsed );
+
+  return isMatchingAttrPath( prefix, path );
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+/* Assert that relative paths work. */
+  bool
+test_isMatchingAttrPath4( nix::EvalState & state )
+{
+  std::vector<attr_part>   prefix = { "python3", "pkgs", "pip" };
+  std::vector<nix::Symbol> parsed;
+  parsed.push_back( state.symbols.create( "packages" ) );
+  parsed.push_back( state.symbols.create( "x86_64-linux" ) );
+  parsed.push_back( state.symbols.create( "python3" ) );
+  parsed.push_back( state.symbols.create( "pkgs" ) );
+  parsed.push_back( state.symbols.create( "pip" ) );
+
+  std::vector<nix::SymbolStr> path = state.symbols.resolve( parsed );
+
+  return isMatchingAttrPath( prefix, path );
+}
+
+
+/* -------------------------------------------------------------------------- */
+
 #define RUN_TEST( _NAME )                                              \
   try                                                                  \
     {                                                                  \
@@ -243,6 +313,8 @@ test_isMatchingAttrPathPrefix5( nix::EvalState & state )
   state.symbols = nix::SymbolTable();
 
 
+/* -------------------------------------------------------------------------- */
+
   int
 main( int argc, char * argv[], char ** envp )
 {
@@ -264,6 +336,10 @@ main( int argc, char * argv[], char ** envp )
   RUN_TEST_WITH_STATE( state, isMatchingAttrPathPrefix3 );
   RUN_TEST_WITH_STATE( state, isMatchingAttrPathPrefix4 );
   RUN_TEST_WITH_STATE( state, isMatchingAttrPathPrefix5 );
+  RUN_TEST_WITH_STATE( state, isMatchingAttrPath1 );
+  RUN_TEST_WITH_STATE( state, isMatchingAttrPath2 );
+  RUN_TEST_WITH_STATE( state, isMatchingAttrPath3 );
+  RUN_TEST_WITH_STATE( state, isMatchingAttrPath4 );
 
   return ec;
 }
