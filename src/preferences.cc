@@ -121,8 +121,7 @@ Preferences::toJSON() const
   void
 from_json( const nlohmann::json & j, Preferences & p )
 {
-  Preferences _p( j );
-  p = _p;
+  p = Preferences( j );
 }
 
   void

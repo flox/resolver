@@ -105,6 +105,21 @@ Resolved::toJSON() const
 
 /* -------------------------------------------------------------------------- */
 
+  void
+to_json( nlohmann::json & j, const Resolved & r )
+{
+  j = r.toJSON();
+}
+
+  void
+from_json( const nlohmann::json & j, Resolved & r )
+{
+  r = Resolved( j );
+}
+
+
+/* -------------------------------------------------------------------------- */
+
   }  /* End Namespace `flox::resolve' */
 }  /* End Namespace `flox' */
 
