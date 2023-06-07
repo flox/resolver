@@ -25,6 +25,12 @@ namespace flox {
 
 /* -------------------------------------------------------------------------- */
 
+std::optional<bool> isAbsAttrPathJSON( const nlohmann::json     & j );
+std::optional<bool> isAbsAttrPath( const std::vector<attr_part> & path );
+
+
+/* -------------------------------------------------------------------------- */
+
 /* Return a ranked vector of satisfactory resolutions. */
 std::vector<Resolved> resolve( const Inputs      & inputs
                              , const Preferences & preferences

@@ -18,38 +18,6 @@ namespace flox {
 
 /* -------------------------------------------------------------------------- */
 
-  std::optional<bool>
-isAbsAttrPath( const nlohmann::json & j )
-{
-  if ( ! j.is_array() )
-    {
-      throw DescriptorException(
-        "Descriptor `path' field must be lists of strings or null."
-      );
-    }
-
-  std::vector<nlohmann::json> path = j;
-  if ( path.empty() )
-    {
-      return std::nullopt;
-    }
-
-  if ( path[0].is_null() )
-    {
-      throw DescriptorException(
-        "Descriptor `path' field may only contain `null' as its second member."
-      );
-    }
-  std::string_view first = path[0].get<std::string_view>();
-
-  return ( first == "packages" ) ||
-         ( first == "legacyPackages" ) ||
-         ( first == "catalog" );
-}
-
-
-/* -------------------------------------------------------------------------- */
-
 Descriptor::Descriptor( std::string_view desc )
 {
   // TODO
@@ -69,7 +37,8 @@ Descriptor::Descriptor( const nlohmann::json & desc )
             {
               continue;
             }
-          if ( isAbsAttrPath( value ) )
+          std::optional<bool> isAbs = isAbsAttrPathJSON( value );
+          if ( isAbs.has_value() && isAbs.value() )
             {
               this->absAttrPath = std::vector<attr_part>();
               for ( auto & p : value )
