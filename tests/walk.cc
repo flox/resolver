@@ -25,7 +25,7 @@ using namespace nlohmann::literals;
 test_isAbsAttrPath1()
 {
   std::vector<attr_part> path = { "packages", nullptr, "hello" };
-  std::optional<bool> rsl = isAbsAttrPath( path );
+  std::optional<bool>    rsl  = isAbsAttrPath( path );
   return rsl.has_value() && rsl.value();
 }
 
@@ -38,7 +38,7 @@ test_isAbsAttrPath1()
 test_isAbsAttrPath2()
 {
   std::vector<attr_part> path = { "packages", nullptr };
-  std::optional<bool> rsl = isAbsAttrPath( path );
+  std::optional<bool>    rsl  = isAbsAttrPath( path );
   return rsl.has_value() && rsl.value();
 }
 
@@ -50,7 +50,7 @@ test_isAbsAttrPath2()
 test_isAbsAttrPath3()
 {
   std::vector<attr_part> path = { "packages" };
-  std::optional<bool> rsl = isAbsAttrPath( path );
+  std::optional<bool>    rsl  = isAbsAttrPath( path );
   return rsl.has_value() && rsl.value();
 }
 
@@ -62,7 +62,7 @@ test_isAbsAttrPath3()
 test_isAbsAttrPath4()
 {
   std::vector<attr_part> path = {};
-  std::optional<bool> rsl = isAbsAttrPath( path );
+  std::optional<bool>    rsl  = isAbsAttrPath( path );
   return ! rsl.has_value();
 }
 
@@ -74,7 +74,7 @@ test_isAbsAttrPath4()
 test_isAbsAttrPath5()
 {
   std::vector<attr_part> path = { "hello" };
-  std::optional<bool> rsl = isAbsAttrPath( path );
+  std::optional<bool>    rsl  = isAbsAttrPath( path );
   return rsl.has_value() && ( ! rsl.value() );
 }
 
