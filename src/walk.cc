@@ -106,8 +106,8 @@ isAbsAttrPath( const std::vector<attr_part> & path )
 /* -------------------------------------------------------------------------- */
 
   bool
-isMatchingAttrPathPrefix( const std::vector<attr_part>        & prefix
-                        , const std::vector<nix::SymbolStr>   & path
+isMatchingAttrPathPrefix( const std::vector<attr_part>      & prefix
+                        , const std::vector<nix::SymbolStr> & path
                         )
 {
   if ( prefix.empty() ) { return true; }
@@ -147,11 +147,10 @@ isMatchingAttrPathPrefix( const std::vector<attr_part>        & prefix
 
 
   bool
-isMatchingAttrPath( const std::vector<attr_part>        & prefix
-                  , const std::vector<nix::SymbolStr>   & path
+isMatchingAttrPath( const std::vector<attr_part>      & prefix
+                  , const std::vector<nix::SymbolStr> & path
                   )
 {
-
   if ( prefix.empty() ) { return true; }
   if ( path.empty() )   { return false; }
 

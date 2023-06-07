@@ -31,12 +31,12 @@ std::optional<bool> isAbsAttrPath(     const std::vector<attr_part> & path );
 
 /* -------------------------------------------------------------------------- */
 
-bool isMatchingAttrPathPrefix( const std::vector<attr_part>        & prefix
-                             , const std::vector<nix::SymbolStr>   & path
+bool isMatchingAttrPathPrefix( const std::vector<attr_part>      & prefix
+                             , const std::vector<nix::SymbolStr> & path
                              );
 
-bool isMatchingAttrPath( const std::vector<attr_part>        & prefix
-                       , const std::vector<nix::SymbolStr>   & path
+bool isMatchingAttrPath( const std::vector<attr_part>      & prefix
+                       , const std::vector<nix::SymbolStr> & path
                        );
 
 /* -------------------------------------------------------------------------- */
