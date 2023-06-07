@@ -115,6 +115,7 @@ test_isAbsAttrPathJSON1()
 
 /* -------------------------------------------------------------------------- */
 
+/* Absolute prefix with globs should work. */
   bool
 test_isMatchingAttrPathPrefix1( nix::EvalState & state )
 {
@@ -132,6 +133,7 @@ test_isMatchingAttrPathPrefix1( nix::EvalState & state )
 
 /* -------------------------------------------------------------------------- */
 
+/* Absolute prefix without globs should work. */
   bool
 test_isMatchingAttrPathPrefix2( nix::EvalState & state )
 {
@@ -149,6 +151,7 @@ test_isMatchingAttrPathPrefix2( nix::EvalState & state )
 
 /* -------------------------------------------------------------------------- */
 
+/* Empty prefix should always work. */
   bool
 test_isMatchingAttrPathPrefix3( nix::EvalState & state )
 {
@@ -166,10 +169,31 @@ test_isMatchingAttrPathPrefix3( nix::EvalState & state )
 
 /* -------------------------------------------------------------------------- */
 
+/* Assert that relative prefixes work. */
   bool
 test_isMatchingAttrPathPrefix4( nix::EvalState & state )
 {
   std::vector<attr_part>   prefix = { "python3", "pkgs" };
+  std::vector<nix::Symbol> parsed;
+  parsed.push_back( state.symbols.create( "packages" ) );
+  parsed.push_back( state.symbols.create( "x86_64-linux" ) );
+  parsed.push_back( state.symbols.create( "python3" ) );
+  parsed.push_back( state.symbols.create( "pkgs" ) );
+  parsed.push_back( state.symbols.create( "pip" ) );
+
+  std::vector<nix::SymbolStr> path = state.symbols.resolve( parsed );
+
+  return isMatchingAttrPathPrefix( prefix, path );
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+/* Assert that relative prefixes for an exact match work. */
+  bool
+test_isMatchingAttrPathPrefix5( nix::EvalState & state )
+{
+  std::vector<attr_part>   prefix = { "python3", "pkgs", "pip" };
   std::vector<nix::Symbol> parsed;
   parsed.push_back( state.symbols.create( "packages" ) );
   parsed.push_back( state.symbols.create( "x86_64-linux" ) );
@@ -199,6 +223,7 @@ test_isMatchingAttrPathPrefix4( nix::EvalState & state )
       ec = EXIT_FAILURE;                                               \
       std::cerr << "  ERROR: " # _NAME ": " << e.what() << std::endl;  \
     }
+
 
 #define RUN_TEST_WITH( _STATE, _NAME )                                 \
   try                                                                  \
@@ -231,10 +256,12 @@ main( int argc, char * argv[], char ** envp )
   nix::initGC();
   nix::evalSettings.pureEval = false;
   nix::EvalState state( {}, nix::openStore() );
+
   RUN_TEST_WITH( state, isMatchingAttrPathPrefix1 );
   RUN_TEST_WITH( state, isMatchingAttrPathPrefix2 );
   RUN_TEST_WITH( state, isMatchingAttrPathPrefix3 );
   RUN_TEST_WITH( state, isMatchingAttrPathPrefix4 );
+  RUN_TEST_WITH( state, isMatchingAttrPathPrefix5 );
 
   return ec;
 }
