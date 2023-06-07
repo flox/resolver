@@ -7,8 +7,12 @@
 #include <cstddef>
 #include <iostream>
 #include <nlohmann/json.hpp>
-#include <nix/flake/flake.hh>
+#include <nix/eval-inline.hh>
+#include <nix/eval.hh>
 #include <nix/fetchers.hh>
+#include <nix/flake/flake.hh>
+#include <nix/shared.hh>
+#include <nix/store-api.hh>
 #include "resolve.hh"
 #include <optional>
 
@@ -111,10 +115,95 @@ test_isAbsAttrPathJSON1()
 
 /* -------------------------------------------------------------------------- */
 
+  bool
+test_isMatchingAttrPathPrefix1( nix::EvalState & state )
+{
+  std::vector<attr_part>   prefix = { "packages", nullptr };
+  std::vector<nix::Symbol> parsed;
+  parsed.push_back( state.symbols.create( "packages" ) );
+  parsed.push_back( state.symbols.create( "x86_64-linux" ) );
+  parsed.push_back( state.symbols.create( "hello" ) );
+
+  std::vector<nix::SymbolStr> path = state.symbols.resolve( parsed );
+
+  return isMatchingAttrPathPrefix( prefix, path );
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+  bool
+test_isMatchingAttrPathPrefix2( nix::EvalState & state )
+{
+  std::vector<attr_part>   prefix = { "packages" };
+  std::vector<nix::Symbol> parsed;
+  parsed.push_back( state.symbols.create( "packages" ) );
+  parsed.push_back( state.symbols.create( "x86_64-linux" ) );
+  parsed.push_back( state.symbols.create( "hello" ) );
+
+  std::vector<nix::SymbolStr> path = state.symbols.resolve( parsed );
+
+  return isMatchingAttrPathPrefix( prefix, path );
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+  bool
+test_isMatchingAttrPathPrefix3( nix::EvalState & state )
+{
+  std::vector<attr_part>   prefix = {};
+  std::vector<nix::Symbol> parsed;
+  parsed.push_back( state.symbols.create( "packages" ) );
+  parsed.push_back( state.symbols.create( "x86_64-linux" ) );
+  parsed.push_back( state.symbols.create( "hello" ) );
+
+  std::vector<nix::SymbolStr> path = state.symbols.resolve( parsed );
+
+  return isMatchingAttrPathPrefix( prefix, path );
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+  bool
+test_isMatchingAttrPathPrefix4( nix::EvalState & state )
+{
+  std::vector<attr_part>   prefix = { "python3", "pkgs" };
+  std::vector<nix::Symbol> parsed;
+  parsed.push_back( state.symbols.create( "packages" ) );
+  parsed.push_back( state.symbols.create( "x86_64-linux" ) );
+  parsed.push_back( state.symbols.create( "python3" ) );
+  parsed.push_back( state.symbols.create( "pkgs" ) );
+  parsed.push_back( state.symbols.create( "pip" ) );
+
+  std::vector<nix::SymbolStr> path = state.symbols.resolve( parsed );
+
+  return isMatchingAttrPathPrefix( prefix, path );
+}
+
+
+/* -------------------------------------------------------------------------- */
+
 #define RUN_TEST( _NAME )                                              \
   try                                                                  \
     {                                                                  \
       if ( ! test_ ## _NAME () )                                       \
+        {                                                              \
+          ec = EXIT_FAILURE;                                           \
+          std::cerr << "  fail: " # _NAME << std::endl;                \
+        }                                                              \
+    }                                                                  \
+  catch( std::exception & e )                                          \
+    {                                                                  \
+      ec = EXIT_FAILURE;                                               \
+      std::cerr << "  ERROR: " # _NAME ": " << e.what() << std::endl;  \
+    }
+
+#define RUN_TEST_WITH( _STATE, _NAME )                                 \
+  try                                                                  \
+    {                                                                  \
+      if ( ! test_ ## _NAME ( _STATE ) )                               \
         {                                                              \
           ec = EXIT_FAILURE;                                           \
           std::cerr << "  fail: " # _NAME << std::endl;                \
@@ -137,6 +226,15 @@ main( int argc, char * argv[], char ** envp )
   RUN_TEST( isAbsAttrPath4 );
   RUN_TEST( isAbsAttrPath5 );
   RUN_TEST( isAbsAttrPathJSON1 );
+
+  nix::initNix();
+  nix::initGC();
+  nix::evalSettings.pureEval = false;
+  nix::EvalState state( {}, nix::openStore() );
+  RUN_TEST_WITH( state, isMatchingAttrPathPrefix1 );
+  RUN_TEST_WITH( state, isMatchingAttrPathPrefix2 );
+  RUN_TEST_WITH( state, isMatchingAttrPathPrefix3 );
+  RUN_TEST_WITH( state, isMatchingAttrPathPrefix4 );
 
   return ec;
 }

@@ -229,7 +229,6 @@ DescriptorFunctor::shouldRecur(       nix::eval_cache::AttrCursor & pos
 
 /* -------------------------------------------------------------------------- */
 
-/* AttrName, <drv>.pname, [parseDrvName( <drv>.name ).name] */
   PkgNameVersion
 nameVersionAt( std::string_view attrName, nix::eval_cache::AttrCursor & pos )
 {
