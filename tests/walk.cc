@@ -225,7 +225,7 @@ test_isMatchingAttrPathPrefix5( nix::EvalState & state )
     }
 
 
-#define RUN_TEST_WITH( _STATE, _NAME )                                 \
+#define RUN_TEST_WITH_STATE( _STATE, _NAME )                           \
   try                                                                  \
     {                                                                  \
       if ( ! test_ ## _NAME ( _STATE ) )                               \
@@ -259,11 +259,11 @@ main( int argc, char * argv[], char ** envp )
   nix::evalSettings.pureEval = false;
   nix::EvalState state( {}, nix::openStore() );
 
-  RUN_TEST_WITH( state, isMatchingAttrPathPrefix1 );
-  RUN_TEST_WITH( state, isMatchingAttrPathPrefix2 );
-  RUN_TEST_WITH( state, isMatchingAttrPathPrefix3 );
-  RUN_TEST_WITH( state, isMatchingAttrPathPrefix4 );
-  RUN_TEST_WITH( state, isMatchingAttrPathPrefix5 );
+  RUN_TEST_WITH_STATE( state, isMatchingAttrPathPrefix1 );
+  RUN_TEST_WITH_STATE( state, isMatchingAttrPathPrefix2 );
+  RUN_TEST_WITH_STATE( state, isMatchingAttrPathPrefix3 );
+  RUN_TEST_WITH_STATE( state, isMatchingAttrPathPrefix4 );
+  RUN_TEST_WITH_STATE( state, isMatchingAttrPathPrefix5 );
 
   return ec;
 }
