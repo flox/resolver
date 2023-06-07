@@ -1,0 +1,105 @@
+/* ========================================================================== *
+ *
+ *
+ *
+ * -------------------------------------------------------------------------- */
+
+#include <cstddef>
+#include <iostream>
+#include <nlohmann/json.hpp>
+#include <nix/flake/flake.hh>
+#include <nix/fetchers.hh>
+#include "resolve.hh"
+#include <optional>
+
+
+/* -------------------------------------------------------------------------- */
+
+using namespace flox::resolve;
+using namespace nlohmann::literals;
+
+/* -------------------------------------------------------------------------- */
+
+/* Conclusive `true' for glob path to a package. */
+  bool
+test_isAbsAttrPath1()
+{
+  std::vector<attr_part> path = { "packages", nullptr, "hello" };
+  std::optional<bool> rsl = isAbsAttrPath( path );
+  return rsl.has_value() && rsl.value();
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+/* Conclusive `true' for path starting with recognized `pkgsSubtree' prefix
+ * and a glob. */
+  bool
+test_isAbsAttrPath2()
+{
+  std::vector<attr_part> path = { "packages", nullptr };
+  std::optional<bool> rsl = isAbsAttrPath( path );
+  return rsl.has_value() && rsl.value();
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+/* Conclusive `true' for path starting with recognized `pkgsSubtree' prefix. */
+  bool
+test_isAbsAttrPath3()
+{
+  std::vector<attr_part> path = { "packages" };
+  std::optional<bool> rsl = isAbsAttrPath( path );
+  return rsl.has_value() && rsl.value();
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+/* Inconclusive for empty path. */
+  bool
+test_isAbsAttrPath4()
+{
+  std::vector<attr_part> path = {};
+  std::optional<bool> rsl = isAbsAttrPath( path );
+  return ! rsl.has_value();
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+#define RUN_TEST( _NAME )                                              \
+  try                                                                  \
+    {                                                                  \
+      if ( ! test_ ## _NAME () )                                       \
+        {                                                              \
+          ec = EXIT_FAILURE;                                           \
+          std::cerr << "  fail: " # _NAME << std::endl;                \
+        }                                                              \
+    }                                                                  \
+  catch( std::exception & e )                                          \
+    {                                                                  \
+      ec = EXIT_FAILURE;                                               \
+      std::cerr << "  ERROR: " # _NAME ": " << e.what() << std::endl;  \
+    }
+
+
+  int
+main( int argc, char * argv[], char ** envp )
+{
+  int ec = EXIT_SUCCESS;
+  RUN_TEST( isAbsAttrPath1 );
+  RUN_TEST( isAbsAttrPath2 );
+  RUN_TEST( isAbsAttrPath3 );
+  RUN_TEST( isAbsAttrPath4 );
+
+  return ec;
+}
+
+
+/* -------------------------------------------------------------------------- *
+ *
+ *
+ *
+ * ========================================================================== */
