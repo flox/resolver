@@ -38,6 +38,7 @@ class Inputs {
   public:
     std::unordered_map<std::string, FloxFlakeRef> inputs;
 
+    Inputs() { this->init( (nlohmann::json) {} ); }
     Inputs( const nlohmann::json & j ) { this->init( j ); }
 
     bool           has( std::string_view id ) const;
@@ -74,6 +75,7 @@ struct Preferences {
   std::optional<std::unordered_set<std::string>> allowedLicenses;
 
   Preferences( const nlohmann::json & j );
+  Preferences() : Preferences( (nlohmann::json) {} ) {}
 
   nlohmann::json toJSON() const;
 };

@@ -57,7 +57,7 @@ TESTS          =  $(wildcard tests/*.cc)
 
 # ---------------------------------------------------------------------------- #
 
-CXXFLAGS     = -std=c++17 '-I$(MAKEFILE_DIR)/include'
+CXXFLAGS     = -std=c++17 '-I$(MAKEFILE_DIR)/include' -ggdb3
 lib_CXXFLAGS = -shared -fPIC
 lib_LDFLAGS  = -shared -fPIC -Wl,--no-undefined
 

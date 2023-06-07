@@ -156,7 +156,8 @@ resolve( const Inputs      & inputs
       );
       lockedInputs.emplace( id, flake );
 
-      auto cache = nix::openEvalCache( state, flake );
+      // TODO: write helper
+      //auto cache = nix::openEvalCache( state, flake );
 
       // TODO
 

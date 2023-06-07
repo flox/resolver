@@ -45,7 +45,6 @@ jobs:
           { printf '    bash   version: '; bash   --version|head -n1; } >&2;
           { printf '    nix    version: '; nix    --version; } >&2;
           echo "# ---------------------------------------------------------------------------- #" >&2;
-          # Register aliases to avoid the long ref
 
       - name: Nix Flake Check
         run: nix flake check

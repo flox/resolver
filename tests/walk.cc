@@ -13,6 +13,7 @@
 #include <nix/flake/flake.hh>
 #include <nix/shared.hh>
 #include <nix/store-api.hh>
+#include <nix/installable-flake.hh>
 #include "resolve.hh"
 #include <optional>
 
@@ -279,6 +280,37 @@ test_isMatchingAttrPath4( nix::EvalState & state )
 
 /* -------------------------------------------------------------------------- */
 
+
+  bool
+test_shouldRecur1( nix::EvalState & state )
+{
+  FloxFlakeRef ref = nix::parseFlakeRef(
+    "github:NixOS/nixpkgs/e8039594435c68eb4f780f3e9bf3972a7399c4b1"
+  );
+  nix::flake::LockFlags lockFlags = {
+    .updateLockFile = false
+  , .writeLockFile  = false
+  };
+  std::shared_ptr<nix::flake::LockedFlake> lockedFlake =
+    std::make_shared<nix::flake::LockedFlake>(
+      nix::flake::LockedFlake( nix::flake::lockFlake( state, ref, lockFlags ) )
+    );
+
+  nix::ref<nix::eval_cache::EvalCache> cache =
+    nix::openEvalCache( state, lockedFlake );
+  nix::ref<nix::eval_cache::AttrCursor> root = cache->getRoot();
+
+  Preferences       prefs;
+  Descriptor        desc;
+  DescriptorFunctor funk( state, prefs, desc );
+
+  return funk.shouldRecur( * root, {} );
+}
+
+
+
+/* -------------------------------------------------------------------------- */
+
 #define RUN_TEST( _NAME )                                              \
   try                                                                  \
     {                                                                  \
@@ -308,9 +340,7 @@ test_isMatchingAttrPath4( nix::EvalState & state )
     {                                                                  \
       ec = EXIT_FAILURE;                                               \
       std::cerr << "  ERROR: " # _NAME ": " << e.what() << std::endl;  \
-    }                                                                  \
-  /* Clear state's symbol table. */                                    \
-  state.symbols = nix::SymbolTable();
+    }
 
 
 /* -------------------------------------------------------------------------- */
@@ -340,6 +370,8 @@ main( int argc, char * argv[], char ** envp )
   RUN_TEST_WITH_STATE( state, isMatchingAttrPath2 );
   RUN_TEST_WITH_STATE( state, isMatchingAttrPath3 );
   RUN_TEST_WITH_STATE( state, isMatchingAttrPath4 );
+
+  RUN_TEST_WITH_STATE( state, shouldRecur1 );
 
   return ec;
 }

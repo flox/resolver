@@ -46,7 +46,8 @@ class Descriptor {
 
     std::optional<std::string> inputId;
 
-    Descriptor( const nlohmann::json   & desc );
+    Descriptor() : Descriptor( (nlohmann::json) {} ) {}
+    Descriptor( const nlohmann::json & desc );
     /**
      * "hello"                  -> { name: "hello" }
      * "hello@18"               -> { name: "hello", semver: "18" }
