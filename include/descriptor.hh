@@ -73,13 +73,24 @@ void to_json(         nlohmann::json & j, const Descriptor & p );
 
 /* -------------------------------------------------------------------------- */
 
+class Preferences;
+
+
 class DescriptorFunctor {
   private:
     Descriptor * descriptor;
 
   public:
-    bool shouldRecur( nix::eval_cache::AttrCursor & pos );
-    bool packagePredicate( nix::eval_cache::AttrCursor & pos );
+    bool shouldRecur(       nix::EvalState              & state
+                    , const Preferences                 & prefs
+                    , const nix::eval_cache::AttrCursor & pos
+                    , const std::vector<nix::Symbol>    & path
+                    );
+    bool packagePredicate(       nix::EvalState              & state
+                         , const Preferences                 & prefs
+                         , const nix::eval_cache::AttrCursor & pos
+                         , const std::vector<nix::Symbol>    & path
+                         );
 };
 
 

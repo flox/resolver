@@ -8,7 +8,7 @@
 #include <vector>
 #include <optional>
 #include <nlohmann/json.hpp>
-#include "descriptor.hh"
+#include "resolve.hh"
 
 
 /* -------------------------------------------------------------------------- */
@@ -231,6 +231,9 @@ Descriptor::toString() const
 
 
 /* -------------------------------------------------------------------------- */
+
+// TODO: Handle case where none of `path' or `name' are set.
+// Use `default' or `defaultPackage'.
 
   static inline bool
 auditAbsAttrPath( const Descriptor & d, std::string & msg )

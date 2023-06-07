@@ -134,9 +134,13 @@ resolve( const Inputs      & inputs
   std::vector<Resolved> rsl;
   nix::initNix();
   nix::initGC();
+
+  // TODO: Add a flag
   nix::evalSettings.pureEval = false;
+
   nix::EvalState state( {}, nix::openStore() );
 
+  // TODO: Add flags
   nix::flake::LockFlags lockFlags = {
     .updateLockFile = false
   , .writeLockFile  = false
