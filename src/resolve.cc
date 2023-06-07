@@ -120,6 +120,38 @@ from_json( const nlohmann::json & j, Resolved & r )
 
 /* -------------------------------------------------------------------------- */
 
+  std::vector<Resolved>
+resolve( const Inputs      & inputs
+       , const Preferences & preferences
+       , const Descriptor  & desc
+       )
+{
+  std::vector<Resolved> rsl;
+  // TODO
+  return rsl;
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+  std::optional<Resolved>
+resolveOne( const Inputs      & inputs
+          , const Preferences & preferences
+          , const Descriptor  & desc
+          )
+{
+  std::vector<Resolved> resolved = resolve( inputs, preferences, desc );
+  if ( resolved.empty() )
+    {
+      return std::nullopt;
+    }
+  return resolved[0];
+}
+
+
+
+/* -------------------------------------------------------------------------- */
+
   }  /* End Namespace `flox::resolve' */
 }  /* End Namespace `flox' */
 
