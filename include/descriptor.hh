@@ -83,7 +83,7 @@ class DescriptorFunctor {
   public:
     bool shouldRecur(       nix::EvalState              & state
                     , const Preferences                 & prefs
-                    , const nix::eval_cache::AttrCursor & pos
+                    ,       nix::eval_cache::AttrCursor & pos
                     , const std::vector<nix::Symbol>    & path
                     );
     bool packagePredicate(       nix::EvalState              & state

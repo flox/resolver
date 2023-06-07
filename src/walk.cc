@@ -64,21 +64,40 @@ isPkgsSubtree( std::string_view attrName )
 
 /* -------------------------------------------------------------------------- */
 
-// TODO: Respect catalog/flake preferences and stabilities
   bool
-shouldRecur(       nix::EvalState              & state
-           , const Preferences                 & prefs
-           ,       nix::eval_cache::AttrCursor & pos
-           , const std::vector<nix::Symbol>    & path
-           )
+DescriptorFunctor::shouldRecur(
+        nix::EvalState              & state
+, const Preferences                 & prefs
+,       nix::eval_cache::AttrCursor & pos
+, const std::vector<nix::Symbol>    & path
+)
 {
   if ( path.size() < 1 ) { return true; }
 
   std::vector<nix::SymbolStr> pathS = state.symbols.resolve( path );
-  if ( path.size() == 1 ) { return isPkgsSubtree( pathS[0] ); }
+  if ( path.size() == 1 )
+    {
+      if ( ! isPkgsSubtree( pathS[0] ) ) { return false; }
+      if ( ! this->descriptor->searchCatalogs )
+        {
+          if ( ( pathS[0] == "catalog" ) || ( pathS[0] == "evalCatalog" ) )
+            {
+              return false;
+            }
+        }
+      if ( ! this->descriptor->searchFlakes )
+        {
+          if ( ( pathS[0] == "packages" ) || ( pathS[0] == "legacyPackages" ) )
+            {
+              return false;
+            }
+        }
+    }
 
   std::string_view system = pathS[1];
   if ( path.size() == 2 ) { return shouldSearchSystem( system ); }
+
+  // TODO: check stability
 
   if ( pos.isDerivation() ) { return false; }
 
@@ -94,11 +113,12 @@ shouldRecur(       nix::EvalState              & state
 
 
   bool
-packagePredicate(       nix::EvalState              & state
-                , const Preferences                 & prefs
-                , const nix::eval_cache::AttrCursor & pos
-                , const std::vector<nix::Symbol>    & path
-                )
+DescriptorFunctor::packagePredicate(
+        nix::EvalState              & state
+, const Preferences                 & prefs
+, const nix::eval_cache::AttrCursor & pos
+, const std::vector<nix::Symbol>    & path
+)
 {
   return false;
 }
