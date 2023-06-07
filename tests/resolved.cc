@@ -84,13 +84,12 @@ test_ResolvedToJSON1()
 /* -------------------------------------------------------------------------- */
 
   bool
-test_ResolvedFromCtx()
+test_ResolvedToString()
 {
   FloxFlakeRef ref = nix::parseFlakeRef( "github:NixOS/nixpkgs" );
   Resolved r( ref, { "packages", nullptr, "hello" }, {} );
-  return true;
+  return r.toString() == "github:NixOS/nixpkgs#packages.{{system}}.hello";
 }
-
 
 
 /* -------------------------------------------------------------------------- */
@@ -117,7 +116,7 @@ main( int argc, char * argv[], char ** envp )
   int ec = EXIT_SUCCESS;
   RUN_TEST( ResolvedFromJSON1 );
   RUN_TEST( ResolvedToJSON1 );
-  RUN_TEST( ResolvedFromCtx );
+  RUN_TEST( ResolvedToString );
 
   return ec;
 }

@@ -97,7 +97,8 @@ class Resolved {
             , const nlohmann::json         & info
             );
 
-    nlohmann::json toJSON() const;
+    nlohmann::json toJSON()   const;
+    std::string    toString() const { return this->uri; }
 };
 
 
