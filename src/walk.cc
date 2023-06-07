@@ -1,5 +1,14 @@
 /* ========================================================================== *
  *
+ * Walk attribute sets to collect satisfactory packages.
+ *
+ * Catalog Attrset Structure:
+ *   <flake>.catalog.<system>.<stability !>.<pname>.<version !>
+ *
+ *
+ * ! :: Attribute set also contains extra fields:
+ *   - `recurseForDerivation'  ( bool )
+ *   - `latest' ( alias of latest version under catalog `<pname>' attrs )
  *
  *
  * -------------------------------------------------------------------------- */
@@ -57,8 +66,9 @@ getSystemFromAttrPath( const nix::EvalState           & state
   static inline bool
 isPkgsSubtree( std::string_view attrName )
 {
-  return ( attrName == "packages" ) || ( attrName == "legacyPackages" ) ||
-         ( attrName == "catalog"  ) || ( attrName == "evalCatalog" );
+  return ( attrName == "packages" ) ||
+         ( attrName == "legacyPackages" ) ||
+         ( attrName == "catalog"  );
 }
 
 
@@ -75,32 +85,42 @@ DescriptorFunctor::shouldRecur(
   if ( path.size() < 1 ) { return true; }
 
   std::vector<nix::SymbolStr> pathS = state.symbols.resolve( path );
+
+  /* Handle prefixes. */
   if ( path.size() == 1 )
     {
       if ( ! isPkgsSubtree( pathS[0] ) ) { return false; }
-      if ( ! this->descriptor->searchCatalogs )
+      if ( ( ! this->descriptor->searchCatalogs ) && ( pathS[0] == "catalog" ) )
         {
-          if ( ( pathS[0] == "catalog" ) || ( pathS[0] == "evalCatalog" ) )
-            {
-              return false;
-            }
+          return false;
         }
-      if ( ! this->descriptor->searchFlakes )
+      if ( ( ! this->descriptor->searchFlakes ) &&
+           ( ( pathS[0] == "packages" ) || ( pathS[0] == "legacyPackages" ) )
+         )
         {
-          if ( ( pathS[0] == "packages" ) || ( pathS[0] == "legacyPackages" ) )
-            {
-              return false;
-            }
+          return false;
         }
     }
 
+  /* Handle systems. */
   std::string_view system = pathS[1];
   if ( path.size() == 2 ) { return shouldSearchSystem( system ); }
 
-  // TODO: check stability
+  /* Handle stability. */
+  if ( ( path.size() == 3 ) && ( pathS[0] == "catalog" ) &&
+       ( this->descriptor->catalogStability.has_value() ) &&
+       ( this->descriptor->catalogStability.value() !=
+         std::string_view( pathS[2] )
+       )
+     )
+    {
+      return false;
+    }
 
+  /* Do not search derivation fields. */
   if ( pos.isDerivation() ) { return false; }
 
+  /* Handle `recurseForDerivation' field. */
   std::shared_ptr<nix::eval_cache::AttrCursor> recurseForDrv =
     pos.maybeGetAttr( "recurseForDerivation" );
   if ( ( recurseForDrv != nullptr ) )
