@@ -238,7 +238,9 @@ test_isMatchingAttrPathPrefix5( nix::EvalState & state )
     {                                                                  \
       ec = EXIT_FAILURE;                                               \
       std::cerr << "  ERROR: " # _NAME ": " << e.what() << std::endl;  \
-    }
+    }                                                                  \
+  /* Clear state's symbol table. */                                    \
+  state.symbols = nix::SymbolTable();
 
 
   int
