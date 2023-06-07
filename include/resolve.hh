@@ -31,11 +31,11 @@ typedef nix::FlakeRef  FloxFlakeRef;
 
 class Inputs {
   private:
-    std::unordered_map<std::string, FloxFlakeRef> inputs;
-
     void init( const nlohmann::json & j );
 
   public:
+    std::unordered_map<std::string, FloxFlakeRef> inputs;
+
     Inputs( const nlohmann::json & j ) { this->init( j ); }
 
     bool           has( std::string_view id ) const;

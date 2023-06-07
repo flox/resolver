@@ -4,10 +4,15 @@
  *
  * -------------------------------------------------------------------------- */
 
+#include <nix/eval-inline.hh>
+#include <nix/eval.hh>
+#include <nix/fetchers.hh>
+#include <nix/flake/flake.hh>
+#include <nix/shared.hh>
+#include <nix/store-api.hh>
+#include <nix/command.hh>
 #include <string>
 #include <nlohmann/json.hpp>
-#include <nix/flake/flake.hh>
-#include <nix/fetchers.hh>
 #include "resolve.hh"
 
 
@@ -127,7 +132,32 @@ resolve( const Inputs      & inputs
        )
 {
   std::vector<Resolved> rsl;
-  // TODO
+  nix::initNix();
+  nix::initGC();
+  nix::evalSettings.pureEval = false;
+  nix::EvalState state( {}, nix::openStore() );
+
+  nix::flake::LockFlags lockFlags = {
+    .updateLockFile = false
+  , .writeLockFile  = false
+  };
+
+    std::unordered_map<std::string, std::shared_ptr<nix::flake::LockedFlake>>
+  lockedInputs;
+
+  for ( auto & [id, ref] : inputs.inputs )
+    {
+      auto flake = std::make_shared<nix::flake::LockedFlake>(
+        nix::flake::lockFlake( state, ref, lockFlags )
+      );
+      lockedInputs.emplace( id, flake );
+
+      auto cache = nix::openEvalCache( state, flake );
+
+      // TODO
+
+    }
+
   return rsl;
 }
 
