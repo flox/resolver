@@ -304,7 +304,14 @@ test_shouldRecur1( nix::EvalState & state )
   Descriptor        desc;
   DescriptorFunctor funk( state, prefs, desc );
 
-  return funk.shouldRecur( * root, {} );
+  bool rsl = funk.shouldRecur( * root, {} );
+
+  rsl &= funk.shouldRecur(
+    * root->getAttr( "legacyPackages" )
+  , { "legacyPackages" }
+  )
+
+  return rsl;
 }
 
 
