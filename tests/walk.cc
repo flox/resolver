@@ -69,6 +69,48 @@ test_isAbsAttrPath4()
 
 /* -------------------------------------------------------------------------- */
 
+/* Conclusive `false' for path missing recognized prefix. */
+  bool
+test_isAbsAttrPath5()
+{
+  std::vector<attr_part> path = { "hello" };
+  std::optional<bool> rsl = isAbsAttrPath( path );
+  return rsl.has_value() && ( ! rsl.value() );
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+/* As above but using JSON. */
+  bool
+test_isAbsAttrPathJSON1()
+{
+  std::vector<attr_part> path = { "hello" };
+  std::optional<bool>    opt  = isAbsAttrPath( path );
+  bool                   rsl  = opt.has_value() && ( ! opt.value() );
+
+  path =  { "packages", nullptr, "hello" };
+  opt  =  isAbsAttrPath( path );
+  rsl  &= opt.has_value() && opt.value();
+
+  path =  { "packages", nullptr };
+  opt  =  isAbsAttrPath( path );
+  rsl  &= opt.has_value() && opt.value();
+
+  path =  { "packages" };
+  opt  =  isAbsAttrPath( path );
+  rsl  &= opt.has_value() && opt.value();
+
+  path =  {};
+  opt  =  isAbsAttrPath( path );
+  rsl  &= ! opt.has_value();
+
+  return rsl;
+}
+
+
+/* -------------------------------------------------------------------------- */
+
 #define RUN_TEST( _NAME )                                              \
   try                                                                  \
     {                                                                  \
@@ -93,6 +135,8 @@ main( int argc, char * argv[], char ** envp )
   RUN_TEST( isAbsAttrPath2 );
   RUN_TEST( isAbsAttrPath3 );
   RUN_TEST( isAbsAttrPath4 );
+  RUN_TEST( isAbsAttrPath5 );
+  RUN_TEST( isAbsAttrPathJSON1 );
 
   return ec;
 }
