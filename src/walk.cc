@@ -106,6 +106,73 @@ isAbsAttrPath( const std::vector<attr_part> & path )
 /* -------------------------------------------------------------------------- */
 
   bool
+isMatchingAttrPathPrefix( const std::vector<attr_part>        & prefix
+                        , const std::vector<nix::SymbolStr>   & path
+                        )
+{
+  if ( prefix.empty() ) { return true; }
+  if ( path.empty() )   { return false; }
+
+  size_t j = 0;
+
+  /* If we have a relative prefix, make `path' relative.
+   * Terminate early if relative form of `path' is too short. */
+  std::optional<bool> isAbsPrefix = isAbsAttrPath( prefix );
+  bool                isAbsPath   = isPkgsSubtree( path[0] );
+  if ( isAbsPrefix.has_value() && ( isAbsPrefix.value() != isAbsPath ) )
+    {
+      if ( path.size() < ( prefix.size() + 2 ) ) { return false; }
+      j = 2;
+    }
+  else if ( path.size() < prefix.size() )
+    {
+      return false;
+    }
+
+  /* Check for equality of elements. */
+  for ( size_t i = 0; i < prefix.size(); ++i, ++j )
+    {
+      if ( std::holds_alternative<std::nullptr_t>( prefix[i] ) )
+        {
+          if ( ! shouldSearchSystem( path[j] ) ) { return false; }
+        }
+      else
+        {
+          std::string_view a = path[j];
+          if ( std::get<std::string>( prefix[i] ) != a ) { return false; }
+        }
+    }
+  return true;
+}
+
+
+  bool
+isMatchingAttrPath( const std::vector<attr_part>        & prefix
+                  , const std::vector<nix::SymbolStr>   & path
+                  )
+{
+
+  if ( prefix.empty() ) { return true; }
+  if ( path.empty() )   { return false; }
+
+  /* If we have a relative prefix, make `path' relative. */
+  std::optional<bool> isAbsPrefix = isAbsAttrPath( prefix );
+  bool                isAbsPath   = isPkgsSubtree( path[0] );
+  /* Terminate early if sizes differ. */
+  if ( ( isAbsPrefix.has_value() && ( isAbsPrefix.value() != isAbsPath ) &&
+         ( path.size() != ( prefix.size() + 2 ) )
+       ) || ( prefix.size() != path.size() )
+     )
+    {
+      return false;
+    }
+  return isMatchingAttrPathPrefix( prefix, path );
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+  bool
 DescriptorFunctor::shouldRecur(       nix::eval_cache::AttrCursor & pos
                               , const std::vector<nix::Symbol>    & path
                               )
@@ -157,73 +224,6 @@ DescriptorFunctor::shouldRecur(       nix::eval_cache::AttrCursor & pos
     }
 
   return true;
-}
-
-
-/* -------------------------------------------------------------------------- */
-
-  static inline bool
-isMatchingAttrPathPrefix( const std::vector<attr_part>        & prefix
-                        , const std::vector<nix::SymbolStr>   & path
-                        )
-{
-  if ( prefix.empty() ) { return true; }
-  if ( path.empty() )   { return false; }
-
-  size_t j = 0;
-
-  /* If we have a relative prefix, make `path' relative.
-   * Terminate early if relative form of `path' is too short. */
-  std::optional<bool> isAbsPrefix = isAbsAttrPath( prefix );
-  bool                isAbsPath   = isPkgsSubtree( path[0] );
-  if ( isAbsPrefix.has_value() && ( isAbsPrefix.value() != isAbsPath ) )
-    {
-      if ( path.size() < ( prefix.size() + 2 ) ) { return false; }
-      j = 2;
-    }
-  else if ( path.size() < prefix.size() )
-    {
-      return false;
-    }
-
-  /* Check for equality of elements. */
-  for ( size_t i = 0; i < prefix.size(); ++i, ++j )
-    {
-      if ( std::holds_alternative<std::nullptr_t>( prefix[i] ) )
-        {
-          if ( ! shouldSearchSystem( path[j] ) ) { return false; }
-        }
-      else
-        {
-          std::string_view a = path[j];
-          if ( std::get<std::string>( prefix[i] ) != a ) { return false; }
-        }
-    }
-  return true;
-}
-
-
-  static inline bool
-isMatchingAttrPath( const std::vector<attr_part>        & prefix
-                  , const std::vector<nix::SymbolStr>   & path
-                  )
-{
-
-  if ( prefix.empty() ) { return true; }
-  if ( path.empty() )   { return false; }
-
-  /* If we have a relative prefix, make `path' relative. */
-  std::optional<bool> isAbsPrefix = isAbsAttrPath( prefix );
-  bool                isAbsPath   = isPkgsSubtree( path[0] );
-  /* Terminate early if sizes differ. */
-  if ( ( isAbsPrefix.has_value() && ( isAbsPrefix.value() != isAbsPath ) &&
-         ( path.size() != ( prefix.size() + 2 ) )
-       ) || ( prefix.size() != path.size() )
-     )
-    {
-      return false;
-    }
-  return isMatchingAttrPathPrefix( prefix, path );
 }
 
 
