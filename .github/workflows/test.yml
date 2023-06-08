@@ -50,4 +50,4 @@ jobs:
         run: nix flake check
 
       - name: Run Tests
-        run: nix develop --command make check
+        run: nix develop --no-update-lock-file --command make check

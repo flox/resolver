@@ -280,7 +280,6 @@ test_isMatchingAttrPath4( nix::EvalState & state )
 
 /* -------------------------------------------------------------------------- */
 
-
   bool
 test_shouldRecur1( nix::EvalState & state )
 {
