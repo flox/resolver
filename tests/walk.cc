@@ -13,7 +13,6 @@
 #include <nix/flake/flake.hh>
 #include <nix/shared.hh>
 #include <nix/store-api.hh>
-#include <nix/installable-flake.hh>
 #include "resolve.hh"
 #include <optional>
 
@@ -22,6 +21,15 @@
 
 using namespace flox::resolve;
 using namespace nlohmann::literals;
+
+/* Exposed in Nix 2.15.x through `installable-flakes.hh',
+ * but it's been defined for internal linkage long before that. */
+namespace nix {
+  extern nix::ref<nix::eval_cache::EvalCache> openEvalCache(
+    nix::EvalState                           & state
+  , std::shared_ptr<nix::flake::LockedFlake>   lockedFlake
+  );
+}
 
 /* -------------------------------------------------------------------------- */
 
