@@ -23,7 +23,8 @@ using namespace flox::resolve;
 using namespace nlohmann::literals;
 
 /* Exposed in Nix 2.15.x through `installable-flakes.hh',
- * but it's been defined for internal linkage long before that. */
+ * but it's been defined for internal linkage long before that.
+ * To avoid build failures with 2.13.x and later we just use `extern'. */
 namespace nix {
   extern nix::ref<nix::eval_cache::EvalCache> openEvalCache(
     nix::EvalState                           & state
