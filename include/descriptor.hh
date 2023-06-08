@@ -74,9 +74,11 @@ class DescriptorFunctor {
     nix::EvalState      * state;
     Preferences         * prefs;
     Descriptor          * desc;
-    std::list<Resolved>   results;
 
   public:
+    // TODO: make private
+    std::list<Resolved>   results;
+
     DescriptorFunctor( nix::EvalState & state
                      , Preferences    & prefs
                      , Descriptor     & desc

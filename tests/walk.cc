@@ -417,6 +417,84 @@ test_packagePredicate4( nix::EvalState & state )
 
 /* -------------------------------------------------------------------------- */
 
+/* Assert that wrong name fails */
+  bool
+test_walk( nix::EvalState & state )
+{
+  FloxFlakeRef                         ref   = coerceFlakeRef( nixpkgsRef );
+  nix::ref<nix::eval_cache::EvalCache> cache = coerceEvalCache( state, ref );
+
+  Preferences       prefs;
+  Descriptor        desc( (nlohmann::json) { { "name", "helloooo" } } );
+  DescriptorFunctor funk( state, prefs, desc );
+
+  nix::ref<nix::eval_cache::AttrCursor> root = cache->getRoot();
+  std::vector<nix::Symbol>              path;
+
+  std::function<void(
+    nix::eval_cache::AttrCursor    & cur
+  , const std::vector<nix::Symbol> & attrPath
+  )> visit;
+
+  visit = [&](
+    nix::eval_cache::AttrCursor    & cur
+  , const std::vector<nix::Symbol> & attrPath
+  ) -> void
+  {
+    std::vector<nix::SymbolStr> attrPathS = state.symbols.resolve( attrPath );
+    if ( funk.shouldRecur( cur, attrPath ) )
+      {
+        for ( const auto & attr : cur.getAttrs() )
+          {
+            try
+              {
+                std::vector<nix::Symbol> attrPath2( attrPath );
+                attrPath2.push_back( attr );
+                nix::ref<nix::eval_cache::AttrCursor> child =
+                  cur.getAttr( state.symbols[attr] );
+                visit( * child, attrPath2 );
+              }
+            catch ( nix::EvalError & e )
+              {
+                if ( ! ( ( attrPathS[0] == "legacyPackages" ) &&
+                         ( 0 < attrPath.size() ) )
+                   )
+                  {
+                    throw;
+                  }
+              }
+          }
+      }
+    else if ( funk.packagePredicate( cur, attrPath ) )
+      {
+        std::vector<attr_part> globPath;
+        for ( size_t i = 0; i < attrPathS.size(); ++i )
+          {
+            if ( i == 1 ) { globPath.push_back( nullptr ); }
+            else          { globPath.push_back( attrPathS[i] ); }
+          }
+        PkgNameVersion pnv =
+          nameVersionAt( attrPathS[attrPath.size() - 1], cur );
+        // TODO: Check if present and append `systems'.
+        Resolved r(
+          ref
+        , globPath
+        , (nlohmann::json) {
+            { "name",    pnv.pname.value_or( pnv.parsedName ) }
+          , { "version", pnv.version.value_or( pnv.parsedVersion ) }
+          , { "systems", { attrPathS[1] } }
+          }
+        );
+        funk.results.push_back( r );
+      }
+  };
+
+  return true;
+}
+
+
+/* -------------------------------------------------------------------------- */
+
 #define RUN_TEST( _NAME )                                              \
   try                                                                  \
     {                                                                  \
