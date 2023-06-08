@@ -425,7 +425,7 @@ test_walk( nix::EvalState & state )
   nix::ref<nix::eval_cache::EvalCache> cache = coerceEvalCache( state, ref );
 
   Preferences       prefs;
-  Descriptor        desc( (nlohmann::json) { { "name", "helloooo" } } );
+  Descriptor        desc( (nlohmann::json) { { "name", "hello" } } );
   DescriptorFunctor funk( state, prefs, desc );
 
   nix::ref<nix::eval_cache::AttrCursor> root = cache->getRoot();
@@ -503,43 +503,11 @@ test_walk( nix::EvalState & state )
       }
   };  /* End `visit' */
 
-  try
-    {
-      std::shared_ptr<nix::eval_cache::AttrCursor> st =
-        root->maybeGetAttr( "packages" );
-      if ( st != nullptr )
-        {
-          visit( * st, { state.symbols.create( "packages" ) } );
-        }
-    }
-  catch( std::exception & e ) { std::cerr << e.what() << std::endl; }
-  catch( ... ) {}
+  visit( * root, {} );
 
-  try
-    {
-      std::shared_ptr<nix::eval_cache::AttrCursor> st =
-        root->maybeGetAttr( "legacyPackages" );
-      if ( st != nullptr )
-        {
-          visit( * st, { state.symbols.create( "legacyPackages" ) } );
-        }
-    }
-  catch( std::exception & e ) { std::cerr << e.what() << std::endl; }
-  catch( ... ) {}
-
-  try
-    {
-      std::shared_ptr<nix::eval_cache::AttrCursor> st =
-        root->maybeGetAttr( "catalog" );
-      if ( st != nullptr )
-        {
-          visit( * st, { state.symbols.create( "catalog" ) } );
-        }
-    }
-  catch( std::exception & e ) { std::cerr << e.what() << std::endl; }
-  catch( ... ) {}
-
-  return true;
+  // TODO: merge multiple systems into a single entry.
+  std::cout << "Matches: " << funk.results.size() << std::endl;
+  return funk.results.size() == 4;
 }
 
 
