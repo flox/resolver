@@ -279,6 +279,37 @@ test_shouldRecur1( nix::EvalState & state )
 /* -------------------------------------------------------------------------- */
 
   bool
+test_nameVersionAt1( nix::EvalState & state )
+{
+  nix::ref<nix::eval_cache::EvalCache> cache =
+    coerceEvalCache( state, nixpkgsRef );
+  nix::ref<nix::eval_cache::AttrCursor> root = cache->getRoot();
+
+  Preferences       prefs;
+  Descriptor        desc( (nlohmann::json) { { "name", "hello" } } );
+  DescriptorFunctor funk( state, prefs, desc );
+
+  nix::ref<nix::eval_cache::AttrCursor> cur =
+    root->getAttr( "legacyPackages" )
+        ->getAttr( "x86_64-linux" )
+        ->getAttr( "hello" );
+
+  PkgNameVersion pnv = nameVersionAt( "hello", * cur );
+
+  return ( pnv.attrName      == "hello" ) &&
+         ( pnv.name          == "hello-2.12.1" ) &&
+         ( pnv.parsedName    == "hello" ) &&
+         ( pnv.parsedVersion == "2.12.1" ) &&
+         pnv.pname.has_value() &&
+         ( pnv.pname.value() == "hello" ) &&
+         pnv.version.has_value() &&
+         ( pnv.version.value() == "2.12.1" );
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+  bool
 test_packagePredicate1( nix::EvalState & state )
 {
   nix::ref<nix::eval_cache::EvalCache> cache =
@@ -447,6 +478,7 @@ main( int argc, char * argv[], char ** envp )
   RUN_TEST_WITH_STATE( state, isMatchingAttrPath4 );
 
   RUN_TEST_WITH_STATE( state, shouldRecur1 );
+  RUN_TEST_WITH_STATE( state, nameVersionAt1 );
   RUN_TEST_WITH_STATE( state, packagePredicate1 );
   RUN_TEST_WITH_STATE( state, packagePredicate2 );
   RUN_TEST_WITH_STATE( state, packagePredicate3 );
