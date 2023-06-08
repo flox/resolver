@@ -25,6 +25,12 @@ using namespace nlohmann::literals;
 
 /* -------------------------------------------------------------------------- */
 
+static const std::string nixpkgsRef =
+  "github:NixOS/nixpkgs/e8039594435c68eb4f780f3e9bf3972a7399c4b1";
+
+
+/* -------------------------------------------------------------------------- */
+
 /* Conclusive `true' for glob path to a package. */
   bool
 test_isAbsAttrPath1()
@@ -275,11 +281,9 @@ test_shouldRecur1( nix::EvalState & state )
   bool
 test_packagePredicate1( nix::EvalState & state )
 {
-  std::string ref = "github:NixOS/nixpkgs/"
-                    "e8039594435c68eb4f780f3e9bf3972a7399c4b1";
-
-  nix::ref<nix::eval_cache::EvalCache>  cache = coerceEvalCache( state, ref );
-  nix::ref<nix::eval_cache::AttrCursor> root  = cache->getRoot();
+  nix::ref<nix::eval_cache::EvalCache> cache =
+    coerceEvalCache( state, nixpkgsRef );
+  nix::ref<nix::eval_cache::AttrCursor> root = cache->getRoot();
 
   Preferences       prefs;
   Descriptor        desc( (nlohmann::json) { { "name", "hello" } } );
@@ -295,6 +299,88 @@ test_packagePredicate1( nix::EvalState & state )
   } );
 
   return funk.packagePredicate( * cur, path );
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+  bool
+test_packagePredicate2( nix::EvalState & state )
+{
+  nix::ref<nix::eval_cache::EvalCache> cache =
+    coerceEvalCache( state, nixpkgsRef );
+  nix::ref<nix::eval_cache::AttrCursor> root = cache->getRoot();
+
+  Preferences prefs;
+  Descriptor  desc( (nlohmann::json) {
+    { "name",    "hello" }
+  , { "version", "2.12.1" }
+  } );
+  DescriptorFunctor funk( state, prefs, desc );
+
+  nix::ref<nix::eval_cache::AttrCursor> cur =
+    root->getAttr( "legacyPackages" )
+        ->getAttr( "x86_64-linux" )
+        ->getAttr( "hello" );
+
+  std::vector<nix::Symbol> path = coerceSymbols( state, {
+    "legacyPackages", "x86_64-linux", "hello"
+  } );
+
+  return funk.packagePredicate( * cur, path );
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+  bool
+test_packagePredicate3( nix::EvalState & state )
+{
+  nix::ref<nix::eval_cache::EvalCache> cache =
+    coerceEvalCache( state, nixpkgsRef );
+  nix::ref<nix::eval_cache::AttrCursor> root = cache->getRoot();
+
+  Preferences       prefs;
+  Descriptor        desc( (nlohmann::json) { { "name", "hello-2.12.1" } } );
+  DescriptorFunctor funk( state, prefs, desc );
+
+  nix::ref<nix::eval_cache::AttrCursor> cur =
+    root->getAttr( "legacyPackages" )
+        ->getAttr( "x86_64-linux" )
+        ->getAttr( "hello" );
+
+  std::vector<nix::Symbol> path = coerceSymbols( state, {
+    "legacyPackages", "x86_64-linux", "hello"
+  } );
+
+  return funk.packagePredicate( * cur, path );
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+/* Assert that wrong name fails */
+  bool
+test_packagePredicate4( nix::EvalState & state )
+{
+  nix::ref<nix::eval_cache::EvalCache> cache =
+    coerceEvalCache( state, nixpkgsRef );
+  nix::ref<nix::eval_cache::AttrCursor> root = cache->getRoot();
+
+  Preferences       prefs;
+  Descriptor        desc( (nlohmann::json) { { "name", "helloooo" } } );
+  DescriptorFunctor funk( state, prefs, desc );
+
+  nix::ref<nix::eval_cache::AttrCursor> cur =
+    root->getAttr( "legacyPackages" )
+        ->getAttr( "x86_64-linux" )
+        ->getAttr( "hello" );
+
+  std::vector<nix::Symbol> path = coerceSymbols( state, {
+    "legacyPackages", "x86_64-linux", "hello"
+  } );
+
+  return ! funk.packagePredicate( * cur, path );
 }
 
 
@@ -362,6 +448,9 @@ main( int argc, char * argv[], char ** envp )
 
   RUN_TEST_WITH_STATE( state, shouldRecur1 );
   RUN_TEST_WITH_STATE( state, packagePredicate1 );
+  RUN_TEST_WITH_STATE( state, packagePredicate2 );
+  RUN_TEST_WITH_STATE( state, packagePredicate3 );
+  RUN_TEST_WITH_STATE( state, packagePredicate4 );
 
   return ec;
 }
