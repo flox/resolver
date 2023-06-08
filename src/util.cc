@@ -99,6 +99,54 @@ nix::ref<nix::eval_cache::EvalCache> coerceEvalCache(
 
 /* -------------------------------------------------------------------------- */
 
+std::vector<nix::Symbol> coerceSymbols(
+        nix::EvalState                & state
+, const std::vector<std::string_view> & lst
+)
+{
+  std::vector<nix::Symbol> rsl;
+  for ( auto & e : lst ) { rsl.push_back( state.symbols.create( e ) ); }
+  return rsl;
+}
+
+std::vector<nix::Symbol> coerceSymbols(
+  nix::EvalState           & state
+, std::vector<nix::Symbol> & lst
+)
+{
+  return lst;
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+std::vector<nix::SymbolStr> coerceSymbolStrs(
+        nix::EvalState                & state
+, const std::vector<std::string_view> & lst
+)
+{
+  return state.symbols.resolve( coerceSymbols( state, lst ) );
+}
+
+std::vector<nix::SymbolStr> coerceSymbolStrs(
+        nix::EvalState           & state
+, const std::vector<nix::Symbol> & lst
+)
+{
+  return state.symbols.resolve( lst );
+}
+
+std::vector<nix::SymbolStr> coerceSymbolStrs(
+  nix::EvalState              & state
+, std::vector<nix::SymbolStr> & lst
+)
+{
+  return lst;
+}
+
+
+/* -------------------------------------------------------------------------- */
+
   }  /* End namespace `flox::resolve' */
 }    /* End namespace `flox' */
 

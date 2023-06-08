@@ -120,14 +120,10 @@ test_isAbsAttrPathJSON1()
   bool
 test_isMatchingAttrPathPrefix1( nix::EvalState & state )
 {
-  std::vector<attr_part>   prefix = { "packages", nullptr };
-  std::vector<nix::Symbol> parsed;
-  parsed.push_back( state.symbols.create( "packages" ) );
-  parsed.push_back( state.symbols.create( "x86_64-linux" ) );
-  parsed.push_back( state.symbols.create( "hello" ) );
-
-  std::vector<nix::SymbolStr> path = state.symbols.resolve( parsed );
-
+  std::vector<attr_part>      prefix = { "packages", nullptr };
+  std::vector<nix::SymbolStr> path   = coerceSymbolStrs( state, {
+    "packages", "x86_64-linux", "hello"
+  } );
   return isMatchingAttrPathPrefix( prefix, path );
 }
 
@@ -138,14 +134,10 @@ test_isMatchingAttrPathPrefix1( nix::EvalState & state )
   bool
 test_isMatchingAttrPathPrefix2( nix::EvalState & state )
 {
-  std::vector<attr_part>   prefix = { "packages" };
-  std::vector<nix::Symbol> parsed;
-  parsed.push_back( state.symbols.create( "packages" ) );
-  parsed.push_back( state.symbols.create( "x86_64-linux" ) );
-  parsed.push_back( state.symbols.create( "hello" ) );
-
-  std::vector<nix::SymbolStr> path = state.symbols.resolve( parsed );
-
+  std::vector<attr_part>      prefix = { "packages" };
+  std::vector<nix::SymbolStr> path   = coerceSymbolStrs( state, {
+    "packages", "x86_64-linux", "hello"
+  } );
   return isMatchingAttrPathPrefix( prefix, path );
 }
 
@@ -156,15 +148,10 @@ test_isMatchingAttrPathPrefix2( nix::EvalState & state )
   bool
 test_isMatchingAttrPathPrefix3( nix::EvalState & state )
 {
-  std::vector<attr_part>   prefix = {};
-  std::vector<nix::Symbol> parsed;
-  parsed.push_back( state.symbols.create( "packages" ) );
-  parsed.push_back( state.symbols.create( "x86_64-linux" ) );
-  parsed.push_back( state.symbols.create( "hello" ) );
-
-  std::vector<nix::SymbolStr> path = state.symbols.resolve( parsed );
-
-  return isMatchingAttrPathPrefix( prefix, path );
+  std::vector<nix::SymbolStr> path   = coerceSymbolStrs( state, {
+    "packages", "x86_64-linux", "hello"
+  } );
+  return isMatchingAttrPathPrefix( {}, path );
 }
 
 
@@ -174,16 +161,10 @@ test_isMatchingAttrPathPrefix3( nix::EvalState & state )
   bool
 test_isMatchingAttrPathPrefix4( nix::EvalState & state )
 {
-  std::vector<attr_part>   prefix = { "python3", "pkgs" };
-  std::vector<nix::Symbol> parsed;
-  parsed.push_back( state.symbols.create( "packages" ) );
-  parsed.push_back( state.symbols.create( "x86_64-linux" ) );
-  parsed.push_back( state.symbols.create( "python3" ) );
-  parsed.push_back( state.symbols.create( "pkgs" ) );
-  parsed.push_back( state.symbols.create( "pip" ) );
-
-  std::vector<nix::SymbolStr> path = state.symbols.resolve( parsed );
-
+  std::vector<attr_part>      prefix = { "python3", "pkgs" };
+  std::vector<nix::SymbolStr> path   = coerceSymbolStrs( state, {
+    "packages", "x86_64-linux", "python3", "pkgs", "pip"
+  } );
   return isMatchingAttrPathPrefix( prefix, path );
 }
 
@@ -194,16 +175,10 @@ test_isMatchingAttrPathPrefix4( nix::EvalState & state )
   bool
 test_isMatchingAttrPathPrefix5( nix::EvalState & state )
 {
-  std::vector<attr_part>   prefix = { "python3", "pkgs", "pip" };
-  std::vector<nix::Symbol> parsed;
-  parsed.push_back( state.symbols.create( "packages" ) );
-  parsed.push_back( state.symbols.create( "x86_64-linux" ) );
-  parsed.push_back( state.symbols.create( "python3" ) );
-  parsed.push_back( state.symbols.create( "pkgs" ) );
-  parsed.push_back( state.symbols.create( "pip" ) );
-
-  std::vector<nix::SymbolStr> path = state.symbols.resolve( parsed );
-
+  std::vector<attr_part>      prefix = { "python3", "pkgs", "pip" };
+  std::vector<nix::SymbolStr> path   = coerceSymbolStrs( state, {
+    "packages", "x86_64-linux", "python3", "pkgs", "pip"
+  } );
   return isMatchingAttrPathPrefix( prefix, path );
 }
 
@@ -214,14 +189,10 @@ test_isMatchingAttrPathPrefix5( nix::EvalState & state )
   bool
 test_isMatchingAttrPath1( nix::EvalState & state )
 {
-  std::vector<attr_part>   prefix = { "packages", nullptr, "hello" };
-  std::vector<nix::Symbol> parsed;
-  parsed.push_back( state.symbols.create( "packages" ) );
-  parsed.push_back( state.symbols.create( "x86_64-linux" ) );
-  parsed.push_back( state.symbols.create( "hello" ) );
-
-  std::vector<nix::SymbolStr> path = state.symbols.resolve( parsed );
-
+  std::vector<attr_part>      prefix = { "packages", nullptr, "hello" };
+  std::vector<nix::SymbolStr> path   = coerceSymbolStrs( state, {
+    "packages", "x86_64-linux", "hello"
+  } );
   return isMatchingAttrPath( prefix, path );
 }
 
@@ -232,14 +203,10 @@ test_isMatchingAttrPath1( nix::EvalState & state )
   bool
 test_isMatchingAttrPath2( nix::EvalState & state )
 {
-  std::vector<attr_part>   prefix = { "packages", "x86_64-linux", "hello" };
-  std::vector<nix::Symbol> parsed;
-  parsed.push_back( state.symbols.create( "packages" ) );
-  parsed.push_back( state.symbols.create( "x86_64-linux" ) );
-  parsed.push_back( state.symbols.create( "hello" ) );
-
-  std::vector<nix::SymbolStr> path = state.symbols.resolve( parsed );
-
+  std::vector<attr_part>      prefix = { "packages", "x86_64-linux", "hello" };
+  std::vector<nix::SymbolStr> path   = coerceSymbolStrs( state, {
+    "packages", "x86_64-linux", "hello"
+  } );
   return isMatchingAttrPath( prefix, path );
 }
 
@@ -250,11 +217,7 @@ test_isMatchingAttrPath2( nix::EvalState & state )
   bool
 test_isMatchingAttrPath3( nix::EvalState & state )
 {
-  std::vector<attr_part>   prefix = {};
-  std::vector<nix::Symbol> parsed;
-  std::vector<nix::SymbolStr> path = state.symbols.resolve( parsed );
-
-  return isMatchingAttrPath( prefix, path );
+  return isMatchingAttrPath( {}, {} );
 }
 
 
@@ -264,16 +227,10 @@ test_isMatchingAttrPath3( nix::EvalState & state )
   bool
 test_isMatchingAttrPath4( nix::EvalState & state )
 {
-  std::vector<attr_part>   prefix = { "python3", "pkgs", "pip" };
-  std::vector<nix::Symbol> parsed;
-  parsed.push_back( state.symbols.create( "packages" ) );
-  parsed.push_back( state.symbols.create( "x86_64-linux" ) );
-  parsed.push_back( state.symbols.create( "python3" ) );
-  parsed.push_back( state.symbols.create( "pkgs" ) );
-  parsed.push_back( state.symbols.create( "pip" ) );
-
-  std::vector<nix::SymbolStr> path = state.symbols.resolve( parsed );
-
+  std::vector<attr_part>      prefix = { "python3", "pkgs", "pip" };
+  std::vector<nix::SymbolStr> path   = coerceSymbolStrs( state, {
+    "packages", "x86_64-linux", "python3", "pkgs", "pip"
+  } );
   return isMatchingAttrPath( prefix, path );
 }
 

@@ -14,6 +14,7 @@
 #include <nix/store-api.hh>
 #include "flox/types.hh"
 #include <optional>
+#include <vector>
 
 
 /* -------------------------------------------------------------------------- */
@@ -86,6 +87,37 @@ nix::ref<nix::eval_cache::EvalCache> coerceEvalCache(
 nix::ref<nix::eval_cache::EvalCache> coerceEvalCache(
   nix::EvalState                       & state
 , nix::ref<nix::eval_cache::EvalCache> & cache
+);
+
+
+/* -------------------------------------------------------------------------- */
+
+std::vector<nix::Symbol> coerceSymbols(
+        nix::EvalState                & state
+, const std::vector<std::string_view> & lst
+);
+
+std::vector<nix::Symbol> coerceSymbols(
+  nix::EvalState           & state
+, std::vector<nix::Symbol> & lst
+);
+
+
+/* -------------------------------------------------------------------------- */
+
+std::vector<nix::SymbolStr> coerceSymbolStrs(
+        nix::EvalState                & state
+, const std::vector<std::string_view> & lst
+);
+
+std::vector<nix::SymbolStr> coerceSymbolStrs(
+        nix::EvalState           & state
+, const std::vector<nix::Symbol> & lst
+);
+
+std::vector<nix::SymbolStr> coerceSymbolStrs(
+  nix::EvalState              & state
+, std::vector<nix::SymbolStr> & lst
 );
 
 
