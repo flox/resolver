@@ -442,6 +442,20 @@ test_walk( nix::EvalState & state )
   ) -> void
   {
     std::vector<nix::SymbolStr> attrPathS = state.symbols.resolve( attrPath );
+
+    #if 0
+    std::cerr << "Visiting: ";
+    for ( size_t i = 0; i < attrPathS.size(); ++i )
+      {
+        std::cerr << attrPathS[i];
+        if ( i != ( attrPathS.size() - 1 ) )
+          {
+            std::cerr << '.';
+          }
+      }
+    std::cerr << std::endl;
+    #endif
+
     if ( funk.shouldRecur( cur, attrPath ) )
       {
         for ( const auto & attr : cur.getAttrs() )
@@ -465,7 +479,7 @@ test_walk( nix::EvalState & state )
               }
           }
       }
-    else if ( funk.packagePredicate( cur, attrPath ) )
+    else if ( cur.isDerivation() && funk.packagePredicate( cur, attrPath ) )
       {
         std::vector<attr_part> globPath;
         for ( size_t i = 0; i < attrPathS.size(); ++i )
@@ -487,7 +501,43 @@ test_walk( nix::EvalState & state )
         );
         funk.results.push_back( r );
       }
-  };
+  };  /* End `visit' */
+
+  try
+    {
+      std::shared_ptr<nix::eval_cache::AttrCursor> st =
+        root->maybeGetAttr( "packages" );
+      if ( st != nullptr )
+        {
+          visit( * st, { state.symbols.create( "packages" ) } );
+        }
+    }
+  catch( std::exception & e ) { std::cerr << e.what() << std::endl; }
+  catch( ... ) {}
+
+  try
+    {
+      std::shared_ptr<nix::eval_cache::AttrCursor> st =
+        root->maybeGetAttr( "legacyPackages" );
+      if ( st != nullptr )
+        {
+          visit( * st, { state.symbols.create( "legacyPackages" ) } );
+        }
+    }
+  catch( std::exception & e ) { std::cerr << e.what() << std::endl; }
+  catch( ... ) {}
+
+  try
+    {
+      std::shared_ptr<nix::eval_cache::AttrCursor> st =
+        root->maybeGetAttr( "catalog" );
+      if ( st != nullptr )
+        {
+          visit( * st, { state.symbols.create( "catalog" ) } );
+        }
+    }
+  catch( std::exception & e ) { std::cerr << e.what() << std::endl; }
+  catch( ... ) {}
 
   return true;
 }
@@ -561,6 +611,8 @@ main( int argc, char * argv[], char ** envp )
   RUN_TEST_WITH_STATE( state, packagePredicate2 );
   RUN_TEST_WITH_STATE( state, packagePredicate3 );
   RUN_TEST_WITH_STATE( state, packagePredicate4 );
+
+  RUN_TEST_WITH_STATE( state, walk );
 
   return ec;
 }

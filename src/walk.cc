@@ -223,7 +223,7 @@ DescriptorFunctor::shouldRecur(       nix::eval_cache::AttrCursor & pos
       return recurseForDrv->getBool();
     }
 
-  return true;
+  return path.size() <= 2;
 }
 
 
