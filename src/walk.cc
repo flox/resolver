@@ -286,10 +286,7 @@ DescriptorFunctor::packagePredicate(       nix::eval_cache::AttrCursor & pos
 
   if ( this->desc->version.has_value() )
     {
-      if ( ! ( this->desc->version == pnv.version ) )
-        {
-          return false;
-        }
+      if ( ! ( this->desc->version == pnv.version ) ) { return false; }
     }
 
   // TODO: semver
@@ -311,7 +308,7 @@ DescriptorFunctor::packagePredicate(       nix::eval_cache::AttrCursor & pos
       if ( ! isMatchingAttrPath( fuzz, pathS ) ) { return false; }
     }
 
-  return false;
+  return true;
 }
 
 

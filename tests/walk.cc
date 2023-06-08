@@ -148,7 +148,7 @@ test_isMatchingAttrPathPrefix2( nix::EvalState & state )
   bool
 test_isMatchingAttrPathPrefix3( nix::EvalState & state )
 {
-  std::vector<nix::SymbolStr> path   = coerceSymbolStrs( state, {
+  std::vector<nix::SymbolStr> path = coerceSymbolStrs( state, {
     "packages", "x86_64-linux", "hello"
   } );
   return isMatchingAttrPathPrefix( {}, path );
@@ -254,7 +254,7 @@ test_shouldRecur1( nix::EvalState & state )
 
   nix::ref<nix::eval_cache::AttrCursor> cur = root->getAttr( "legacyPackages" );
   std::vector<nix::Symbol>              path;
-  path.push_back( state.symbols.create( "packages" ) );
+  path.push_back( state.symbols.create( "legacyPackages" ) );
 
   rsl &= funk.shouldRecur( * cur, path );
 
@@ -269,6 +269,33 @@ test_shouldRecur1( nix::EvalState & state )
   return rsl;
 }
 
+
+/* -------------------------------------------------------------------------- */
+
+  bool
+test_packagePredicate1( nix::EvalState & state )
+{
+  std::string ref = "github:NixOS/nixpkgs/"
+                    "e8039594435c68eb4f780f3e9bf3972a7399c4b1";
+
+  nix::ref<nix::eval_cache::EvalCache>  cache = coerceEvalCache( state, ref );
+  nix::ref<nix::eval_cache::AttrCursor> root  = cache->getRoot();
+
+  Preferences       prefs;
+  Descriptor        desc( (nlohmann::json) { { "name", "hello" } } );
+  DescriptorFunctor funk( state, prefs, desc );
+
+  nix::ref<nix::eval_cache::AttrCursor> cur =
+    root->getAttr( "legacyPackages" )
+        ->getAttr( "x86_64-linux" )
+        ->getAttr( "hello" );
+
+  std::vector<nix::Symbol> path = coerceSymbols( state, {
+    "legacyPackages", "x86_64-linux", "hello"
+  } );
+
+  return funk.packagePredicate( * cur, path );
+}
 
 
 /* -------------------------------------------------------------------------- */
@@ -334,6 +361,7 @@ main( int argc, char * argv[], char ** envp )
   RUN_TEST_WITH_STATE( state, isMatchingAttrPath4 );
 
   RUN_TEST_WITH_STATE( state, shouldRecur1 );
+  RUN_TEST_WITH_STATE( state, packagePredicate1 );
 
   return ec;
 }
