@@ -51,7 +51,8 @@ LIBFLOXRESOLVE = libflox-resolve$(libExt)
 
 BINS           =  resolver
 LIBS           =  $(LIBFLOXRESOLVE)
-COMMON_HEADERS =  resolve.hh descriptor.hh flox/exception.hh flox/types.hh
+COMMON_HEADERS =  resolve.hh descriptor.hh flox/exceptions.hh flox/types.hh
+COMMON_HEADERS += flox/util.hh
 TESTS          =  $(wildcard tests/*.cc)
 
 
@@ -119,7 +120,7 @@ lib/$(LIBFLOXRESOLVE): LDFLAGS  += -Wl,--as-needed
 lib/$(LIBFLOXRESOLVE): LDFLAGS  += $(nix_LDFLAGS) $(sqlite3_LDFLAGS)
 lib/$(LIBFLOXRESOLVE): LDFLAGS  += -Wl,--no-as-needed
 lib/$(LIBFLOXRESOLVE): $(addprefix src/,resolve.o descriptor.o preferences.o)
-lib/$(LIBFLOXRESOLVE): $(addprefix src/,inputs.o walk.o)
+lib/$(LIBFLOXRESOLVE): $(addprefix src/,inputs.o walk.o util.o)
 	$(CXX) $^ $(LDFLAGS) -o "$@"
 
 
@@ -163,7 +164,8 @@ tests/%: CXXFLAGS += $(sqlite3_CFLAGS) $(nljson_CFLAGS)
 tests/%: CXXFLAGS += $(nix_CFLAGS) $(nljson_CFLAGS)
 tests/%: LDFLAGS  += $(sqlite3_LDFLAGS) $(nix_LDFLAGS)
 tests/%: LDFLAGS  += $(floxresolve_LDFLAGS)
-$(TESTS:.cc=): %: %.cc lib/$(LIBFLOXRESOLVE)
+$(TESTS:.cc=): %: $(addprefix include/,$(COMMON_HEADERS)) lib/$(LIBFLOXRESOLVE)
+$(TESTS:.cc=): %: %.cc
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) "$<" -o "$@"
 
 

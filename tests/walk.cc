@@ -15,22 +15,13 @@
 #include <nix/store-api.hh>
 #include "resolve.hh"
 #include <optional>
+#include "flox/util.hh"
 
 
 /* -------------------------------------------------------------------------- */
 
 using namespace flox::resolve;
 using namespace nlohmann::literals;
-
-/* Exposed in Nix 2.15.x through `installable-flakes.hh',
- * but it's been defined for internal linkage long before that.
- * To avoid build failures with 2.13.x and later we just use `extern'. */
-namespace nix {
-  extern nix::ref<nix::eval_cache::EvalCache> openEvalCache(
-    nix::EvalState                           & state
-  , std::shared_ptr<nix::flake::LockedFlake>   lockedFlake
-  );
-}
 
 /* -------------------------------------------------------------------------- */
 
@@ -292,21 +283,11 @@ test_isMatchingAttrPath4( nix::EvalState & state )
   bool
 test_shouldRecur1( nix::EvalState & state )
 {
-  FloxFlakeRef ref = nix::parseFlakeRef(
-    "github:NixOS/nixpkgs/e8039594435c68eb4f780f3e9bf3972a7399c4b1"
-  );
-  nix::flake::LockFlags lockFlags = {
-    .updateLockFile = false
-  , .writeLockFile  = false
-  };
-  std::shared_ptr<nix::flake::LockedFlake> lockedFlake =
-    std::make_shared<nix::flake::LockedFlake>(
-      nix::flake::LockedFlake( nix::flake::lockFlake( state, ref, lockFlags ) )
-    );
+  std::string ref = "github:NixOS/nixpkgs/"
+                    "e8039594435c68eb4f780f3e9bf3972a7399c4b1";
 
-  nix::ref<nix::eval_cache::EvalCache> cache =
-    nix::openEvalCache( state, lockedFlake );
-  nix::ref<nix::eval_cache::AttrCursor> root = cache->getRoot();
+  nix::ref<nix::eval_cache::EvalCache>  cache = coerceEvalCache( state, ref );
+  nix::ref<nix::eval_cache::AttrCursor> root  = cache->getRoot();
 
   Preferences       prefs;
   Descriptor        desc;

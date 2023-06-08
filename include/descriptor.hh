@@ -41,12 +41,12 @@ class Descriptor {
 
     std::optional<std::string> catalogStability;
 
-    bool searchCatalogs;
-    bool searchFlakes;
+    bool searchCatalogs = true;
+    bool searchFlakes   = true;
 
     std::optional<std::string> inputId;
 
-    Descriptor() : Descriptor( (nlohmann::json) {} ) {}
+    Descriptor() = default;
     Descriptor( const nlohmann::json & desc );
     /**
      * "hello"                  -> { name: "hello" }
