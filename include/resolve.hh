@@ -40,9 +40,8 @@ bool isMatchingAttrPath( const AttrPathGlob                & prefix
 
 struct PkgNameVersion {
   std::string                name;
-  std::string                attrName;
-  std::string                parsedName;
-  std::string                parsedVersion;
+  std::optional<std::string> parsedName;
+  std::optional<std::string> parsedVersion;
   std::optional<std::string> pname;
   std::optional<std::string> version;
   // TODO
@@ -50,9 +49,7 @@ struct PkgNameVersion {
   // bool isSemver() const { return this->semver.has_value(); }
 };
 
-PkgNameVersion nameVersionAt( std::string_view              attrName
-                            , nix::eval_cache::AttrCursor & pos
-                            );
+PkgNameVersion nameVersionAt( nix::eval_cache::AttrCursor & pos );
 
 
 /* -------------------------------------------------------------------------- */

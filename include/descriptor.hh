@@ -92,6 +92,12 @@ class DescriptorFunctor {
     bool packagePredicate(       nix::eval_cache::AttrCursor & pos
                          , const std::vector<nix::Symbol>    & path
                          );
+
+    void addResult( const FloxFlakeRef                & ref
+                  , const std::vector<nix::SymbolStr> & path
+                  ,       std::string                 & name
+                  ,       std::string                 & version
+                  );
 };
 
 

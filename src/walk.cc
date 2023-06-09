@@ -168,17 +168,10 @@ DescriptorFunctor::shouldRecur(       nix::eval_cache::AttrCursor & pos
 /* -------------------------------------------------------------------------- */
 
   PkgNameVersion
-nameVersionAt( std::string_view attrName, nix::eval_cache::AttrCursor & pos )
+nameVersionAt( nix::eval_cache::AttrCursor & pos )
 {
-  std::string  name        = pos.getAttr( "name" )->getString();
-  nix::DrvName parsed( name );
-
-  PkgNameVersion pnv = {
-    .name          = name
-  , .attrName      = std::string( attrName )
-  , .parsedName    = parsed.name
-  , .parsedVersion = parsed.version
-  };
+  std::string    name = pos.getAttr( "name" )->getString();
+  PkgNameVersion pnv  = { .name = name };
 
   std::shared_ptr<nix::eval_cache::AttrCursor> attr =
     pos.maybeGetAttr( "pname" );
@@ -186,6 +179,13 @@ nameVersionAt( std::string_view attrName, nix::eval_cache::AttrCursor & pos )
 
   attr = pos.maybeGetAttr( "version" );
   if ( attr != nullptr ) { pnv.version = attr->getString(); }
+
+  if ( ! ( pnv.pname.has_value() && pnv.version.has_value() ) )
+    {
+      nix::DrvName parsed( name );
+      pnv.parsedName    = std::move( parsed.name );
+      pnv.parsedVersion = std::move( parsed.version );
+    }
 
   return pnv;
 }
@@ -198,10 +198,6 @@ DescriptorFunctor::packagePredicate(       nix::eval_cache::AttrCursor & pos
                                    , const std::vector<nix::Symbol>    & path
                                    )
 {
-  std::vector<nix::SymbolStr> pathS = this->state->symbols.resolve( path );
-
-  PkgNameVersion pnv = nameVersionAt( pathS[path.size() - 1], pos );
-
   if ( ! pos.isDerivation() )
     {
       throw DescriptorException(
@@ -209,25 +205,7 @@ DescriptorFunctor::packagePredicate(       nix::eval_cache::AttrCursor & pos
       );
     }
 
-  /* Check name */
-  if ( this->desc->name.has_value() )
-    {
-      if ( ! ( ( this->desc->name == pnv.name ) ||
-               ( this->desc->name == pnv.pname ) ||
-               ( this->desc->name == pnv.attrName ) ||
-               ( this->desc->name == pnv.attrName ) )
-         )
-        {
-          return false;
-        }
-    }
-
-  if ( this->desc->version.has_value() )
-    {
-      if ( ! ( this->desc->version == pnv.version ) ) { return false; }
-    }
-
-  // TODO: semver
+  std::vector<nix::SymbolStr> pathS = this->state->symbols.resolve( path );
 
   if ( this->desc->absAttrPath.has_value() )
     {
@@ -242,7 +220,88 @@ DescriptorFunctor::packagePredicate(       nix::eval_cache::AttrCursor & pos
       if ( ! isMatchingAttrPath( fuzz, pathS ) ) { return false; }
     }
 
+  PkgNameVersion pnv = nameVersionAt( pos );
+
+  /* Check name */
+  if ( this->desc->name.has_value() )
+    {
+      std::string_view n = this->desc->name.value();
+      std::string_view o;
+      if ( pnv.pname.has_value() )           { o = pnv.pname.value(); }
+      else if ( pnv.parsedName.has_value() ) { o = pnv.parsedName.value(); }
+      else
+        {
+          throw DescriptorException(
+            "Failed to parse derivation name: " + pnv.name
+          );
+        }
+      if ( ! ( ( n == pathS[path.size() - 1] ) ||
+               ( n == pnv.name ) ||
+               ( n == o )
+             )
+         )
+        {
+          return false;
+        }
+    }
+
+  if ( this->desc->version.has_value() )
+    {
+      std::string_view o;
+      if ( pnv.version.has_value() )
+        {
+          o = pnv.version.value();
+        }
+      else if ( pnv.parsedVersion.has_value() )
+        {
+          o = pnv.parsedVersion.value();
+        }
+      else
+        {
+          throw DescriptorException(
+            "Failed to parse derivation version: " + pnv.name
+          );
+        }
+      if ( this->desc->version.value() != o ) { return false; }
+    }
+
+  // TODO: semver
+
   return true;
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+  void
+DescriptorFunctor::addResult( const FloxFlakeRef                & ref
+                            , const std::vector<nix::SymbolStr> & path
+                            ,       std::string                 & name
+                            ,       std::string                 & version
+                            )
+{
+  AttrPathGlob pg;
+  pg.path.push_back( path[0] );
+  pg.path.push_back( nullptr );
+  for ( size_t i = 2; i < path.size(); ++i )
+    {
+      pg.path.push_back( path[i] );
+    }
+  /* If this result already exists append `systems', otherwise add. */
+  for ( auto & r : this->results )
+    {
+      if ( r.path.globEq( pg ) )
+        {
+          r.info.at( "systems" ).push_back( path[1] );
+          return;
+        }
+    }
+  Resolved r( ref, std::move( pg ), (nlohmann::json) {
+    { "name",    std::move( name ) }
+  , { "version", std::move( version ) }
+  , { "systems", { path[1] } }
+  } );
+  this->results.push_back( std::move( r ) );
 }
 
 

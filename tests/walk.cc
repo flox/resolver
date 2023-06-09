@@ -285,16 +285,11 @@ test_nameVersionAt1( nix::EvalState & state )
         ->getAttr( "x86_64-linux" )
         ->getAttr( "hello" );
 
-  PkgNameVersion pnv = nameVersionAt( "hello", * cur );
+  PkgNameVersion pnv = nameVersionAt( * cur );
 
-  return ( pnv.attrName      == "hello" ) &&
-         ( pnv.name          == "hello-2.12.1" ) &&
-         ( pnv.parsedName    == "hello" ) &&
-         ( pnv.parsedVersion == "2.12.1" ) &&
-         pnv.pname.has_value() &&
-         ( pnv.pname.value() == "hello" ) &&
-         pnv.version.has_value() &&
-         ( pnv.version.value() == "2.12.1" );
+  return ( pnv.name == "hello-2.12.1" ) &&
+         pnv.pname.has_value() && ( pnv.pname.value() == "hello" ) &&
+         pnv.version.has_value() && ( pnv.version.value() == "2.12.1" );
 }
 
 
@@ -472,33 +467,45 @@ test_walk( nix::EvalState & state )
       }
     else if ( cur.isDerivation() && funk.packagePredicate( cur, attrPath ) )
       {
-        AttrPathGlob globPath;
-        for ( size_t i = 0; i < attrPathS.size(); ++i )
+        PkgNameVersion pnv = nameVersionAt( cur );
+        std::string    n;
+        std::string    v;
+        if ( pnv.pname.has_value() )
           {
-            if ( i == 1 ) { globPath.path.push_back( nullptr ); }
-            else          { globPath.path.push_back( attrPathS[i] ); }
+            v = pnv.pname.value();
           }
-        PkgNameVersion pnv =
-          nameVersionAt( attrPathS[attrPath.size() - 1], cur );
-        // TODO: Check if present and append `systems'.
-        Resolved r(
-          ref
-        , globPath
-        , (nlohmann::json) {
-            { "name",    pnv.pname.value_or( pnv.parsedName ) }
-          , { "version", pnv.version.value_or( pnv.parsedVersion ) }
-          , { "systems", { attrPathS[1] } }
+        else if ( pnv.parsedName.has_value() )
+          {
+            v = pnv.parsedName.value();
           }
-        );
-        funk.results.push_back( r );
+        else
+          {
+            throw DescriptorException(
+              "Failed to parse derivation name: " + pnv.name
+            );
+          }
+        if ( pnv.version.has_value() )
+          {
+            v = pnv.version.value();
+          }
+        else if ( pnv.parsedVersion.has_value() )
+          {
+            v = pnv.parsedVersion.value();
+          }
+        else
+          {
+            throw DescriptorException(
+              "Failed to parse derivation version: " + pnv.name
+            );
+          }
+        funk.addResult( ref, attrPathS, n, v );
       }
   };  /* End `visit' */
 
+  /* Traverse attrsets and collect satisfactory packages. */
   visit( * root, {} );
-
-  // TODO: merge multiple systems into a single entry.
-  std::cout << "Matches: " << funk.results.size() << std::endl;
-  return funk.results.size() == 4;
+  /* We should just get GNU `hello' as a result. */
+  return funk.results.size() == 1;
 }
 
 
