@@ -429,19 +429,6 @@ test_walk( nix::EvalState & state )
   {
     std::vector<nix::SymbolStr> attrPathS = state.symbols.resolve( attrPath );
 
-    #if 0
-    std::cerr << "Visiting: ";
-    for ( size_t i = 0; i < attrPathS.size(); ++i )
-      {
-        std::cerr << attrPathS[i];
-        if ( i != ( attrPathS.size() - 1 ) )
-          {
-            std::cerr << '.';
-          }
-      }
-    std::cerr << std::endl;
-    #endif
-
     if ( funk.shouldRecur( cur, attrPath ) )
       {
         for ( const auto & attr : cur.getAttrs() )
@@ -467,16 +454,16 @@ test_walk( nix::EvalState & state )
       }
     else if ( cur.isDerivation() && funk.packagePredicate( cur, attrPath ) )
       {
-        PkgNameVersion pnv = nameVersionAt( cur );
-        std::string    n;
-        std::string    v;
+        PkgNameVersion   pnv = nameVersionAt( cur );
+        std::string_view n;
+        std::string_view v;
         if ( pnv.pname.has_value() )
           {
-            v = pnv.pname.value();
+            n = pnv.pname.value();
           }
         else if ( pnv.parsedName.has_value() )
           {
-            v = pnv.parsedName.value();
+            n = pnv.parsedName.value();
           }
         else
           {
@@ -505,6 +492,10 @@ test_walk( nix::EvalState & state )
   /* Traverse attrsets and collect satisfactory packages. */
   visit( * root, {} );
   /* We should just get GNU `hello' as a result. */
+  for ( auto & r : funk.results )
+    {
+      std::cerr << r.toJSON().dump() << std::endl;
+    }
   return funk.results.size() == 1;
 }
 

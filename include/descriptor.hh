@@ -95,8 +95,8 @@ class DescriptorFunctor {
 
     void addResult( const FloxFlakeRef                & ref
                   , const std::vector<nix::SymbolStr> & path
-                  ,       std::string                 & name
-                  ,       std::string                 & version
+                  ,       std::string_view              name
+                  ,       std::string_view              version
                   );
 };
 

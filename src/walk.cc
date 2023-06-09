@@ -276,8 +276,8 @@ DescriptorFunctor::packagePredicate(       nix::eval_cache::AttrCursor & pos
   void
 DescriptorFunctor::addResult( const FloxFlakeRef                & ref
                             , const std::vector<nix::SymbolStr> & path
-                            ,       std::string                 & name
-                            ,       std::string                 & version
+                            ,       std::string_view              name
+                            ,       std::string_view              version
                             )
 {
   AttrPathGlob pg;
@@ -297,8 +297,8 @@ DescriptorFunctor::addResult( const FloxFlakeRef                & ref
         }
     }
   Resolved r( ref, std::move( pg ), (nlohmann::json) {
-    { "name",    std::move( name ) }
-  , { "version", std::move( version ) }
+    { "name",    name }
+  , { "version", version }
   , { "systems", { path[1] } }
   } );
   this->results.push_back( std::move( r ) );
