@@ -37,9 +37,9 @@ struct AttrPathGlob {
   std::vector<attr_part> path;
 
   AttrPathGlob() = default;
-  AttrPathGlob( std::vector<std::string_view> path );
-  AttrPathGlob( std::vector<attr_part> path );
-  AttrPathGlob( const nlohmann::json & path );
+  AttrPathGlob( const std::vector<attr_part>        & path );
+  AttrPathGlob(       std::vector<std::string_view>   path );
+  AttrPathGlob( const nlohmann::json                & path );
 
   std::string    toString() const;
   nlohmann::json toJSON()   const;

@@ -22,7 +22,7 @@ AttrPathGlob::AttrPathGlob( std::vector<std::string_view> path )
   for ( auto & p : path ) { this->path.push_back( std::string( p ) ); }
 }
 
-AttrPathGlob::AttrPathGlob( std::vector<attr_part> path )
+AttrPathGlob::AttrPathGlob( const std::vector<attr_part> & path )
 {
   for ( size_t i = 0; i < path.size(); ++i )
     {
