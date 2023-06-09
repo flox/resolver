@@ -24,6 +24,7 @@
 #include <string>
 #include <nlohmann/json.hpp>
 #include "resolve.hh"
+#include "flox/util.hh"
 
 
 /* -------------------------------------------------------------------------- */
@@ -32,21 +33,6 @@ namespace flox {
   namespace resolve {
 
 /* -------------------------------------------------------------------------- */
-
-  static inline bool
-isPkgsSubtree( std::string_view attrName )
-{
-  return ( attrName == "packages" ) ||
-         ( attrName == "legacyPackages" ) ||
-         ( attrName == "catalog"  );
-}
-
-
-/* -------------------------------------------------------------------------- */
-
-static const std::unordered_set<std::string> defaultSystems = {
- "x86_64-linux", "aarch64-linux", "x86_64-darwin", "aarch64-darwin"
-};
 
   static inline bool
 shouldSearchSystem( std::string_view system )

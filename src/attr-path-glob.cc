@@ -7,6 +7,7 @@
 #include <string>
 #include <nlohmann/json.hpp>
 #include "flox/types.hh"
+#include "flox/util.hh"
 
 
 /* -------------------------------------------------------------------------- */
@@ -50,6 +51,41 @@ AttrPathGlob::AttrPathGlob( const nlohmann::json & path )
         }
     }
 }
+
+
+/* -------------------------------------------------------------------------- */
+
+  bool
+AttrPathGlob::isAbsolute() const
+{
+  return ( 0 < this->path.size() ) &&
+         isPkgsSubtree( std::get<std::string>( this->path[0] ) );
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+  bool
+AttrPathGlob::hasGlob() const
+{
+  return ( 1 < this->path.size() ) &&
+         std::holds_alternative<std::nullptr_t>( this->path[1] );
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+  void
+AttrPathGlob::coerceGlob()
+{
+  if ( ( 1 < this->path.size() ) &&
+       ( ! std::holds_alternative<std::nullptr_t>( this->path[1] ) )
+     )
+    {
+      this->path[1] = nullptr;
+    }
+}
+
 
 
 /* -------------------------------------------------------------------------- */

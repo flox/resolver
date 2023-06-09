@@ -37,6 +37,24 @@ namespace flox {
 
 /* -------------------------------------------------------------------------- */
 
+static const std::unordered_set<std::string> defaultSystems = {
+ "x86_64-linux", "aarch64-linux", "x86_64-darwin", "aarch64-darwin"
+};
+
+
+/* -------------------------------------------------------------------------- */
+
+  static inline bool
+isPkgsSubtree( std::string_view attrName )
+{
+  return ( attrName == "packages" ) ||
+         ( attrName == "legacyPackages" ) ||
+         ( attrName == "catalog"  );
+}
+
+
+/* -------------------------------------------------------------------------- */
+
 static nix::flake::LockFlags floxFlakeLockFlags = {
   .updateLockFile = false
 , .writeLockFile  = false

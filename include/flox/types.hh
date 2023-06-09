@@ -44,6 +44,11 @@ struct AttrPathGlob {
   std::string    toString() const;
   nlohmann::json toJSON()   const;
 
+  bool isAbsolute() const;
+  bool hasGlob()    const;
+  /* Replace second element ( if present ) with `nullptr' glob. */
+  void coerceGlob();
+
 };
 
 void from_json( const nlohmann::json & j,       AttrPathGlob & path );
