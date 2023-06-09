@@ -87,10 +87,15 @@ AttrPathGlob::hasGlob() const
 AttrPathGlob::coerceGlob()
 {
   if ( ( 1 < this->path.size() ) &&
-       ( ! std::holds_alternative<std::nullptr_t>( this->path[1] ) )
+       ( ! std::holds_alternative<std::nullptr_t>( this->path[1] ) ) &&
+       isPkgsSubtree( std::get<std::string>( this->path[0] ) )
      )
     {
-      this->path[1] = nullptr;
+      const std::string s = std::get<std::string>( this->path[1] );
+      if ( defaultSystems.find( s ) != defaultSystems.end() )
+        {
+          this->path[1] = nullptr;
+        }
     }
 }
 
