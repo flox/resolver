@@ -31,62 +31,57 @@ static const std::string nixpkgsRef =
 
 /* -------------------------------------------------------------------------- */
 
-/* Conclusive `true' for glob path to a package. */
+/* `true' for glob path to a package. */
   bool
 test_isAbsAttrPath1()
 {
-  std::vector<attr_part> path = { "packages", nullptr, "hello" };
-  std::optional<bool>    rsl  = isAbsAttrPath( path );
-  return rsl.has_value() && rsl.value();
+  std::vector<attr_part> path( { "packages", nullptr, "hello" } );
+  return AttrPathGlob( path ).isAbsolute();
 }
 
 
 /* -------------------------------------------------------------------------- */
 
-/* Conclusive `true' for path starting with recognized `pkgsSubtree' prefix
+/* `true' for path starting with recognized `pkgsSubtree' prefix
  * and a glob. */
   bool
 test_isAbsAttrPath2()
 {
-  std::vector<attr_part> path = { "packages", nullptr };
-  std::optional<bool>    rsl  = isAbsAttrPath( path );
-  return rsl.has_value() && rsl.value();
+  std::vector<attr_part> path( { "packages", nullptr } );
+  return AttrPathGlob( path ).isAbsolute();
 }
 
 
 /* -------------------------------------------------------------------------- */
 
-/* Conclusive `true' for path starting with recognized `pkgsSubtree' prefix. */
+/* `true' for path starting with recognized `pkgsSubtree' prefix. */
   bool
 test_isAbsAttrPath3()
 {
   std::vector<attr_part> path = { "packages" };
-  std::optional<bool>    rsl  = isAbsAttrPath( path );
-  return rsl.has_value() && rsl.value();
+  return AttrPathGlob( path ).isAbsolute();
 }
 
 
 /* -------------------------------------------------------------------------- */
 
-/* Inconclusive for empty path. */
+/* `false' for empty path. */
   bool
 test_isAbsAttrPath4()
 {
   std::vector<attr_part> path = {};
-  std::optional<bool>    rsl  = isAbsAttrPath( path );
-  return ! rsl.has_value();
+  return ! AttrPathGlob( path ).isAbsolute();
 }
 
 
 /* -------------------------------------------------------------------------- */
 
-/* Conclusive `false' for path missing recognized prefix. */
+/* `false' for path missing recognized prefix. */
   bool
 test_isAbsAttrPath5()
 {
   std::vector<attr_part> path = { "hello" };
-  std::optional<bool>    rsl  = isAbsAttrPath( path );
-  return rsl.has_value() && ( ! rsl.value() );
+  return ! AttrPathGlob( path ).isAbsolute();
 }
 
 
@@ -96,25 +91,20 @@ test_isAbsAttrPath5()
   bool
 test_isAbsAttrPathJSON1()
 {
-  nlohmann::json      path = R"(["hello"])"_json;
-  std::optional<bool> opt  = isAbsAttrPathJSON( path );
-  bool                rsl  = opt.has_value() && ( ! opt.value() );
+  nlohmann::json path = R"(["hello"])"_json;
+  bool           rsl  = ! AttrPathGlob( path ).isAbsolute();
 
   path =  R"(["packages",null,"hello"])"_json;
-  opt  =  isAbsAttrPathJSON( path );
-  rsl  &= opt.has_value() && opt.value();
+  rsl  &= AttrPathGlob( path ).isAbsolute();
 
   path =  R"(["packages",null])"_json;
-  opt  =  isAbsAttrPathJSON( path );
-  rsl  &= opt.has_value() && opt.value();
+  rsl  &= AttrPathGlob( path ).isAbsolute();
 
   path =  R"(["packages"])"_json;
-  opt  =  isAbsAttrPathJSON( path );
-  rsl  &= opt.has_value() && opt.value();
+  rsl  &= AttrPathGlob( path ).isAbsolute();
 
   path =  R"([])"_json;
-  opt  =  isAbsAttrPathJSON( path );
-  rsl  &= ! opt.has_value();
+  rsl  &= ! AttrPathGlob( path ).isAbsolute();
 
   return rsl;
 }
@@ -130,7 +120,7 @@ test_isMatchingAttrPathPrefix1( nix::EvalState & state )
   std::vector<nix::SymbolStr> path   = coerceSymbolStrs( state, {
     "packages", "x86_64-linux", "hello"
   } );
-  return isMatchingAttrPathPrefix( prefix, path );
+  return isMatchingAttrPathPrefix( AttrPathGlob( prefix ), path );
 }
 
 
@@ -141,10 +131,10 @@ test_isMatchingAttrPathPrefix1( nix::EvalState & state )
 test_isMatchingAttrPathPrefix2( nix::EvalState & state )
 {
   std::vector<attr_part>      prefix = { "packages" };
-  std::vector<nix::SymbolStr> path   = coerceSymbolStrs( state, {
+  std::vector<nix::SymbolStr> path = coerceSymbolStrs( state, {
     "packages", "x86_64-linux", "hello"
   } );
-  return isMatchingAttrPathPrefix( prefix, path );
+  return isMatchingAttrPathPrefix( AttrPathGlob( prefix ), path );
 }
 
 
@@ -154,10 +144,11 @@ test_isMatchingAttrPathPrefix2( nix::EvalState & state )
   bool
 test_isMatchingAttrPathPrefix3( nix::EvalState & state )
 {
+  std::vector<attr_part>      prefix;
   std::vector<nix::SymbolStr> path = coerceSymbolStrs( state, {
     "packages", "x86_64-linux", "hello"
   } );
-  return isMatchingAttrPathPrefix( {}, path );
+  return isMatchingAttrPathPrefix( AttrPathGlob( prefix ), path );
 }
 
 
@@ -171,7 +162,7 @@ test_isMatchingAttrPathPrefix4( nix::EvalState & state )
   std::vector<nix::SymbolStr> path   = coerceSymbolStrs( state, {
     "packages", "x86_64-linux", "python3", "pkgs", "pip"
   } );
-  return isMatchingAttrPathPrefix( prefix, path );
+  return isMatchingAttrPathPrefix( AttrPathGlob( prefix ), path );
 }
 
 
@@ -185,7 +176,7 @@ test_isMatchingAttrPathPrefix5( nix::EvalState & state )
   std::vector<nix::SymbolStr> path   = coerceSymbolStrs( state, {
     "packages", "x86_64-linux", "python3", "pkgs", "pip"
   } );
-  return isMatchingAttrPathPrefix( prefix, path );
+  return isMatchingAttrPathPrefix( AttrPathGlob( prefix ), path );
 }
 
 
@@ -199,7 +190,7 @@ test_isMatchingAttrPath1( nix::EvalState & state )
   std::vector<nix::SymbolStr> path   = coerceSymbolStrs( state, {
     "packages", "x86_64-linux", "hello"
   } );
-  return isMatchingAttrPath( prefix, path );
+  return isMatchingAttrPath( AttrPathGlob( prefix ), path );
 }
 
 
@@ -213,7 +204,7 @@ test_isMatchingAttrPath2( nix::EvalState & state )
   std::vector<nix::SymbolStr> path   = coerceSymbolStrs( state, {
     "packages", "x86_64-linux", "hello"
   } );
-  return isMatchingAttrPath( prefix, path );
+  return isMatchingAttrPath( AttrPathGlob( prefix ), path );
 }
 
 
@@ -237,7 +228,7 @@ test_isMatchingAttrPath4( nix::EvalState & state )
   std::vector<nix::SymbolStr> path   = coerceSymbolStrs( state, {
     "packages", "x86_64-linux", "python3", "pkgs", "pip"
   } );
-  return isMatchingAttrPath( prefix, path );
+  return isMatchingAttrPath( AttrPathGlob( prefix ), path );
 }
 
 
@@ -481,11 +472,11 @@ test_walk( nix::EvalState & state )
       }
     else if ( cur.isDerivation() && funk.packagePredicate( cur, attrPath ) )
       {
-        std::vector<attr_part> globPath;
+        AttrPathGlob globPath;
         for ( size_t i = 0; i < attrPathS.size(); ++i )
           {
-            if ( i == 1 ) { globPath.push_back( nullptr ); }
-            else          { globPath.push_back( attrPathS[i] ); }
+            if ( i == 1 ) { globPath.path.push_back( nullptr ); }
+            else          { globPath.path.push_back( attrPathS[i] ); }
           }
         PkgNameVersion pnv =
           nameVersionAt( attrPathS[attrPath.size() - 1], cur );

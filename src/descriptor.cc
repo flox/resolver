@@ -37,43 +37,14 @@ Descriptor::Descriptor( const nlohmann::json & desc )
             {
               continue;
             }
-          std::optional<bool> isAbs = isAbsAttrPathJSON( value );
-          if ( isAbs.has_value() && isAbs.value() )
-            {
-              this->absAttrPath = std::vector<attr_part>();
-              for ( auto & p : value )
-                {
-                  if ( p.is_null() )
-                    {
-                      this->absAttrPath.value().push_back( nullptr );
-                    }
-                  else
-                    {
-                      this->absAttrPath.value().push_back( p );
-                    }
-                }
-            }
-          else
-            {
-              this->relAttrPath = value;
-            }
+          AttrPathGlob path( value );
+          if ( path.isAbsolute() ) { this->absAttrPath = path; }
+          else                     { this->relAttrPath = value; }
         }
-      else if ( key == "input" )
-        {
-          this->inputId = value;
-        }
-      else if ( key == "name" )
-        {
-          this->name = value;
-        }
-      else if ( key == "version" )
-        {
-          this->version = value;
-        }
-      else if ( key == "semver" )
-        {
-          this->semver = value;
-        }
+      else if ( key == "input" )   { this->inputId = value; }
+      else if ( key == "name" )    { this->name = value; }
+      else if ( key == "version" ) { this->version = value; }
+      else if ( key == "semver" )  { this->semver = value; }
       else if ( key == "catalog" )
         {
           if ( value.is_boolean() )
@@ -137,19 +108,7 @@ Descriptor::toJSON() const
     }
   else if ( this->absAttrPath.has_value() )
     {
-      nlohmann::json path;
-      for ( auto & p : this->absAttrPath.value() )
-        {
-          if ( std::holds_alternative<std::nullptr_t>( p ) )
-            {
-              path.push_back( nlohmann::json() );
-            }
-          else
-            {
-              path.push_back( std::get<std::string>( p ) );
-            }
-        }
-      j.emplace( "path", path );
+      j.emplace( "path", this->absAttrPath.value().toJSON() );
     }
 
   if ( this->name.has_value() )
@@ -219,20 +178,23 @@ auditAbsAttrPath( const Descriptor & d, std::string & msg )
       return true;
     }
   /* Must be at least length 3. */
-  if ( d.absAttrPath.value().size() < 3 )
+  if ( d.absAttrPath.value().path.size() < 3 )
     {
       msg = "Descriptor field `absAttrPath' must contain at least 3 elements.";
       return false;
     }
   /* `nullptr' may only appear as second element. */
-  for ( size_t i = 0; i < d.absAttrPath.value().size(); ++i )
+  for ( size_t i = 0; i < d.absAttrPath.value().path.size(); ++i )
     {
       /* Don't audit second element. */
       if ( i == 1 )
         {
           continue;
         }
-      if ( std::holds_alternative<std::nullptr_t>( d.absAttrPath.value()[i] ) )
+      if ( std::holds_alternative<std::nullptr_t>(
+             d.absAttrPath.value().path[i]
+           )
+         )
         {
           msg = "Descriptor field `absAttrPath' may only contain `nullptr' as "
                 "its second element.";

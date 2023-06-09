@@ -115,16 +115,16 @@ void to_json(         nlohmann::json & j, const Preferences & p );
 
 class Resolved {
   private:
-    std::string            uri;
-    FloxFlakeRef           input;
-    std::vector<attr_part> path;
-    nlohmann::json         info;
+    std::string    uri;
+    FloxFlakeRef   input;
+    AttrPathGlob   path;
+    nlohmann::json info;
 
   public:
     Resolved( const nlohmann::json & attrs );
-    Resolved( const FloxFlakeRef           & input
-            , const std::vector<attr_part> & path
-            , const nlohmann::json         & info
+    Resolved( const FloxFlakeRef   & input
+            , const AttrPathGlob   & path
+            , const nlohmann::json & info
             );
 
     nlohmann::json toJSON()   const;

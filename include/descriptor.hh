@@ -33,7 +33,7 @@ class Descriptor {
     /* ["python3", "pkgs", "pip"] */
     std::optional<std::vector<std::string>> relAttrPath;
     /* ["packages", null, "hello"] */
-    std::optional<std::vector<attr_part>> absAttrPath;
+    std::optional<AttrPathGlob> absAttrPath;
 
     std::optional<std::string> name;
     std::optional<std::string> version;

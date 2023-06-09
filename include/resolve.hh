@@ -27,17 +27,11 @@ namespace flox {
 
 /* -------------------------------------------------------------------------- */
 
-std::optional<bool> isAbsAttrPathJSON( const nlohmann::json         & j );
-std::optional<bool> isAbsAttrPath(     const std::vector<attr_part> & path );
-
-
-/* -------------------------------------------------------------------------- */
-
-bool isMatchingAttrPathPrefix( const std::vector<attr_part>      & prefix
+bool isMatchingAttrPathPrefix( const AttrPathGlob                & prefix
                              , const std::vector<nix::SymbolStr> & path
                              );
 
-bool isMatchingAttrPath( const std::vector<attr_part>      & prefix
+bool isMatchingAttrPath( const AttrPathGlob                & prefix
                        , const std::vector<nix::SymbolStr> & path
                        );
 

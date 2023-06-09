@@ -44,89 +44,41 @@ shouldSearchSystem( std::string_view system )
 
 /* -------------------------------------------------------------------------- */
 
-  std::optional<bool>
-isAbsAttrPathJSON( const nlohmann::json & j )
-{
-  if ( ! j.is_array() )
-    {
-      throw DescriptorException(
-        "Descriptor `path' field must be lists of strings or null."
-      );
-    }
-
-  std::vector<nlohmann::json> path = j;
-  if ( path.empty() )
-    {
-      return std::nullopt;
-    }
-
-  if ( path[0].is_null() )
-    {
-      throw DescriptorException(
-        "Descriptor `path' field may only contain `null' as its second member."
-      );
-    }
-
-  return isPkgsSubtree( path[0].get<std::string_view>() );
-}
-
-
-  std::optional<bool>
-isAbsAttrPath( const std::vector<attr_part> & path )
-{
-  if ( path.empty() )
-    {
-      return std::nullopt;
-    }
-
-  if ( std::holds_alternative<std::string>( path[0] ) )
-    {
-      return isPkgsSubtree( std::get<std::string>( path[0] ) );
-    }
-  throw DescriptorException(
-    "Descriptor `path' field may only contain `null' as its second member."
-  );
-  return false;
-}
-
-
-/* -------------------------------------------------------------------------- */
-
   bool
-isMatchingAttrPathPrefix( const std::vector<attr_part>      & prefix
+isMatchingAttrPathPrefix( const AttrPathGlob                & prefix
                         , const std::vector<nix::SymbolStr> & path
                         )
 {
-  if ( prefix.empty() ) { return true; }
+  if ( prefix.path.empty() ) { return true; }
   if ( path.empty() )   { return false; }
 
   size_t j = 0;
 
   /* If we have a relative prefix, make `path' relative.
    * Terminate early if relative form of `path' is too short. */
-  std::optional<bool> isAbsPrefix = isAbsAttrPath( prefix );
-  bool                isAbsPath   = isPkgsSubtree( path[0] );
-  if ( isAbsPrefix.has_value() && ( isAbsPrefix.value() != isAbsPath ) )
+  bool isAbsPrefix = prefix.isAbsolute();
+  bool isAbsPath   = isPkgsSubtree( path[0] );
+  if ( isAbsPrefix != isAbsPath )
     {
-      if ( path.size() < ( prefix.size() + 2 ) ) { return false; }
+      if ( path.size() < ( prefix.path.size() + 2 ) ) { return false; }
       j = 2;
     }
-  else if ( path.size() < prefix.size() )
+  else if ( path.size() < prefix.path.size() )
     {
       return false;
     }
 
   /* Check for equality of elements. */
-  for ( size_t i = 0; i < prefix.size(); ++i, ++j )
+  for ( size_t i = 0; i < prefix.path.size(); ++i, ++j )
     {
-      if ( std::holds_alternative<std::nullptr_t>( prefix[i] ) )
+      if ( std::holds_alternative<std::nullptr_t>( prefix.path[i] ) )
         {
           if ( ! shouldSearchSystem( path[j] ) ) { return false; }
         }
       else
         {
           std::string_view a = path[j];
-          if ( std::get<std::string>( prefix[i] ) != a ) { return false; }
+          if ( std::get<std::string>( prefix.path[i] ) != a ) { return false; }
         }
     }
   return true;
@@ -134,23 +86,23 @@ isMatchingAttrPathPrefix( const std::vector<attr_part>      & prefix
 
 
   bool
-isMatchingAttrPath( const std::vector<attr_part>      & prefix
+isMatchingAttrPath( const AttrPathGlob                & prefix
                   , const std::vector<nix::SymbolStr> & path
                   )
 {
-  if ( prefix.empty() ) { return true; }
+  if ( prefix.path.empty() ) { return true; }
   if ( path.empty() )   { return false; }
 
-  /* If we have a relative prefix, make `path' relative. */
-  std::optional<bool> isAbsPrefix = isAbsAttrPath( prefix );
-  /* Terminate early if sizes differ. */
-  if ( isAbsPrefix.has_value() && ( ! isAbsPrefix.value() ) )
+  /* If we have a relative prefix, treat `path' as relative. */
+  if ( ! prefix.isAbsolute() )
     {
-      if ( ( prefix.size() + 2 ) != path.size() ) { return false; }
+      /* Terminate early if sizes differ. */
+      if ( ( prefix.path.size() + 2 ) != path.size() ) { return false; }
     }
   else
     {
-      if ( prefix.size() != path.size() ) { return false; }
+      /* Terminate early if sizes differ. */
+      if ( prefix.path.size() != path.size() ) { return false; }
     }
   return isMatchingAttrPathPrefix( prefix, path );
 }
@@ -286,11 +238,7 @@ DescriptorFunctor::packagePredicate(       nix::eval_cache::AttrCursor & pos
     }
   if ( this->desc->relAttrPath.has_value() )
     {
-      std::vector<attr_part> fuzz;
-      for ( auto & p : this->desc->relAttrPath.value() )
-        {
-          fuzz.push_back( p );
-        }
+      AttrPathGlob fuzz( this->desc->relAttrPath.value() );
       if ( ! isMatchingAttrPath( fuzz, pathS ) ) { return false; }
     }
 

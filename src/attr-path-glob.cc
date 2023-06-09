@@ -24,15 +24,23 @@ AttrPathGlob::AttrPathGlob( std::vector<std::string_view> path )
 
 AttrPathGlob::AttrPathGlob( std::vector<attr_part> path )
 {
-  for ( auto & p : path )
+  for ( size_t i = 0; i < path.size(); ++i )
     {
-      if ( std::holds_alternative<std::nullptr_t>( p ) )
+      if ( ( std::holds_alternative<std::nullptr_t>( path[i] ) ) ||
+           ( std::get<std::string>( path[i] ) == "{{system}}" )
+         )
         {
+          if ( i != 1 )
+            {
+              throw ResolverException(
+                "Resolved `path' may only contain `null' as its second member."
+              );
+            }
           this->path.push_back( nullptr );
         }
       else
         {
-          this->path.push_back( p );
+          this->path.push_back( path[i] );
         }
     }
 }
@@ -94,12 +102,11 @@ AttrPathGlob::coerceGlob()
 AttrPathGlob::toString() const
 {
   std::string str;
-  bool first = true;
-  for ( auto & p : this->path )
+  for ( size_t i = 0; i < this->path.size(); ++i )
     {
-      if ( std::holds_alternative<std::nullptr_t>( p ) )
+      if ( std::holds_alternative<std::nullptr_t>( this->path[i] ) )
         {
-          if ( first )
+          if ( i != 1 )
             {
               throw ResolverException(
                 "Resolved `path' may only contain `null' as its second member."
@@ -109,15 +116,8 @@ AttrPathGlob::toString() const
         }
       else
         {
-          if ( first )
-            {
-              first = false;
-            }
-          else
-            {
-              str += ".";
-            }
-          str += std::get<std::string>( p );
+          if ( i != 0 ) { str += "."; }
+          str += std::get<std::string>( this->path[i] );
         }
     }
   return str;
