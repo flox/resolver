@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <string>
 #include <variant>
 #include <vector>
 #include <optional>
@@ -27,6 +28,26 @@ namespace flox {
 typedef nix::FlakeRef  FloxFlakeRef;
 
 typedef std::variant<std::nullptr_t, std::string>  attr_part;
+
+
+/* -------------------------------------------------------------------------- */
+
+struct AttrPathGlob {
+
+  std::vector<attr_part> path;
+
+  AttrPathGlob() = default;
+  AttrPathGlob( std::vector<std::string_view> path );
+  AttrPathGlob( std::vector<attr_part> path );
+  AttrPathGlob( const nlohmann::json & path );
+
+  std::string    toString() const;
+  nlohmann::json toJSON()   const;
+
+};
+
+void from_json( const nlohmann::json & j,       AttrPathGlob & path );
+void to_json(         nlohmann::json & j, const AttrPathGlob & path );
 
 
 /* -------------------------------------------------------------------------- */

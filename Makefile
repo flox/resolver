@@ -120,7 +120,7 @@ lib/$(LIBFLOXRESOLVE): LDFLAGS  += -Wl,--as-needed
 lib/$(LIBFLOXRESOLVE): LDFLAGS  += $(nix_LDFLAGS) $(sqlite3_LDFLAGS)
 lib/$(LIBFLOXRESOLVE): LDFLAGS  += -Wl,--no-as-needed
 lib/$(LIBFLOXRESOLVE): $(addprefix src/,resolve.o descriptor.o preferences.o)
-lib/$(LIBFLOXRESOLVE): $(addprefix src/,inputs.o walk.o util.o)
+lib/$(LIBFLOXRESOLVE): $(addprefix src/,inputs.o walk.o util.o attr-path-glob.o)
 	$(CXX) $^ $(LDFLAGS) -o "$@"
 
 
