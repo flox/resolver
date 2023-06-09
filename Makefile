@@ -23,6 +23,8 @@ UNAME      ?= uname
 MKDIR      ?= mkdir
 MKDIR_P    ?= $(MKDIR) -p
 CP         ?= cp
+TR         ?= tr
+SED        ?= sed
 
 
 # ---------------------------------------------------------------------------- #
@@ -58,9 +60,14 @@ TESTS          =  $(wildcard tests/*.cc)
 
 # ---------------------------------------------------------------------------- #
 
-CXXFLAGS     = -std=c++17 '-I$(MAKEFILE_DIR)/include' -ggdb3
-lib_CXXFLAGS = -shared -fPIC
-lib_LDFLAGS  = -shared -fPIC -Wl,--no-undefined
+CXXFLAGS     ?=
+CXXFLAGS     += '-I$(MAKEFILE_DIR)/include'
+lib_CXXFLAGS =  -shared -fPIC
+lib_LDFLAGS  =  -shared -fPIC -Wl,--no-undefined
+
+ifneq ($(DEBUG),)
+	CXXFLAGS += -ggdb3
+endif
 
 
 nljson_CFLAGS   = $(shell $(PKG_CONFIG) --cflags nlohmann_json)
@@ -188,6 +195,20 @@ check: $(TESTS:.cc=)
 # ---------------------------------------------------------------------------- #
 
 all: bin lib tests
+
+
+# ---------------------------------------------------------------------------- #
+
+.ccls: FORCE
+	echo 'clang' > "$@";
+	{                                                                     \
+	  if [[ -n "$(NIX_CC)" ]]; then                                       \
+	    $(CAT) "$(NIX_CC)/nix-support/libc-cflags";                       \
+	    $(CAT) "$(NIX_CC)/nix-support/libcxx-cxxflags";                   \
+	  fi;                                                                 \
+	  echo $(CXXFLAGS) $(sqlite3_CFLAGS) $(nljson_CFLAGS) $(nix_CFLAGS);  \
+	  echo $(nljson_CFLAGS);                                              \
+	}|$(TR) ' ' '\n'|$(SED) 's/-std=/%cpp -std=/' >> "$@";
 
 
 # ---------------------------------------------------------------------------- #

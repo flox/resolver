@@ -5,6 +5,7 @@
  * -------------------------------------------------------------------------- */
 
 #include <string>
+#include <nlohmann/json.hpp>
 #include "flox/types.hh"
 
 
