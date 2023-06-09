@@ -47,7 +47,11 @@ struct AttrPathGlob {
   bool isAbsolute() const;
   bool hasGlob()    const;
   /* Replace second element ( if present ) with `nullptr' glob. */
+  void coerceRelative();
+  /* Replace second element ( if present ) with `nullptr' glob. */
   void coerceGlob();
+
+  bool globEq( const AttrPathGlob & other ) const;
 
 };
 

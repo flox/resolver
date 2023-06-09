@@ -504,6 +504,18 @@ test_walk( nix::EvalState & state )
 
 /* -------------------------------------------------------------------------- */
 
+  bool
+test_coerceRelative1()
+{
+  std::vector<attr_part> p = { "packages", nullptr, "hello" };
+  AttrPathGlob path( p );
+  path.coerceRelative();
+  return path.path.size() == 1;
+}
+
+
+/* -------------------------------------------------------------------------- */
+
 #define RUN_TEST( _NAME )                                              \
   try                                                                  \
     {                                                                  \
@@ -572,6 +584,8 @@ main( int argc, char * argv[], char ** envp )
   RUN_TEST_WITH_STATE( state, packagePredicate4 );
 
   RUN_TEST_WITH_STATE( state, walk );
+
+  RUN_TEST( coerceRelative1 );
 
   return ec;
 }

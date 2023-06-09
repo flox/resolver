@@ -95,6 +95,39 @@ AttrPathGlob::coerceGlob()
 }
 
 
+/* -------------------------------------------------------------------------- */
+
+  void
+AttrPathGlob::coerceRelative()
+{
+  if ( this->isAbsolute() )
+    {
+      this->path.erase( this->path.begin(), this->path.begin() + 2 );
+    }
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+  bool
+AttrPathGlob::globEq( const AttrPathGlob & other ) const
+{
+  if ( ( * this ).path == other.path )      { return true; }
+  if ( this->hasGlob() == other.hasGlob() ) { return false; }
+  if ( this->hasGlob() )
+    {
+      AttrPathGlob o( other );
+      o.coerceGlob();
+      return ( * this ).path == other.path;
+    }
+  else
+    {
+      AttrPathGlob t( * this );
+      t.coerceGlob();
+      return t.path == other.path;
+    }
+}
+
 
 /* -------------------------------------------------------------------------- */
 
