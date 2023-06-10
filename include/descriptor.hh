@@ -77,7 +77,7 @@ class DescriptorFunctor {
 
   public:
     // TODO: make private
-    std::list<Resolved>   results;
+    std::unordered_map<AttrPathGlob, Resolved> results;
 
     DescriptorFunctor( nix::EvalState & state
                      , Preferences    & prefs

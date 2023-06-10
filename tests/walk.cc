@@ -420,7 +420,7 @@ test_walk( nix::EvalState & state )
   /* Traverse attrsets and collect satisfactory packages. */
   funk.visit( ref, root, {} );
   /* We should just get GNU `hello' as a result. */
-  for ( auto & r : funk.results )
+  for ( auto & [pg, r] : funk.results )
     {
       std::cerr << r.toJSON().dump() << std::endl;
     }

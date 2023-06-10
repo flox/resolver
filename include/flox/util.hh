@@ -12,7 +12,7 @@
 #include <nix/flake/flake.hh>
 #include <nix/shared.hh>
 #include <nix/store-api.hh>
-#include "flox/types.hh"
+#include "resolve.hh"
 #include <optional>
 #include <vector>
 
@@ -40,6 +40,16 @@ namespace flox {
 static const std::unordered_set<std::string> defaultSystems = {
  "x86_64-linux", "aarch64-linux", "x86_64-darwin", "aarch64-darwin"
 };
+
+
+/* -------------------------------------------------------------------------- */
+
+  static inline bool
+shouldSearchSystem( std::string_view system )
+{
+  std::string s( system );
+  return defaultSystems.find( s ) != defaultSystems.end();
+}
 
 
 /* -------------------------------------------------------------------------- */
