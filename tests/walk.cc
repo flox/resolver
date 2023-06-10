@@ -247,21 +247,21 @@ test_shouldRecur1( nix::EvalState & state )
   Descriptor        desc;
   DescriptorFunctor funk( state, prefs, desc );
 
-  bool rsl = funk.shouldRecur( * root, {} );
+  bool rsl = funk.shouldRecur( root, {} );
 
   nix::ref<nix::eval_cache::AttrCursor> cur = root->getAttr( "legacyPackages" );
   std::vector<nix::Symbol>              path;
   path.push_back( state.symbols.create( "legacyPackages" ) );
 
-  rsl &= funk.shouldRecur( * cur, path );
+  rsl &= funk.shouldRecur( cur, path );
 
   cur = cur->getAttr( "x86_64-linux" );
   path.push_back( state.symbols.create( "x86_64-linux" ) );
-  rsl &= funk.shouldRecur( * cur, path );
+  rsl &= funk.shouldRecur( cur, path );
 
   cur = cur->getAttr( "hello" );
   path.push_back( state.symbols.create( "hello" ) );
-  rsl &= ! funk.shouldRecur( * cur, path );
+  rsl &= ! funk.shouldRecur( cur, path );
 
   return rsl;
 }
@@ -315,7 +315,7 @@ test_packagePredicate1( nix::EvalState & state )
     "legacyPackages", "x86_64-linux", "hello"
   } );
 
-  return funk.packagePredicate( * cur, path );
+  return funk.packagePredicate( cur, path );
 }
 
 
@@ -344,7 +344,7 @@ test_packagePredicate2( nix::EvalState & state )
     "legacyPackages", "x86_64-linux", "hello"
   } );
 
-  return funk.packagePredicate( * cur, path );
+  return funk.packagePredicate( cur, path );
 }
 
 
@@ -370,7 +370,7 @@ test_packagePredicate3( nix::EvalState & state )
     "legacyPackages", "x86_64-linux", "hello"
   } );
 
-  return funk.packagePredicate( * cur, path );
+  return funk.packagePredicate( cur, path );
 }
 
 
@@ -397,7 +397,7 @@ test_packagePredicate4( nix::EvalState & state )
     "legacyPackages", "x86_64-linux", "hello"
   } );
 
-  return ! funk.packagePredicate( * cur, path );
+  return ! funk.packagePredicate( cur, path );
 }
 
 
@@ -417,50 +417,8 @@ test_walk( nix::EvalState & state )
   nix::ref<nix::eval_cache::AttrCursor> root = cache->getRoot();
   std::vector<nix::Symbol>              path;
 
-  std::function<void(
-    nix::eval_cache::AttrCursor    & cur
-  , const std::vector<nix::Symbol> & attrPath
-  )> visit;
-
-  visit = [&](
-    nix::eval_cache::AttrCursor    & cur
-  , const std::vector<nix::Symbol> & attrPath
-  ) -> void
-  {
-    std::vector<nix::SymbolStr> attrPathS = state.symbols.resolve( attrPath );
-
-    if ( funk.shouldRecur( cur, attrPath ) )
-      {
-        for ( const auto & attr : cur.getAttrs() )
-          {
-            try
-              {
-                std::vector<nix::Symbol> attrPath2( attrPath );
-                attrPath2.push_back( attr );
-                nix::ref<nix::eval_cache::AttrCursor> child =
-                  cur.getAttr( state.symbols[attr] );
-                visit( * child, attrPath2 );
-              }
-            catch ( nix::EvalError & e )
-              {
-                if ( ! ( ( attrPathS[0] == "legacyPackages" ) &&
-                         ( 0 < attrPath.size() ) )
-                   )
-                  {
-                    throw;
-                  }
-              }
-          }
-      }
-    else if ( cur.isDerivation() && funk.packagePredicate( cur, attrPath ) )
-      {
-        PkgNameVersion pnv = nameVersionAt( cur );
-        funk.addResult( ref, attrPathS, pnv.getPname(), pnv.getVersion() );
-      }
-  };  /* End `visit' */
-
   /* Traverse attrsets and collect satisfactory packages. */
-  visit( * root, {} );
+  funk.visit( ref, root, {} );
   /* We should just get GNU `hello' as a result. */
   for ( auto & r : funk.results )
     {

@@ -86,11 +86,11 @@ class DescriptorFunctor {
       : state( & state ), prefs( & prefs ), desc( & desc )
     {}
 
-    bool shouldRecur(       nix::eval_cache::AttrCursor & pos
-                    , const std::vector<nix::Symbol>    & path
+    bool shouldRecur(       nix::ref<nix::eval_cache::AttrCursor>   pos
+                    , const std::vector<nix::Symbol>              & path
                     );
-    bool packagePredicate(       nix::eval_cache::AttrCursor & pos
-                         , const std::vector<nix::Symbol>    & path
+    bool packagePredicate(       nix::ref<nix::eval_cache::AttrCursor>   pos
+                         , const std::vector<nix::Symbol>              & path
                          );
 
     void addResult( const FloxFlakeRef                & ref
@@ -98,6 +98,11 @@ class DescriptorFunctor {
                   ,       std::string_view              name
                   ,       std::string_view              version
                   );
+
+    void visit( const FloxFlakeRef                          & ref
+              ,       nix::ref<nix::eval_cache::AttrCursor>   cur
+              , const std::vector<nix::Symbol>              & attrPath
+              );
 };
 
 

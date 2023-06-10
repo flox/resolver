@@ -111,9 +111,10 @@ isMatchingAttrPath( const AttrPathGlob                & prefix
 /* -------------------------------------------------------------------------- */
 
   bool
-DescriptorFunctor::shouldRecur(       nix::eval_cache::AttrCursor & pos
-                              , const std::vector<nix::Symbol>    & path
-                              )
+DescriptorFunctor::shouldRecur(
+        nix::ref<nix::eval_cache::AttrCursor>   pos
+, const std::vector<nix::Symbol>              & path
+)
 {
   if ( path.size() < 1 ) { return true; }
 
@@ -151,11 +152,11 @@ DescriptorFunctor::shouldRecur(       nix::eval_cache::AttrCursor & pos
     }
 
   /* Do not search derivation fields. */
-  if ( pos.isDerivation() ) { return false; }
+  if ( pos->isDerivation() ) { return false; }
 
   /* Handle `recurseForDerivation' field. */
   std::shared_ptr<nix::eval_cache::AttrCursor> recurseForDrv =
-    pos.maybeGetAttr( "recurseForDerivation" );
+    pos->maybeGetAttr( "recurseForDerivation" );
   if ( ( recurseForDrv != nullptr ) )
     {
       return recurseForDrv->getBool();
@@ -232,11 +233,12 @@ PkgNameVersion::getVersion()
 /* -------------------------------------------------------------------------- */
 
   bool
-DescriptorFunctor::packagePredicate(       nix::eval_cache::AttrCursor & pos
-                                   , const std::vector<nix::Symbol>    & path
-                                   )
+DescriptorFunctor::packagePredicate(
+        nix::ref<nix::eval_cache::AttrCursor>   pos
+, const std::vector<nix::Symbol>              & path
+)
 {
-  if ( ! pos.isDerivation() )
+  if ( ! pos->isDerivation() )
     {
       throw DescriptorException(
         "`packagePredicate()' must be run on a derivation."
@@ -258,7 +260,7 @@ DescriptorFunctor::packagePredicate(       nix::eval_cache::AttrCursor & pos
       if ( ! isMatchingAttrPath( fuzz, pathS ) ) { return false; }
     }
 
-  PkgNameVersion pnv = nameVersionAt( pos );
+  PkgNameVersion pnv = nameVersionAt( * pos );
 
   /* Check name */
   if ( this->desc->name.has_value() )
@@ -340,6 +342,49 @@ DescriptorFunctor::addResult( const FloxFlakeRef                & ref
   , { "systems", { path[1] } }
   } );
   this->results.push_back( std::move( r ) );
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+  void
+DescriptorFunctor::visit(
+  const FloxFlakeRef                          & ref
+,       nix::ref<nix::eval_cache::AttrCursor>   cur
+, const std::vector<nix::Symbol>              & attrPath
+)
+{
+  std::vector<nix::SymbolStr> attrPathS =
+    this->state->symbols.resolve( attrPath );
+
+  if ( this->shouldRecur( cur, attrPath ) )
+    {
+      for ( const auto & attr : cur->getAttrs() )
+        {
+          try
+            {
+              std::vector<nix::Symbol> attrPath2( attrPath );
+              attrPath2.push_back( attr );
+              nix::ref<nix::eval_cache::AttrCursor> child =
+                cur->getAttr( this->state->symbols[attr] );
+              visit( ref, child, attrPath2 );
+            }
+          catch ( nix::EvalError & e )
+            {
+              if ( ! ( ( attrPathS[0] == "legacyPackages" ) &&
+                       ( 0 < attrPath.size() ) )
+                 )
+                {
+                  throw;
+                }
+            }
+        }
+    }
+  else if ( cur->isDerivation() && this->packagePredicate( cur, attrPath ) )
+    {
+      PkgNameVersion pnv = nameVersionAt( * cur );
+      this->addResult( ref, attrPathS, pnv.getPname(), pnv.getVersion() );
+    }
 }
 
 
