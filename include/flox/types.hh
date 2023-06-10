@@ -10,6 +10,7 @@
 #include <variant>
 #include <vector>
 #include <optional>
+#include <functional>
 #include <nlohmann/json.hpp>
 #include <nix/flake/flake.hh>
 #include <nix/fetchers.hh>
@@ -51,7 +52,8 @@ struct AttrPathGlob {
   /* Replace second element ( if present ) with `nullptr' glob. */
   void coerceGlob();
 
-  bool globEq( const AttrPathGlob & other ) const;
+  bool globEq(     const AttrPathGlob & other ) const;
+  bool operator==( const AttrPathGlob & other ) const;
 
 };
 
@@ -145,6 +147,31 @@ void to_json(         nlohmann::json & j, const Resolved & p );
 
   }  /* End Namespace `flox::resolve' */
 }  /* End Namespace `flox' */
+
+
+/* -------------------------------------------------------------------------- */
+
+template<>
+struct std::hash<flox::resolve::AttrPathGlob>
+{
+    std::size_t
+  operator()( const flox::resolve::AttrPathGlob & k ) const noexcept
+  {
+    if ( k.path.size() < 1 ) { return 0; }
+    std::size_t h1 = std::hash<std::string>{}(
+      std::get<std::string>( k.path[0] )
+    );
+    // Skip `{{system}}' element
+    for ( size_t i = 3; i < k.path.size(); ++i )
+      {
+        std::size_t h2 = std::hash<std::string>{}(
+          std::get<std::string>( k.path[i] )
+        );
+        h1 = ( h1 >> 1 ) ^ ( h2 << 1 );
+      }
+    return h1;
+  }
+};
 
 
 /* -------------------------------------------------------------------------- *

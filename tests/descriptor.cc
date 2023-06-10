@@ -146,6 +146,8 @@ test_DescriptorToJSON2()
     }
 
 
+/* -------------------------------------------------------------------------- */
+
   int
 main( int argc, char * argv[], char ** envp )
 {

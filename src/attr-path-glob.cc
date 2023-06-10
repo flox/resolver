@@ -117,20 +117,22 @@ AttrPathGlob::coerceRelative()
   bool
 AttrPathGlob::globEq( const AttrPathGlob & other ) const
 {
-  if ( ( * this ).path == other.path )      { return true; }
-  if ( this->hasGlob() == other.hasGlob() ) { return false; }
-  if ( this->hasGlob() )
+  if ( this->path.size() != other.path.size() ) { return false; }
+  // Skip `{{system}}' element
+  for ( size_t i = 3; i < this->path.size(); ++i )
     {
-      AttrPathGlob o( other );
-      o.coerceGlob();
-      return ( * this ).path == other.path;
+      if ( this->path[i] != other.path[i] ) { return false; }
     }
-  else
-    {
-      AttrPathGlob t( * this );
-      t.coerceGlob();
-      return t.path == other.path;
-    }
+  return true;
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+  bool
+AttrPathGlob::operator==( const AttrPathGlob & other ) const
+{
+  return this->path == other.path;
 }
 
 

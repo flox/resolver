@@ -111,6 +111,8 @@ test_ResolvedToString()
     }
 
 
+/* -------------------------------------------------------------------------- */
+
   int
 main( int argc, char * argv[], char ** envp )
 {
