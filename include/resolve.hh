@@ -47,6 +47,8 @@ struct PkgNameVersion {
   // TODO
   // std::optional<std::string> semver;
   // bool isSemver() const { return this->semver.has_value(); }
+  std::string getPname();
+  std::string getVersion();
 };
 
 PkgNameVersion nameVersionAt( nix::eval_cache::AttrCursor & pos );

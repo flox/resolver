@@ -454,38 +454,8 @@ test_walk( nix::EvalState & state )
       }
     else if ( cur.isDerivation() && funk.packagePredicate( cur, attrPath ) )
       {
-        PkgNameVersion   pnv = nameVersionAt( cur );
-        std::string_view n;
-        std::string_view v;
-        if ( pnv.pname.has_value() )
-          {
-            n = pnv.pname.value();
-          }
-        else if ( pnv.parsedName.has_value() )
-          {
-            n = pnv.parsedName.value();
-          }
-        else
-          {
-            throw DescriptorException(
-              "Failed to parse derivation name: " + pnv.name
-            );
-          }
-        if ( pnv.version.has_value() )
-          {
-            v = pnv.version.value();
-          }
-        else if ( pnv.parsedVersion.has_value() )
-          {
-            v = pnv.parsedVersion.value();
-          }
-        else
-          {
-            throw DescriptorException(
-              "Failed to parse derivation version: " + pnv.name
-            );
-          }
-        funk.addResult( ref, attrPathS, n, v );
+        PkgNameVersion pnv = nameVersionAt( cur );
+        funk.addResult( ref, attrPathS, pnv.getPname(), pnv.getVersion() );
       }
   };  /* End `visit' */
 

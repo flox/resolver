@@ -190,6 +190,44 @@ nameVersionAt( nix::eval_cache::AttrCursor & pos )
   return pnv;
 }
 
+  std::string
+PkgNameVersion::getPname()
+{
+ if ( this->pname.has_value() )
+   {
+     return this->pname.value();
+   }
+ else if ( this->parsedName.has_value() )
+   {
+     return this->parsedName.value();
+   }
+ else
+   {
+     throw DescriptorException(
+       "Failed to parse derivation name: " + this->name
+     );
+   }
+}
+
+  std::string
+PkgNameVersion::getVersion()
+{
+ if ( this->version.has_value() )
+   {
+     return this->version.value();
+   }
+ else if ( this->parsedVersion.has_value() )
+   {
+     return this->parsedVersion.value();
+   }
+ else
+   {
+     throw DescriptorException(
+       "Failed to parse derivation version: " + this->name
+     );
+   }
+}
+
 
 /* -------------------------------------------------------------------------- */
 
