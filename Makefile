@@ -64,13 +64,16 @@ CXXFLAGS     ?=
 CXXFLAGS     += '-I$(MAKEFILE_DIR)/include'
 lib_CXXFLAGS =  -shared -fPIC
 lib_LDFLAGS  =  -shared -fPIC -Wl,--no-undefined
+bin_CXXFLAGS =
+bin_LDFLAGS  =
 
 ifneq ($(DEBUG),)
-	CXXFLAGS += -ggdb3
+	CXXFLAGS += -ggdb3 -pg
+	LDFLAGS  += -ggdb3 -pg
 endif
 
 
-nljson_CFLAGS   = $(shell $(PKG_CONFIG) --cflags nlohmann_json)
+nljson_CFLAGS   =  $(shell $(PKG_CONFIG) --cflags nlohmann_json)
 boost_CFLAGS    ?=                                                             \
   -I$(shell $(NIX) build --no-link --print-out-paths 'nixpkgs#boost')/include
 
@@ -135,7 +138,9 @@ lib/$(LIBFLOXRESOLVE): $(addprefix src/,descriptor-functor.o)
 
 # ---------------------------------------------------------------------------- #
 
+bin/%:        CXXFLAGS += $(bin_CXXFLAGS)
 bin/resolver: CXXFLAGS += $(sqlite3_CFLAGS) $(nljson_CFLAGS) $(nix_CFLAGS)
+bin/%:        LDFLAGS  += $(bin_LDFLAGS)
 bin/resolver: LDFLAGS  += $(sqlite3_LDFLAGS) $(nix_LDFLAGS)
 bin/resolver: LDFLAGS  += $(floxresolve_LDFLAGS)
 bin/resolver: src/main.cc lib/$(LIBFLOXRESOLVE)
@@ -169,9 +174,9 @@ install-include: $(addprefix $(INCLUDEDIR)/,$(COMMON_HEADERS))
 .PHONY: tests check
 
 tests/%: CXXFLAGS += $(sqlite3_CFLAGS) $(nljson_CFLAGS)
-tests/%: CXXFLAGS += $(nix_CFLAGS) $(nljson_CFLAGS)
+tests/%: CXXFLAGS += $(nix_CFLAGS) $(nljson_CFLAGS) $(bin_CXXFLAGS)
 tests/%: LDFLAGS  += $(sqlite3_LDFLAGS) $(nix_LDFLAGS)
-tests/%: LDFLAGS  += $(floxresolve_LDFLAGS)
+tests/%: LDFLAGS  += $(floxresolve_LDFLAGS) $(bin_LDFLAGS)
 $(TESTS:.cc=): %: $(addprefix include/,$(COMMON_HEADERS)) lib/$(LIBFLOXRESOLVE)
 $(TESTS:.cc=): %: %.cc
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) "$<" -o "$@"

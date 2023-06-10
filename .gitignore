@@ -7,3 +7,4 @@ result-*
 *.o
 resolver
 *.so
+gmon.out
