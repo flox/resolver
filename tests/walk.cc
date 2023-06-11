@@ -346,9 +346,10 @@ test_walk1( nix::EvalState & state )
 
 /* -------------------------------------------------------------------------- */
 
-/* Expect 5 entries for packages such as `legacyPackages.{{system}}.bintools'
+/* Expect 1 entry for packages such as `legacyPackages.{{system}}.bintools'
  * which have different names and versions for different systems.
- * We will get one entry foreach system, and one "globbed" entry. */
+ * The difference in name/version should not effect number of results.
+ */
   bool
 test_walk2( nix::EvalState & state )
 {
@@ -366,7 +367,7 @@ test_walk2( nix::EvalState & state )
 
   /* Traverse attrsets and collect satisfactory packages. */
   funk.visit( ref, root, {} );
-  return funk.results.size() == 5;
+  return funk.results.size() == 1;
 }
 
 

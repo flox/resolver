@@ -178,53 +178,42 @@ DescriptorFunctor::addResult( const FloxFlakeRef                & ref
   if ( auto search = this->results.find( pg ); search != this->results.end() )
     {
       nlohmann::json & info = search->second.info;
-      /* If a glob entry exists but lacks name/version, we know it's already
-       * split and just append `system' and continue.
-       * If a glob entry exists but conflicts with our name/version we split it.
-       * If a glob entry exists without conflicts, append systems list. */
-      if ( ( info.find( "name" )    == info.end() ) ||
-           ( info.find( "version" ) == info.end() )
-         )
+      info.at( "systems" ).push_back( path[1] );
+      info.at( "names" ).emplace( path[1], std::string( name ) );
+      if ( ! version.empty() )
         {
-          info.at( "systems" ).push_back( path[1] );
-          pg.path[1] = path[1];  /* Ensures lower block adds unglobbed path. */
-        }
-      else if ( ( info.at( "version" ).get<std::string>() == version ) &&
-                ( info.at( "name" ).get<std::string>()    == name )
-              )
-        {
-          info.at( "systems" ).push_back( path[1] );
-          return;
-        }
-      else
-        {
-          /* Split existing results into multiple entries. */
-          std::string oname    = info.at( "name" ).get<std::string>();
-          std::string oversion = info.at( "version" ).get<std::string>();
-          for ( const std::string & s : info.at( "systems" ) )
+          if ( info.find( "versions" ) == info.end() )
             {
-              pg.path[1] = s;
-              Resolved o( ref, pg, (nlohmann::json) {
-                { "name",    oname }
-              , { "version", oversion }
-              , { "systems", s }
-              } );
-              this->results.emplace( pg, std::move( o ) );
+              info["versions"] = { { path[1], std::string( version ) } };
             }
-          info.erase( "name" );
-          info.erase( "version" );
-          info.at( "systems" ).push_back( path[1] );
-          pg.path[1] = path[1];  /* Ensures lower block adds unglobbed path. */
+          else
+            {
+              info.at( "versions" ).emplace( path[1], std::string( version ) );
+            }
         }
     }
-
-  /* Add a new entry. */
-  Resolved r( ref, std::move( pg ), (nlohmann::json) {
-    { "name",    name }
-  , { "version", version }
-  , { "systems", { path[1] } }
-  } );
-  this->results.emplace( pg, std::move( r ) );
+  else
+    {
+      /* Add a new entry. */
+      Resolved r( ref, std::move( pg ), (nlohmann::json) {
+        { "systems", { path[1] } }
+      , { "names",   { { path[1], std::string( name ) } } }
+      } );
+      if ( ! version.empty() )
+        {
+          if ( r.info.find( "versions" ) == r.info.end() )
+            {
+              r.info["versions"] = { { path[1], std::string( version ) } };
+            }
+          else
+            {
+              r.info.at( "versions" ).emplace( path[1]
+                                             , std::string( version )
+                                             );
+            }
+        }
+      this->results.emplace( pg, std::move( r ) );
+    }
 }
 
 

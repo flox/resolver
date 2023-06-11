@@ -106,13 +106,10 @@ resolve( const Inputs      & inputs
         nix::flake::lockFlake( state, ref, lockFlags )
       );
       lockedInputs.emplace( id, flake );
-
-      // TODO: write helper
-      //auto cache = nix::openEvalCache( state, flake );
-
-      // TODO
-
     }
+
+  // Past this point our inputs are guaranteed to be locked.
+  nix::evalSettings.pureEval = true;
 
   return rsl;
 }
