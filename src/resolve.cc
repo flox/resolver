@@ -39,7 +39,7 @@ Resolved::Resolved( const FloxFlakeRef   & input
                   , const AttrPathGlob   & path
                   , const nlohmann::json & info
                   )
-  : input( input ), path( AttrPathGlob::fromJSON( path ) ), info( info )
+  : input( input ), path( path ), info( info )
 {
   this->uri = this->input.to_string() + "#" + this->path.toString();
 }
