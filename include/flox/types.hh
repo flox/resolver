@@ -131,6 +131,10 @@ struct Preferences {
   nlohmann::json toJSON() const;
 
   PkgPredicate pred() const;
+  int compareInputs(
+        const std::string_view idA, const FloxFlakeRef & a
+      , const std::string_view idB, const FloxFlakeRef & b
+      ) const;
 };
 
 

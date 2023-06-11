@@ -75,6 +75,87 @@ Preferences::Preferences( const nlohmann::json & j )
 
 /* -------------------------------------------------------------------------- */
 
+  int
+Preferences::compareInputs(
+  const std::string_view idA, const FloxFlakeRef & a
+, const std::string_view idB, const FloxFlakeRef & b
+) const
+{
+  if ( ( idA == idB ) && ( a == b ) ) { return 0; }
+  int rankA = this->inputs.size();
+  int rankB = this->inputs.size();
+  for ( int i = 0; i < this->inputs.size(); ++i )
+    {
+      if ( this->inputs[i] == idA ) { rankA = i; }
+      if ( this->inputs[i] == idB ) { rankB = i; }
+    }
+
+  if ( rankA < rankB ) { return -1; }
+  if ( rankB < rankA ) { return 1; }
+  if ( a == b )        { return 0; }
+
+  /* Try to compare by input `revCount' or `lastModifiedDate'. */
+  const nix::fetchers::Input & ia = a.input;
+  const nix::fetchers::Input & ib = b.input;
+
+  /* Prefer locked inputs. */
+  // TODO: make this an option
+  if ( ia.isLocked() && ( ! ib.isLocked() ) )      { return -1; }
+  else if ( ! ia.isLocked() && ( ib.isLocked() ) ) { return 1; }
+
+  std::optional<uint64_t> lmA = ia.getLastModified();
+  std::optional<uint64_t> lmB = ib.getLastModified();
+  if ( lmA.has_value() && lmB.has_value() )
+    {
+      if ( lmA.value() < lmB.value() )
+        {
+          return -1;
+        }
+      else if ( lmB.value() < lmA.value() )
+        {
+          return 1;
+        }
+      else
+        {
+          return 0;
+        }
+    }
+  /* NOTE: It's unlikely that we'll make it past the previous block. */
+
+  std::string tA = ia.getType();
+  std::string tB = ib.getType();
+  // TODO: Try to assert that these are different revs of the same input.
+  // This naively assumes they are.
+  if ( tA == tB )
+    {
+      std::optional<uint64_t> rcA = ia.getRevCount();
+      std::optional<uint64_t> rcB = ib.getRevCount();
+      if ( rcA.has_value() && rcB.has_value() )
+        {
+          if ( rcA.value() < rcB.value() )
+            {
+              return -1;
+            }
+          else if ( rcB.value() < rcA.value() )
+            {
+              return 1;
+            }
+          else
+            {
+              return 0;
+            }
+        }
+    }
+
+  /* TODO: Rank by `type'. */
+
+  /* These refs are effectively the same. This is probably unreachable. */
+  return 0;
+}
+
+
+/* -------------------------------------------------------------------------- */
+
   nlohmann::json
 Preferences::toJSON() const
 {
