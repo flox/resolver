@@ -15,6 +15,7 @@
 #include "resolve.hh"
 #include <optional>
 #include <vector>
+#include <map>
 
 
 /* -------------------------------------------------------------------------- */
@@ -146,6 +147,20 @@ std::vector<nix::SymbolStr> coerceSymbolStrs(
 std::vector<nix::SymbolStr> coerceSymbolStrs(
   nix::EvalState              & state
 , std::vector<nix::SymbolStr> & lst
+);
+
+
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Process `Inputs' arg using `Preferences' settings to sort inputs in
+ * priority ordering.
+ * In the process fetch and lock inputs to prepare them for evaluation.
+ */
+std::map<std::string, std::shared_ptr<nix::flake::LockedFlake>> prepInputs(
+        nix::ref<nix::EvalState>   state
+, const Inputs                   & inputs
+, const Preferences              & prefs
 );
 
 

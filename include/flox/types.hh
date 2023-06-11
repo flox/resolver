@@ -27,9 +27,12 @@ namespace flox {
 
 /* -------------------------------------------------------------------------- */
 
-using FloxFlakeRef   = nix::FlakeRef;
-using attr_part      = std::variant<std::nullptr_t, std::string>;
-using attr_parts     = std::vector<attr_part>;
+using FloxFlakeRef = nix::FlakeRef;
+using input_pair   =
+  std::pair<std::string, std::shared_ptr<nix::flake::LockedFlake>>;
+
+using attr_part  = std::variant<std::nullptr_t, std::string>;
+using attr_parts = std::vector<attr_part>;
 
 
 /* -------------------------------------------------------------------------- */
@@ -131,10 +134,30 @@ struct Preferences {
   nlohmann::json toJSON() const;
 
   PkgPredicate pred() const;
+
   int compareInputs(
         const std::string_view idA, const FloxFlakeRef & a
       , const std::string_view idB, const FloxFlakeRef & b
       ) const;
+
+    inline int
+  compareInputs( const input_pair & a, const input_pair & b ) const
+  {
+    return this->compareInputs( a.first
+                              , a.second->flake.lockedRef
+                              , b.first
+                              , b.second->flake.lockedRef
+                              );
+  }
+
+    std::function<bool( const input_pair &, const input_pair & )>
+  inputLessThan() const
+  {
+    return [&]( const input_pair & a, const input_pair & b )
+    {
+      return this->compareInputs( a, b ) < 0;
+    };
+  }
 };
 
 

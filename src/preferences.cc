@@ -120,36 +120,10 @@ Preferences::compareInputs(
           return 0;
         }
     }
-  /* NOTE: It's unlikely that we'll make it past the previous block. */
 
-  std::string tA = ia.getType();
-  std::string tB = ib.getType();
-  // TODO: Try to assert that these are different revs of the same input.
-  // This naively assumes they are.
-  if ( tA == tB )
-    {
-      std::optional<uint64_t> rcA = ia.getRevCount();
-      std::optional<uint64_t> rcB = ib.getRevCount();
-      if ( rcA.has_value() && rcB.has_value() )
-        {
-          if ( rcA.value() < rcB.value() )
-            {
-              return -1;
-            }
-          else if ( rcB.value() < rcA.value() )
-            {
-              return 1;
-            }
-          else
-            {
-              return 0;
-            }
-        }
-    }
-
-  /* TODO: Rank by `type'. */
-
-  /* These refs are effectively the same. This is probably unreachable. */
+  /* Sort lexicographically by `id' to break ties. */
+  if ( idA < idB ) { return -1; }
+  if ( idB < idA ) { return 1; }
   return 0;
 }
 

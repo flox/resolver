@@ -4,6 +4,7 @@
  *
  * -------------------------------------------------------------------------- */
 
+#include <algorithm>
 #include "flox/util.hh"
 
 
@@ -142,6 +143,32 @@ std::vector<nix::SymbolStr> coerceSymbolStrs(
 )
 {
   return lst;
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+  std::map<std::string, std::shared_ptr<nix::flake::LockedFlake>>
+prepInputs(       nix::ref<nix::EvalState>   state
+          , const Inputs                   & inputs
+          , const Preferences              & prefs
+          )
+{
+  std::vector<input_pair> ins;
+  for ( auto & [id, ref] : inputs.inputs )
+    {
+      std::shared_ptr<nix::flake::LockedFlake> locked =
+        coerceLockedFlake( * state, ref );
+      ins.push_back( std::make_pair( id, locked ) );
+    }
+  std::sort( ins.begin(), ins.end(), prefs.inputLessThan() );
+
+  std::map<std::string, std::shared_ptr<nix::flake::LockedFlake>> prep;
+  for ( auto & i : ins )
+    {
+      prep.emplace( i.first, i.second );
+    }
+  return prep;
 }
 
 
