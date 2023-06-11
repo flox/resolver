@@ -323,9 +323,10 @@ test_packagePredicate4( nix::EvalState & state )
 
 /* -------------------------------------------------------------------------- */
 
-/* Assert that wrong name fails */
+/* We should just get a single GNU `hello' as a result.
+ * This package has the same name/version on all systems. */
   bool
-test_walk( nix::EvalState & state )
+test_walk1( nix::EvalState & state )
 {
   FloxFlakeRef                         ref   = coerceFlakeRef( nixpkgsRef );
   nix::ref<nix::eval_cache::EvalCache> cache = coerceEvalCache( state, ref );
@@ -339,12 +340,33 @@ test_walk( nix::EvalState & state )
 
   /* Traverse attrsets and collect satisfactory packages. */
   funk.visit( ref, root, {} );
-  /* We should just get GNU `hello' as a result. */
-  for ( auto & [pg, r] : funk.results )
-    {
-      std::cerr << r.toJSON().dump() << std::endl;
-    }
   return funk.results.size() == 1;
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+/* Expect 5 entries for packages such as `legacyPackages.{{system}}.bintools'
+ * which have different names and versions for different systems.
+ * We will get one entry foreach system, and one "globbed" entry. */
+  bool
+test_walk2( nix::EvalState & state )
+{
+  FloxFlakeRef                         ref   = coerceFlakeRef( nixpkgsRef );
+  nix::ref<nix::eval_cache::EvalCache> cache = coerceEvalCache( state, ref );
+
+  Preferences prefs;
+  Descriptor  desc( (nlohmann::json) {
+    { "path", { "legacyPackages", nullptr, "bintools" } }
+  } );
+  DescriptorFunctor funk( state, prefs, desc );
+
+  nix::ref<nix::eval_cache::AttrCursor> root = cache->getRoot();
+  std::vector<nix::Symbol>              path;
+
+  /* Traverse attrsets and collect satisfactory packages. */
+  funk.visit( ref, root, {} );
+  return funk.results.size() == 5;
 }
 
 
@@ -411,7 +433,8 @@ main( int argc, char * argv[], char ** envp )
   RUN_TEST_WITH_STATE( state, packagePredicate3 );
   RUN_TEST_WITH_STATE( state, packagePredicate4 );
 
-  RUN_TEST_WITH_STATE( state, walk );
+  RUN_TEST_WITH_STATE( state, walk1 );
+  RUN_TEST_WITH_STATE( state, walk2 );
 
   return ec;
 }

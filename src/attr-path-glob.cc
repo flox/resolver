@@ -67,6 +67,13 @@ AttrPathGlob::fromStrings( const std::vector<std::string_view> & path )
   AttrPathGlob
 AttrPathGlob::fromJSON( const nlohmann::json & path )
 {
+  if ( ! path.is_array() )
+    {
+      throw ResolverException(
+        "AttrPathGlobs must be constructed using an array, but argument "
+        "is of type '" + std::string( path.type_name() ) + "'"
+      );
+    }
   AttrPathGlob ap;
   for ( auto & p : path )
     {

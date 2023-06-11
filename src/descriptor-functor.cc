@@ -177,38 +177,54 @@ DescriptorFunctor::addResult( const FloxFlakeRef                & ref
   /* If this result already exists append `systems', otherwise add. */
   if ( auto search = this->results.find( pg ); search != this->results.end() )
     {
-      /* TODO: handle these without throwing an error. */
-      if ( version != search->second.info.at( "version" ) )
+      nlohmann::json & info = search->second.info;
+      /* If a glob entry exists but lacks name/version, we know it's already
+       * split and just append `system' and continue.
+       * If a glob entry exists but conflicts with our name/version we split it.
+       * If a glob entry exists without conflicts, append systems list. */
+      if ( ( info.find( "name" )    == info.end() ) ||
+           ( info.find( "version" ) == info.end() )
+         )
         {
-          throw ResolverException(
-            "Encountered conflicting versions at path '"
-            + pg.toString() + "' for system '" + path[1] + "' with version '"
-            + std::string( version ) + "' against version '"
-            + search->second.info.at( "version" ).get<std::string>()
-            + "' on systems: " + search->second.info.at( "systems" ).dump()
-          );
+          info.at( "systems" ).push_back( path[1] );
+          pg.path[1] = path[1];  /* Ensures lower block adds unglobbed path. */
         }
-      if ( name != search->second.info.at( "name" ) )
+      else if ( ( info.at( "version" ).get<std::string>() == version ) &&
+                ( info.at( "name" ).get<std::string>()    == name )
+              )
         {
-          throw ResolverException(
-            "Encountered conflicting names at path '"
-            + pg.toString() + "' for system '" + path[1] + "' with name '"
-            + std::string( name ) + "' against name '"
-            + search->second.info.at( "name" ).get<std::string>()
-            + "' on systems: " + search->second.info.at( "systems" ).dump()
-          );
+          info.at( "systems" ).push_back( path[1] );
+          return;
         }
-      search->second.info.at( "systems" ).push_back( path[1] );
+      else
+        {
+          /* Split existing results into multiple entries. */
+          std::string oname    = info.at( "name" ).get<std::string>();
+          std::string oversion = info.at( "version" ).get<std::string>();
+          for ( const std::string & s : info.at( "systems" ) )
+            {
+              pg.path[1] = s;
+              Resolved o( ref, pg, (nlohmann::json) {
+                { "name",    oname }
+              , { "version", oversion }
+              , { "systems", s }
+              } );
+              this->results.emplace( pg, std::move( o ) );
+            }
+          info.erase( "name" );
+          info.erase( "version" );
+          info.at( "systems" ).push_back( path[1] );
+          pg.path[1] = path[1];  /* Ensures lower block adds unglobbed path. */
+        }
     }
-  else
-    {
-      Resolved r( ref, std::move( pg ), (nlohmann::json) {
-        { "name",    name }
-      , { "version", version }
-      , { "systems", { path[1] } }
-      } );
-      this->results.emplace( pg, std::move( r ) );
-    }
+
+  /* Add a new entry. */
+  Resolved r( ref, std::move( pg ), (nlohmann::json) {
+    { "name",    name }
+  , { "version", version }
+  , { "systems", { path[1] } }
+  } );
+  this->results.emplace( pg, std::move( r ) );
 }
 
 

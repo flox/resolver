@@ -34,7 +34,7 @@ test_hash1()
 {
   AttrPathGlob p1( { "packages", nullptr, "hello" } );
   AttrPathGlob p2( { "packages", "x86_64-linux", "hello" } );
-  return std::hash<AttrPathGlob>{}( p1 ) == std::hash<AttrPathGlob>{}( p2 );
+  return std::hash<AttrPathGlob>{}( p1 ) != std::hash<AttrPathGlob>{}( p2 );
 }
 
 

@@ -182,13 +182,17 @@ struct std::hash<flox::resolve::AttrPathGlob>
     std::size_t h1 = std::hash<std::string>{}(
       std::get<std::string>( k.path[0] )
     );
-    // Skip `{{system}}' element
-    for ( size_t i = 3; i < k.path.size(); ++i )
+    for ( size_t i = 1; i < k.path.size(); ++i )
       {
-        std::size_t h2 = std::hash<std::string>{}(
-          std::get<std::string>( k.path[i] )
-        );
-        h1 = ( h1 >> 1 ) ^ ( h2 << 1 );
+        if ( std::holds_alternative<std::string>( k.path[1] ) )
+          {
+            std::string p = std::get<std::string>( k.path[i] );
+            if ( p != "{{system}}" )
+              {
+                std::size_t h2 = std::hash<std::string>{}( p );
+                h1 = ( h1 >> 1 ) ^ ( h2 << 1 );
+              }
+          }
       }
     return h1;
   }

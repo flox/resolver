@@ -28,6 +28,13 @@ Descriptor::Descriptor( std::string_view desc )
 
 Descriptor::Descriptor( const nlohmann::json & desc )
 {
+  if ( ! desc.is_object() )
+    {
+      throw DescriptorException(
+        "Descriptors must be constructed using an attribute set, but argument "
+        "is of type '" + std::string( desc.type_name() ) + "'"
+      );
+    }
   bool explicitFlake = false;
   for ( auto & [key, value] : desc.items() )
     {
