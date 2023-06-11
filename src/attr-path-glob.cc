@@ -17,12 +17,7 @@ namespace flox {
 
 /* -------------------------------------------------------------------------- */
 
-AttrPathGlob::AttrPathGlob( std::vector<std::string_view> path )
-{
-  for ( auto & p : path ) { this->path.push_back( std::string( p ) ); }
-}
-
-AttrPathGlob::AttrPathGlob( const std::vector<attr_part> & path )
+AttrPathGlob::AttrPathGlob( const attr_parts & path )
 {
   for ( size_t i = 0; i < path.size(); ++i )
     {
@@ -45,19 +40,46 @@ AttrPathGlob::AttrPathGlob( const std::vector<attr_part> & path )
     }
 }
 
-AttrPathGlob::AttrPathGlob( const nlohmann::json & path )
+  AttrPathGlob
+AttrPathGlob::fromStrings( const std::vector<std::string> & path )
 {
+  AttrPathGlob ap;
+  for ( auto & p : path )
+    {
+      if ( p == "{{system}}" ) { ap.path.push_back( nullptr ); }
+      else                     { ap.path.push_back( p ); }
+    }
+  return ap;
+}
+
+  AttrPathGlob
+AttrPathGlob::fromStrings( const std::vector<std::string_view> & path )
+{
+  AttrPathGlob ap;
+  for ( auto & p : path )
+    {
+      if ( p == "{{system}}" ) { ap.path.push_back( nullptr ); }
+      else                     { ap.path.push_back( std::string( p ) ); }
+    }
+  return ap;
+}
+
+  AttrPathGlob
+AttrPathGlob::fromJSON( const nlohmann::json & path )
+{
+  AttrPathGlob ap;
   for ( auto & p : path )
     {
       if ( p.is_null() )
         {
-          this->path.push_back( nullptr );
+          ap.path.push_back( nullptr );
         }
       else
         {
-          this->path.push_back( p );
+          ap.path.push_back( p );
         }
     }
+  return ap;
 }
 
 

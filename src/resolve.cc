@@ -29,7 +29,7 @@ Resolved::Resolved( const nlohmann::json & attrs )
              nix::fetchers::jsonToAttrs( attrs.at( "input" ) )
            ) )
   , info( attrs.at( "info" ) )
-  , path( attrs.at( "path" ) )
+  , path( AttrPathGlob::fromJSON( attrs.at( "path" ) ) )
 {}
 
 
@@ -39,7 +39,7 @@ Resolved::Resolved( const FloxFlakeRef   & input
                   , const AttrPathGlob   & path
                   , const nlohmann::json & info
                   )
-  : input( input ), path( path ), info( info )
+  : input( input ), path( AttrPathGlob::fromJSON( path ) ), info( info )
 {
   this->uri = this->input.to_string() + "#" + this->path.toString();
 }

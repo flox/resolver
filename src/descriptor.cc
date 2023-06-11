@@ -37,7 +37,7 @@ Descriptor::Descriptor( const nlohmann::json & desc )
             {
               continue;
             }
-          AttrPathGlob path( value );
+          AttrPathGlob path = AttrPathGlob::fromJSON( value );
           if ( path.isAbsolute() ) { this->absAttrPath = path; }
           else                     { this->relAttrPath = value; }
         }

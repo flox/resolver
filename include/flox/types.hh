@@ -26,21 +26,23 @@ namespace flox {
 
 /* -------------------------------------------------------------------------- */
 
-typedef nix::FlakeRef  FloxFlakeRef;
-
-typedef std::variant<std::nullptr_t, std::string>  attr_part;
+using FloxFlakeRef   = nix::FlakeRef;
+using attr_part      = std::variant<std::nullptr_t, std::string>;
+using attr_parts     = std::vector<attr_part>;
 
 
 /* -------------------------------------------------------------------------- */
 
 struct AttrPathGlob {
 
-  std::vector<attr_part> path;
+  attr_parts path;
+
+  static AttrPathGlob fromStrings( const std::vector<std::string>      & path );
+  static AttrPathGlob fromStrings( const std::vector<std::string_view> & path );
+  static AttrPathGlob fromJSON(    const nlohmann::json                & path );
 
   AttrPathGlob() = default;
-  AttrPathGlob( const std::vector<attr_part>        & path );
-  AttrPathGlob(       std::vector<std::string_view>   path );
-  AttrPathGlob( const nlohmann::json                & path );
+  AttrPathGlob( const attr_parts & path );
 
   std::string    toString() const;
   nlohmann::json toJSON()   const;

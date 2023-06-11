@@ -87,8 +87,7 @@ test_ResolvedToJSON1()
 test_ResolvedToString()
 {
   FloxFlakeRef ref = nix::parseFlakeRef( "github:NixOS/nixpkgs" );
-  std::vector<attr_part> path = { "packages", nullptr, "hello" };
-  Resolved r( ref, AttrPathGlob( path ), {} );
+  Resolved r( ref, AttrPathGlob( { "packages", nullptr, "hello" } ), {} );
   return r.toString() == "github:NixOS/nixpkgs#packages.{{system}}.hello";
 }
 

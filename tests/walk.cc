@@ -31,96 +31,16 @@ static const std::string nixpkgsRef =
 
 /* -------------------------------------------------------------------------- */
 
-/* `true' for glob path to a package. */
-  bool
-test_isAbsAttrPath1()
-{
-  std::vector<attr_part> path( { "packages", nullptr, "hello" } );
-  return AttrPathGlob( path ).isAbsolute();
-}
-
-
-/* -------------------------------------------------------------------------- */
-
-/* `true' for path starting with recognized `pkgsSubtree' prefix
- * and a glob. */
-  bool
-test_isAbsAttrPath2()
-{
-  std::vector<attr_part> path( { "packages", nullptr } );
-  return AttrPathGlob( path ).isAbsolute();
-}
-
-
-/* -------------------------------------------------------------------------- */
-
-/* `true' for path starting with recognized `pkgsSubtree' prefix. */
-  bool
-test_isAbsAttrPath3()
-{
-  std::vector<attr_part> path = { "packages" };
-  return AttrPathGlob( path ).isAbsolute();
-}
-
-
-/* -------------------------------------------------------------------------- */
-
-/* `false' for empty path. */
-  bool
-test_isAbsAttrPath4()
-{
-  std::vector<attr_part> path = {};
-  return ! AttrPathGlob( path ).isAbsolute();
-}
-
-
-/* -------------------------------------------------------------------------- */
-
-/* `false' for path missing recognized prefix. */
-  bool
-test_isAbsAttrPath5()
-{
-  std::vector<attr_part> path = { "hello" };
-  return ! AttrPathGlob( path ).isAbsolute();
-}
-
-
-/* -------------------------------------------------------------------------- */
-
-/* As above but using JSON. */
-  bool
-test_isAbsAttrPathJSON1()
-{
-  nlohmann::json path = R"(["hello"])"_json;
-  bool           rsl  = ! AttrPathGlob( path ).isAbsolute();
-
-  path =  R"(["packages",null,"hello"])"_json;
-  rsl  &= AttrPathGlob( path ).isAbsolute();
-
-  path =  R"(["packages",null])"_json;
-  rsl  &= AttrPathGlob( path ).isAbsolute();
-
-  path =  R"(["packages"])"_json;
-  rsl  &= AttrPathGlob( path ).isAbsolute();
-
-  path =  R"([])"_json;
-  rsl  &= ! AttrPathGlob( path ).isAbsolute();
-
-  return rsl;
-}
-
-
-/* -------------------------------------------------------------------------- */
-
 /* Absolute prefix with globs should work. */
   bool
 test_isMatchingAttrPathPrefix1( nix::EvalState & state )
 {
-  std::vector<attr_part>      prefix = { "packages", nullptr };
   std::vector<nix::SymbolStr> path   = coerceSymbolStrs( state, {
     "packages", "x86_64-linux", "hello"
   } );
-  return isMatchingAttrPathPrefix( AttrPathGlob( prefix ), path );
+  return isMatchingAttrPathPrefix( AttrPathGlob( { "packages", nullptr } )
+                                 , path
+                                 );
 }
 
 
@@ -130,11 +50,10 @@ test_isMatchingAttrPathPrefix1( nix::EvalState & state )
   bool
 test_isMatchingAttrPathPrefix2( nix::EvalState & state )
 {
-  std::vector<attr_part>      prefix = { "packages" };
   std::vector<nix::SymbolStr> path = coerceSymbolStrs( state, {
     "packages", "x86_64-linux", "hello"
   } );
-  return isMatchingAttrPathPrefix( AttrPathGlob( prefix ), path );
+  return isMatchingAttrPathPrefix( AttrPathGlob( { "packages" } ), path );
 }
 
 
@@ -144,11 +63,10 @@ test_isMatchingAttrPathPrefix2( nix::EvalState & state )
   bool
 test_isMatchingAttrPathPrefix3( nix::EvalState & state )
 {
-  std::vector<attr_part>      prefix;
   std::vector<nix::SymbolStr> path = coerceSymbolStrs( state, {
     "packages", "x86_64-linux", "hello"
   } );
-  return isMatchingAttrPathPrefix( AttrPathGlob( prefix ), path );
+  return isMatchingAttrPathPrefix( AttrPathGlob(), path );
 }
 
 
@@ -158,11 +76,12 @@ test_isMatchingAttrPathPrefix3( nix::EvalState & state )
   bool
 test_isMatchingAttrPathPrefix4( nix::EvalState & state )
 {
-  std::vector<attr_part>      prefix = { "python3", "pkgs" };
-  std::vector<nix::SymbolStr> path   = coerceSymbolStrs( state, {
+  std::vector<nix::SymbolStr> path = coerceSymbolStrs( state, {
     "packages", "x86_64-linux", "python3", "pkgs", "pip"
   } );
-  return isMatchingAttrPathPrefix( AttrPathGlob( prefix ), path );
+  return isMatchingAttrPathPrefix( AttrPathGlob( { "python3", "pkgs" } )
+                                 , path
+                                 );
 }
 
 
@@ -214,7 +133,7 @@ test_isMatchingAttrPath2( nix::EvalState & state )
   bool
 test_isMatchingAttrPath3( nix::EvalState & state )
 {
-  return isMatchingAttrPath( {}, {} );
+  return isMatchingAttrPath( AttrPathGlob(), {} );
 }
 
 
@@ -224,11 +143,12 @@ test_isMatchingAttrPath3( nix::EvalState & state )
   bool
 test_isMatchingAttrPath4( nix::EvalState & state )
 {
-  std::vector<attr_part>      prefix = { "python3", "pkgs", "pip" };
-  std::vector<nix::SymbolStr> path   = coerceSymbolStrs( state, {
+  std::vector<nix::SymbolStr> path = coerceSymbolStrs( state, {
     "packages", "x86_64-linux", "python3", "pkgs", "pip"
   } );
-  return isMatchingAttrPath( AttrPathGlob( prefix ), path );
+  return isMatchingAttrPath( AttrPathGlob( { "python3", "pkgs", "pip" } )
+                           , path
+                           );
 }
 
 
@@ -430,18 +350,6 @@ test_walk( nix::EvalState & state )
 
 /* -------------------------------------------------------------------------- */
 
-  bool
-test_coerceRelative1()
-{
-  std::vector<attr_part> p = { "packages", nullptr, "hello" };
-  AttrPathGlob path( p );
-  path.coerceRelative();
-  return path.path.size() == 1;
-}
-
-
-/* -------------------------------------------------------------------------- */
-
 #define RUN_TEST( _NAME )                                              \
   try                                                                  \
     {                                                                  \
@@ -480,12 +388,6 @@ test_coerceRelative1()
 main( int argc, char * argv[], char ** envp )
 {
   int ec = EXIT_SUCCESS;
-  RUN_TEST( isAbsAttrPath1 );
-  RUN_TEST( isAbsAttrPath2 );
-  RUN_TEST( isAbsAttrPath3 );
-  RUN_TEST( isAbsAttrPath4 );
-  RUN_TEST( isAbsAttrPath5 );
-  RUN_TEST( isAbsAttrPathJSON1 );
 
   nix::initNix();
   nix::initGC();
@@ -510,8 +412,6 @@ main( int argc, char * argv[], char ** envp )
   RUN_TEST_WITH_STATE( state, packagePredicate4 );
 
   RUN_TEST_WITH_STATE( state, walk );
-
-  RUN_TEST( coerceRelative1 );
 
   return ec;
 }

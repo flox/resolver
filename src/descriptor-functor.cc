@@ -101,7 +101,9 @@ DescriptorFunctor::packagePredicate(
     }
   if ( this->desc->relAttrPath.has_value() )
     {
-      AttrPathGlob fuzz( this->desc->relAttrPath.value() );
+      AttrPathGlob fuzz = AttrPathGlob::fromStrings(
+        this->desc->relAttrPath.value()
+      );
       if ( ! isMatchingAttrPath( fuzz, pathS ) ) { return false; }
     }
 
