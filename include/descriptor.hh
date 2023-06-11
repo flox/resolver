@@ -71,9 +71,10 @@ void to_json(         nlohmann::json & j, const Descriptor & p );
 
 class DescriptorFunctor {
   private:
-    nix::EvalState      * state;
-    Preferences         * prefs;
-    Descriptor          * desc;
+    nix::EvalState  * state;
+    Preferences     * prefs;
+    Descriptor      * desc;
+    PkgPredicate      prefsPredicate = defaultPkgPredicate;
 
   public:
     // TODO: make private
@@ -83,7 +84,10 @@ class DescriptorFunctor {
                      , Preferences    & prefs
                      , Descriptor     & desc
                      )
-      : state( & state ), prefs( & prefs ), desc( & desc )
+      : state( & state )
+      , prefs( & prefs )
+      , desc( & desc )
+      , prefsPredicate( prefs.pred() )
     {}
 
     bool shouldRecur(       nix::ref<nix::eval_cache::AttrCursor>   pos

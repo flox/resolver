@@ -14,6 +14,7 @@
 #include <nlohmann/json.hpp>
 #include <nix/flake/flake.hh>
 #include <nix/fetchers.hh>
+#include <nix/eval-cache.hh>
 #include <unordered_map>
 #include <unordered_set>
 #include "flox/exceptions.hh"
@@ -87,6 +88,22 @@ void to_json(         nlohmann::json & j, const Inputs & i );
 
 /* -------------------------------------------------------------------------- */
 
+using PkgPredicate = std::function<bool(
+                             nix::ref<nix::eval_cache::AttrCursor>
+                     , const std::vector<nix::Symbol>              &
+                     )>;
+
+  static bool
+defaultPkgPredicate(       nix::ref<nix::eval_cache::AttrCursor>   pos
+                   , const std::vector<nix::Symbol>              & path
+                   )
+{
+  return true;
+}
+
+
+/* -------------------------------------------------------------------------- */
+
 static const std::vector<std::string> defaultCatalogStabilities = {
   "stable", "staging", "unstable"
 };
@@ -112,6 +129,8 @@ struct Preferences {
   Preferences( const nlohmann::json & j );
 
   nlohmann::json toJSON() const;
+
+  PkgPredicate pred() const;
 };
 
 

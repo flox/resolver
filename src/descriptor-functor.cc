@@ -154,7 +154,7 @@ DescriptorFunctor::packagePredicate(
 
   // TODO: semver
 
-  return true;
+  return this->prefsPredicate( pos, path );
 }
 
 
@@ -178,7 +178,6 @@ DescriptorFunctor::addResult( const FloxFlakeRef                & ref
   if ( auto search = this->results.find( pg ); search != this->results.end() )
     {
       /* TODO: handle these without throwing an error. */
-      /* TODO: handle broken/unavailable packages. */
       if ( version != search->second.info.at( "version" ) )
         {
           throw ResolverException(

@@ -118,6 +118,67 @@ Preferences::toJSON() const
 
 /* -------------------------------------------------------------------------- */
 
+  PkgPredicate
+Preferences::pred() const
+{
+  if ( this->allowUnfree &&
+       this->allowBroken &&
+       ( ! this->allowedLicenses.has_value() )
+     )
+    {
+      return defaultPkgPredicate;
+    }
+
+  return [&](       nix::ref<nix::eval_cache::AttrCursor>   pos
+            , const std::vector<nix::Symbol>              & path
+            )
+  {
+    std::shared_ptr<nix::eval_cache::AttrCursor> mMeta =
+      pos->maybeGetAttr( "meta" );
+    if ( mMeta == nullptr ) { return true; }
+
+    if ( ! this->allowUnfree )
+      {
+        std::shared_ptr<nix::eval_cache::AttrCursor> mUnfree =
+          mMeta->maybeGetAttr( "unfree" );
+        if ( ( mUnfree != nullptr ) && ( mUnfree->getBool() ) )
+          {
+            return false;
+          }
+      }
+
+    if ( ! this->allowBroken )
+      {
+        std::shared_ptr<nix::eval_cache::AttrCursor> mBroken =
+          mMeta->maybeGetAttr( "broken" );
+        if ( ( mBroken != nullptr ) && ( mBroken->getBool() ) )
+          {
+            return false;
+          }
+      }
+
+    if ( this->allowedLicenses.has_value() )
+      {
+        std::shared_ptr<nix::eval_cache::AttrCursor> mLicense =
+          mMeta->maybeGetAttr( "license" );
+        if ( ( mLicense != nullptr ) &&
+             ( this->allowedLicenses.value().find(
+                 mLicense->getAttr( "spdxId" )->getString()
+               ) == this->allowedLicenses.value().end()
+             )
+           )
+          {
+            return false;
+          }
+      }
+
+    return true;
+  };
+}
+
+
+/* -------------------------------------------------------------------------- */
+
   void
 from_json( const nlohmann::json & j, Preferences & p )
 {
