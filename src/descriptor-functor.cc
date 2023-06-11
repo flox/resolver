@@ -177,6 +177,28 @@ DescriptorFunctor::addResult( const FloxFlakeRef                & ref
   /* If this result already exists append `systems', otherwise add. */
   if ( auto search = this->results.find( pg ); search != this->results.end() )
     {
+      /* TODO: handle these without throwing an error. */
+      /* TODO: handle broken/unavailable packages. */
+      if ( version != search->second.info.at( "version" ) )
+        {
+          throw ResolverException(
+            "Encountered conflicting versions at path '"
+            + pg.toString() + "' for system '" + path[1] + "' with version '"
+            + std::string( version ) + "' against version '"
+            + search->second.info.at( "version" ).get<std::string>()
+            + "' on systems: " + search->second.info.at( "systems" ).dump()
+          );
+        }
+      if ( name != search->second.info.at( "name" ) )
+        {
+          throw ResolverException(
+            "Encountered conflicting names at path '"
+            + pg.toString() + "' for system '" + path[1] + "' with name '"
+            + std::string( name ) + "' against name '"
+            + search->second.info.at( "name" ).get<std::string>()
+            + "' on systems: " + search->second.info.at( "systems" ).dump()
+          );
+        }
       search->second.info.at( "systems" ).push_back( path[1] );
     }
   else
