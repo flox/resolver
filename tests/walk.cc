@@ -391,7 +391,7 @@ main( int argc, char * argv[], char ** envp )
 
   nix::initNix();
   nix::initGC();
-  nix::evalSettings.pureEval = false;
+  nix::evalSettings.pureEval = true;  /* Our reference is locked so we can. */
   nix::EvalState state( {}, nix::openStore() );
 
   RUN_TEST_WITH_STATE( state, isMatchingAttrPathPrefix1 );
