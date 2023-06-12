@@ -103,3 +103,15 @@ or short-name.
   }
 }
 #+END_SRC
+
+
+** TODO
+- [ ] Semantic version filtering.
+- [ ] Read Inputs from =flake.lock= and =registry.json=.
+- [ ] Parse descriptor strings.
+- [ ] Optimize with supplemental database.
+- [ ] Stability filtering.
+- [ ] Optimize resolution by =path=.
+- [ ] More sensible =info= structure.
+- [ ] Additional tests.
+- [ ] Document descriptor fields.
