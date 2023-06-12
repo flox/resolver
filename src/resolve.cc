@@ -14,6 +14,8 @@
 #include <string>
 #include <nlohmann/json.hpp>
 #include "resolve.hh"
+#include "flox/util.hh"
+#include <functional>
 
 
 /* -------------------------------------------------------------------------- */
@@ -76,6 +78,11 @@ from_json( const nlohmann::json & j, Resolved & r )
 
 /* -------------------------------------------------------------------------- */
 
+
+
+
+/* -------------------------------------------------------------------------- */
+
   std::vector<Resolved>
 resolve( const Inputs      & inputs
        , const Preferences & preferences
@@ -86,30 +93,67 @@ resolve( const Inputs      & inputs
   nix::initNix();
   nix::initGC();
 
-  // TODO: Add a flag
-  nix::evalSettings.pureEval = false;
+  nix::ref<nix::EvalState> state( new nix::EvalState( {}, nix::openStore() ) );
+  DescriptorFunctor funk( * state, preferences, desc );
 
-  nix::EvalState state( {}, nix::openStore() );
+  std::map<std::string, std::shared_ptr<nix::flake::LockedFlake>> lockedInputs;
 
-  // TODO: Add flags
-  nix::flake::LockFlags lockFlags = {
-    .updateLockFile = false
-  , .writeLockFile  = false
-  };
-
-    std::unordered_map<std::string, std::shared_ptr<nix::flake::LockedFlake>>
-  lockedInputs;
-
-  for ( auto & [id, ref] : inputs.inputs )
+  if ( desc.inputId.has_value() )
     {
-      auto flake = std::make_shared<nix::flake::LockedFlake>(
-        nix::flake::lockFlake( state, ref, lockFlags )
-      );
-      lockedInputs.emplace( id, flake );
+      nix::evalSettings.pureEval = false;  /* We re-enable below. */
+      std::string id = desc.inputId.value();
+      // TODO assert input exists
+      std::shared_ptr<nix::flake::LockedFlake> locked =
+        coerceLockedFlake( * state, inputs.inputs.at( id ) );
+      lockedInputs.emplace( id, locked );
+    }
+  else
+    {
+      lockedInputs = prepInputs( state, inputs, preferences );
     }
 
-  // Past this point our inputs are guaranteed to be locked.
+  /* Past this point our inputs are guaranteed to be locked.
+   * We enable pure so that we can leverage the eval cache. */
   nix::evalSettings.pureEval = true;
+
+  std::vector<CursorPos> roots;
+
+  for( auto & [id, flake] : lockedInputs )
+    {
+      for ( auto & p : funk.getRoots( id, flake ) )
+        {
+          if ( desc.absAttrPath.has_value() &&
+               ( state->symbols[p.second[0]] !=
+                 std::get<std::string>( desc.absAttrPath.value().path[0] )
+               )
+             )
+            {
+              continue;
+            }
+          else
+            {
+              roots.push_back( std::move( p ) );
+            }
+        }
+    }
+
+  /* Get a cursor for every system. */
+  std::unordered_set<std::string> systems;
+  if ( desc.absAttrPath.has_value() &&
+       ( ! desc.absAttrPath.value().hasGlob() )
+     )
+    {
+      systems.emplace(
+        std::get<std::string>( desc.absAttrPath.value().path[1] )
+      );
+    }
+  else
+    {
+      systems = defaultSystems;
+    }
+  std::vector<CursorPos> sysRoots = globSystems( * state, roots, systems );
+
+  // TODO: walk
 
   return rsl;
 }

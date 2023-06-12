@@ -154,6 +154,10 @@ prepInputs(       nix::ref<nix::EvalState>   state
           , const Preferences              & prefs
           )
 {
+  /* Set impure while we lock inputs. */
+  bool oldPure = nix::evalSettings.pureEval;
+  nix::evalSettings.pureEval = false;
+
   std::vector<input_pair> ins;
   for ( auto & [id, ref] : inputs.inputs )
     {
@@ -168,6 +172,9 @@ prepInputs(       nix::ref<nix::EvalState>   state
     {
       prep.emplace( i.first, i.second );
     }
+
+  /* Restore initial `pureEval' setting. */
+  nix::evalSettings.pureEval = oldPure;
   return prep;
 }
 
