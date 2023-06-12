@@ -19,7 +19,7 @@ Optional arguments:
   -d, --descriptor DESCRIPTOR   inline JSON or path to JSON file containing a package descriptor [required]
 #+END_SRC
 
-,#+BEGIN_SRC console
+#+BEGIN_SRC shell
 $ ./bin/resolver -i '{"nixpkgs":"github:NixOS/nixpkgs"}' -d '{"name":"hello","version":"2.12.1"}'|jq;
 [
   {
