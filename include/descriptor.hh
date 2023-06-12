@@ -90,11 +90,17 @@ class DescriptorFunctor {
       , prefsPredicate( prefs.pred() )
     {}
 
-    bool shouldRecur(       nix::ref<nix::eval_cache::AttrCursor>   pos
-                    , const std::vector<nix::Symbol>              & path
+    /* std::vector<std::pair<Cursor, std::vector<nix::Symbol>>> */
+    std::vector<CursorPos> getRoots(
+      std::string_view                         inputId
+    , std::shared_ptr<nix::flake::LockedFlake> flake
+    );
+
+    bool shouldRecur(       Cursor                     pos
+                    , const std::vector<nix::Symbol> & path
                     );
-    bool packagePredicate(       nix::ref<nix::eval_cache::AttrCursor>   pos
-                         , const std::vector<nix::Symbol>              & path
+    bool packagePredicate(       Cursor                     pos
+                         , const std::vector<nix::Symbol> & path
                          );
 
     void addResult( const FloxFlakeRef                & ref
@@ -103,9 +109,9 @@ class DescriptorFunctor {
                   ,       std::string_view              version
                   );
 
-    void visit( const FloxFlakeRef                          & ref
-              ,       nix::ref<nix::eval_cache::AttrCursor>   cur
-              , const std::vector<nix::Symbol>              & attrPath
+    void visit( const FloxFlakeRef             & ref
+              ,       Cursor                     cur
+              , const std::vector<nix::Symbol> & attrPath
               );
 };
 

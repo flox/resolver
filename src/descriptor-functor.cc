@@ -64,8 +64,7 @@ DescriptorFunctor::shouldRecur(
   if ( pos->isDerivation() ) { return false; }
 
   /* Handle `recurseForDerivation' field. */
-  std::shared_ptr<nix::eval_cache::AttrCursor> recurseForDrv =
-    pos->maybeGetAttr( "recurseForDerivation" );
+  MaybeCursor recurseForDrv = pos->maybeGetAttr( "recurseForDerivation" );
   if ( ( recurseForDrv != nullptr ) )
     {
       return recurseForDrv->getBool();
@@ -257,6 +256,53 @@ DescriptorFunctor::visit(
       PkgNameVersion pnv = nameVersionAt( * cur );
       this->addResult( ref, attrPathS, pnv.getPname(), pnv.getVersion() );
     }
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+  std::vector<CursorPos>
+DescriptorFunctor::getRoots(
+  std::string_view                         inputId
+, std::shared_ptr<nix::flake::LockedFlake> flake
+)
+{
+  const std::vector<std::string> * prefixes = & defaultAttrPathPrefixes;
+  if ( auto search = this->prefs->prefixes.find( std::string( inputId ) );
+       search != this->prefs->prefixes.end()
+     )
+    {
+      prefixes = & search->second;
+    }
+
+  nix::ref<nix::eval_cache::EvalCache> cache =
+    coerceEvalCache( * this->state, flake );
+
+  Cursor                 root = cache->getRoot();
+  std::vector<CursorPos> roots;
+
+  for ( auto & p : * prefixes )
+    {
+      if ( ( ! this->desc->searchCatalogs ) && ( p == "catalog" ) )
+        {
+          continue;
+        }
+      if ( ( ! this->desc->searchFlakes ) &&
+           ( ( p == "packages" ) || ( p == "legacyPackages" ) )
+         )
+        {
+          continue;
+        }
+      nix::Symbol s = state->symbols.create( p );
+      MaybeCursor c = root->maybeGetAttr( s );
+      if ( c != nullptr )
+        {
+          std::vector<nix::Symbol> path = { s };
+          CursorPos r = std::make_pair( Cursor( c ), path );
+          roots.push_back( r );
+        }
+    }
+  return roots;
 }
 
 

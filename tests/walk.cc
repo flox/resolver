@@ -161,7 +161,7 @@ test_shouldRecur1( nix::EvalState & state )
                     "e8039594435c68eb4f780f3e9bf3972a7399c4b1";
 
   nix::ref<nix::eval_cache::EvalCache>  cache = coerceEvalCache( state, ref );
-  nix::ref<nix::eval_cache::AttrCursor> root  = cache->getRoot();
+  Cursor root  = cache->getRoot();
 
   Preferences       prefs;
   Descriptor        desc;
@@ -169,7 +169,7 @@ test_shouldRecur1( nix::EvalState & state )
 
   bool rsl = funk.shouldRecur( root, {} );
 
-  nix::ref<nix::eval_cache::AttrCursor> cur = root->getAttr( "legacyPackages" );
+  Cursor cur = root->getAttr( "legacyPackages" );
   std::vector<nix::Symbol>              path;
   path.push_back( state.symbols.create( "legacyPackages" ) );
 
@@ -194,13 +194,13 @@ test_nameVersionAt1( nix::EvalState & state )
 {
   nix::ref<nix::eval_cache::EvalCache> cache =
     coerceEvalCache( state, nixpkgsRef );
-  nix::ref<nix::eval_cache::AttrCursor> root = cache->getRoot();
+  Cursor root = cache->getRoot();
 
   Preferences       prefs;
   Descriptor        desc( (nlohmann::json) { { "name", "hello" } } );
   DescriptorFunctor funk( state, prefs, desc );
 
-  nix::ref<nix::eval_cache::AttrCursor> cur =
+  Cursor cur =
     root->getAttr( "legacyPackages" )
         ->getAttr( "x86_64-linux" )
         ->getAttr( "hello" );
@@ -220,13 +220,13 @@ test_packagePredicate1( nix::EvalState & state )
 {
   nix::ref<nix::eval_cache::EvalCache> cache =
     coerceEvalCache( state, nixpkgsRef );
-  nix::ref<nix::eval_cache::AttrCursor> root = cache->getRoot();
+  Cursor root = cache->getRoot();
 
   Preferences       prefs;
   Descriptor        desc( (nlohmann::json) { { "name", "hello" } } );
   DescriptorFunctor funk( state, prefs, desc );
 
-  nix::ref<nix::eval_cache::AttrCursor> cur =
+  Cursor cur =
     root->getAttr( "legacyPackages" )
         ->getAttr( "x86_64-linux" )
         ->getAttr( "hello" );
@@ -246,7 +246,7 @@ test_packagePredicate2( nix::EvalState & state )
 {
   nix::ref<nix::eval_cache::EvalCache> cache =
     coerceEvalCache( state, nixpkgsRef );
-  nix::ref<nix::eval_cache::AttrCursor> root = cache->getRoot();
+  Cursor root = cache->getRoot();
 
   Preferences prefs;
   Descriptor  desc( (nlohmann::json) {
@@ -255,7 +255,7 @@ test_packagePredicate2( nix::EvalState & state )
   } );
   DescriptorFunctor funk( state, prefs, desc );
 
-  nix::ref<nix::eval_cache::AttrCursor> cur =
+  Cursor cur =
     root->getAttr( "legacyPackages" )
         ->getAttr( "x86_64-linux" )
         ->getAttr( "hello" );
@@ -275,13 +275,13 @@ test_packagePredicate3( nix::EvalState & state )
 {
   nix::ref<nix::eval_cache::EvalCache> cache =
     coerceEvalCache( state, nixpkgsRef );
-  nix::ref<nix::eval_cache::AttrCursor> root = cache->getRoot();
+  Cursor root = cache->getRoot();
 
   Preferences       prefs;
   Descriptor        desc( (nlohmann::json) { { "name", "hello-2.12.1" } } );
   DescriptorFunctor funk( state, prefs, desc );
 
-  nix::ref<nix::eval_cache::AttrCursor> cur =
+  Cursor cur =
     root->getAttr( "legacyPackages" )
         ->getAttr( "x86_64-linux" )
         ->getAttr( "hello" );
@@ -302,16 +302,15 @@ test_packagePredicate4( nix::EvalState & state )
 {
   nix::ref<nix::eval_cache::EvalCache> cache =
     coerceEvalCache( state, nixpkgsRef );
-  nix::ref<nix::eval_cache::AttrCursor> root = cache->getRoot();
+  Cursor root = cache->getRoot();
 
   Preferences       prefs;
   Descriptor        desc( (nlohmann::json) { { "name", "helloooo" } } );
   DescriptorFunctor funk( state, prefs, desc );
 
-  nix::ref<nix::eval_cache::AttrCursor> cur =
-    root->getAttr( "legacyPackages" )
-        ->getAttr( "x86_64-linux" )
-        ->getAttr( "hello" );
+  Cursor cur = root->getAttr( "legacyPackages" )
+                    ->getAttr( "x86_64-linux" )
+                    ->getAttr( "hello" );
 
   std::vector<nix::Symbol> path = coerceSymbols( state, {
     "legacyPackages", "x86_64-linux", "hello"
@@ -335,8 +334,8 @@ test_walk1( nix::EvalState & state )
   Descriptor        desc( (nlohmann::json) { { "name", "hello" } } );
   DescriptorFunctor funk( state, prefs, desc );
 
-  nix::ref<nix::eval_cache::AttrCursor> root = cache->getRoot();
-  std::vector<nix::Symbol>              path;
+  Cursor                   root = cache->getRoot();
+  std::vector<nix::Symbol> path;
 
   /* Traverse attrsets and collect satisfactory packages. */
   funk.visit( ref, root, {} );
@@ -362,8 +361,8 @@ test_walk2( nix::EvalState & state )
   } );
   DescriptorFunctor funk( state, prefs, desc );
 
-  nix::ref<nix::eval_cache::AttrCursor> root = cache->getRoot();
-  std::vector<nix::Symbol>              path;
+  Cursor                   root = cache->getRoot();
+  std::vector<nix::Symbol> path;
 
   /* Traverse attrsets and collect satisfactory packages. */
   funk.visit( ref, root, {} );

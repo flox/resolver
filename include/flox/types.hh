@@ -34,6 +34,10 @@ using input_pair   =
 using attr_part  = std::variant<std::nullptr_t, std::string>;
 using attr_parts = std::vector<attr_part>;
 
+using Cursor      = nix::ref<nix::eval_cache::AttrCursor>;
+using CursorPos   = std::pair<Cursor, std::vector<nix::Symbol>>;
+using MaybeCursor = std::shared_ptr<nix::eval_cache::AttrCursor>;
+
 
 /* -------------------------------------------------------------------------- */
 
@@ -92,13 +96,13 @@ void to_json(         nlohmann::json & j, const Inputs & i );
 /* -------------------------------------------------------------------------- */
 
 using PkgPredicate = std::function<bool(
-                             nix::ref<nix::eval_cache::AttrCursor>
-                     , const std::vector<nix::Symbol>              &
+                             Cursor
+                     , const std::vector<nix::Symbol> &
                      )>;
 
   static bool
-defaultPkgPredicate(       nix::ref<nix::eval_cache::AttrCursor>   pos
-                   , const std::vector<nix::Symbol>              & path
+defaultPkgPredicate(       Cursor                     pos
+                   , const std::vector<nix::Symbol> & path
                    )
 {
   return true;
