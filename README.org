@@ -6,7 +6,7 @@ Resolve Nix packages from flakes and catalogs from a set of requirements.
 
 #+BEGIN_SRC console
 # resolver [-o|--one] [-q|--quiet] [-f|--file] INPUTS [-f|--file] PREFERENCES [-f|--file] DESCRIPTOR;
-$ ./bin/resolver '{"nixpkgs":"github:NixOS/nixpkgs"}' '{}' '{"name": "hello","version":"2.12.1"}'|jq;
+$ ./bin/resolver '{"nixpkgs":"github:NixOS/nixpkgs"}' '{}' '{"name":"hello","version":"2.12.1"}'|jq;
 [
   {
     "info": {
