@@ -166,6 +166,21 @@ std::map<std::string, std::shared_ptr<nix::flake::LockedFlake>> prepInputs(
 
 /* -------------------------------------------------------------------------- */
 
+std::vector<CursorPos> globSystems(
+        nix::EvalState                  & state
+,       CursorPos                       & c
+, const std::unordered_set<std::string> & systems = defaultSystems
+);
+
+std::vector<CursorPos> globSystems(
+        nix::EvalState                  & state
+,       std::vector<CursorPos>          & cs
+, const std::unordered_set<std::string> & systems = defaultSystems
+);
+
+
+/* -------------------------------------------------------------------------- */
+
   }  /* End namespace `flox::resolve' */
 }    /* End namespace `flox' */
 

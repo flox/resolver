@@ -174,6 +174,49 @@ prepInputs(       nix::ref<nix::EvalState>   state
 
 /* -------------------------------------------------------------------------- */
 
+  std::vector<CursorPos>
+globSystems(       nix::EvalState                  & state
+           ,       CursorPos                       & c
+           , const std::unordered_set<std::string> & systems
+           )
+{
+  std::vector<CursorPos> rsl;
+  for ( auto & s : systems )
+    {
+      nix::Symbol ss = state.symbols.create( s );
+      MaybeCursor mc = c.first->maybeGetAttr( ss );
+      if ( mc != nullptr )
+        {
+          std::vector<nix::Symbol> path( c.second );
+          path.push_back( ss );
+          CursorPos r = std::make_pair( Cursor( mc ), path );
+          rsl.push_back( r );
+        }
+    }
+  return rsl;
+}
+
+
+  std::vector<CursorPos>
+globSystems(       nix::EvalState                  & state
+           ,       std::vector<CursorPos>          & cs
+           , const std::unordered_set<std::string> & systems
+           )
+{
+  std::vector<CursorPos> rsl;
+  for ( CursorPos & c : cs )
+    {
+      for ( auto & r : globSystems( state, c, systems ) )
+        {
+          rsl.push_back( std::move( r ) );
+        }
+    }
+  return rsl;
+}
+
+
+/* -------------------------------------------------------------------------- */
+
   }  /* End namespace `flox::resolve' */
 }    /* End namespace `flox' */
 
