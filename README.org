@@ -115,3 +115,5 @@ or short-name.
 - [ ] More sensible =info= structure.
 - [ ] Additional tests.
 - [ ] Document descriptor fields.
+- [ ] Drop unused routines.
+- [ ] Multi-threading.
