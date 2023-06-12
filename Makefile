@@ -74,6 +74,7 @@ endif
 
 
 nljson_CFLAGS   =  $(shell $(PKG_CONFIG) --cflags nlohmann_json)
+argparse_CFLAGS =  $(shell $(PKG_CONFIG) --cflags argparse)
 boost_CFLAGS    ?=                                                             \
   -I$(shell $(NIX) build --no-link --print-out-paths 'nixpkgs#boost')/include
 
@@ -90,6 +91,11 @@ nix_LDFLAGS += -lnixfetchers
 
 floxresolve_LDFLAGS =  '-L$(MAKEFILE_DIR)/lib' -lflox-resolve
 floxresolve_LDFLAGS += -Wl,--enable-new-dtags '-Wl,-rpath,$$ORIGIN/../lib'
+
+
+# ---------------------------------------------------------------------------- #
+
+bin_CXXFLAGS += $(argparse_CFLAGS)
 
 
 # ---------------------------------------------------------------------------- #

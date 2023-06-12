@@ -13,8 +13,9 @@
 , nlohmann_json ? pkgsFor.nlohmann_json
 , nix           ? pkgsFor.nix
 , boost         ? pkgsFor.boost
+, argparse      ? pkgsFor.argparse
 }: import ./pkg-fun.nix {
-  inherit stdenv sqlite pkg-config nlohmann_json nix boost;
+  inherit stdenv sqlite pkg-config nlohmann_json nix boost argparse;
 }
 
 

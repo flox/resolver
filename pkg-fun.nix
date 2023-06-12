@@ -10,6 +10,7 @@
 , nlohmann_json
 , nix
 , boost
+, argparse
 }: stdenv.mkDerivation {
   pname   = "flox-resolver";
   version = "0.1.0";
@@ -39,7 +40,7 @@
   libExt            = stdenv.hostPlatform.extensions.sharedLibrary;
   nativeBuildInputs = [pkg-config];
   buildInputs       = [
-    sqlite.dev nlohmann_json nix.dev boost
+    sqlite.dev nlohmann_json nix.dev boost argparse
   ];
   makeFlags = [
     "boost_CFLAGS=-I${boost}/include"

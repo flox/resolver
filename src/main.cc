@@ -4,6 +4,7 @@
  *
  * -------------------------------------------------------------------------- */
 
+#include <filesystem>
 #include <stddef.h>
 #include <fstream>
 #include <iostream>
@@ -15,6 +16,7 @@
 #include <nix/flake/flake.hh>
 #include <nix/store-api.hh>
 #include "resolve.hh"
+#include <argparse/argparse.hpp>
 
 
 /* -------------------------------------------------------------------------- */
@@ -24,69 +26,88 @@ using namespace flox::resolve;
 
 /* -------------------------------------------------------------------------- */
 
+const std::string defaultInputs = "{"
+  "\"nixpkgs\":"      "\"github:NixOS/nixpkgs\","
+  "\"nixpkgs-flox\":" "\"github:flox/nixpkgs-flox\","
+  "\"floxpkgs\":"     "\"github:flox/floxpkgs\""
+"}";
+
+
+/* -------------------------------------------------------------------------- */
+
+  static nlohmann::json
+readOrParseJSON( const std::string & i )
+{
+  nlohmann::json j;
+  if ( std::filesystem::exists( i ) )
+    {
+      j = nlohmann::json::parse( std::ifstream( i ) );
+    }
+  else
+    {
+      j = nlohmann::json::parse( i );
+    }
+  return j;
+}
+
+
+/* -------------------------------------------------------------------------- */
+
   int
 main( int argc, char * argv[], char ** envp )
 {
-  bool           quiet = false;
-  bool           one   = false;
-  nlohmann::json ij;
-  nlohmann::json pj;
-  nlohmann::json dj;
-  for ( int i = 1, field = 0; ( i < argc ) && ( field < 3 ); ++i )
+  argparse::ArgumentParser prog( "resolver", "0.1.0" );
+  prog.add_description( "Resolve nix package descriptors in flakes" );
+
+  prog.add_argument( "-o", "--one" )
+    .default_value( false )
+    .implicit_value( true )
+    .help( "return single resolved entry or `null'" );
+
+  prog.add_argument( "-q", "--quiet" )
+    .default_value( false )
+    .implicit_value( true )
+    .help( "exit 0 even if no resolutions are found" );
+
+  prog.add_argument( "-i", "--inputs" )
+    .default_value( defaultInputs )
+    .help( "inline JSON or path to JSON file containing flake references" )
+    .metavar( "INPUTS" );
+
+  prog.add_argument( "-p", "--preferences" )
+    .default_value( std::string( "{}" ) )
+    .help( "inline JSON or path to JSON file containing resolver preferences" )
+    .metavar( "PREFERENCES" );
+
+  prog.add_argument( "-d", "--descriptor" )
+    .required()
+    .help( "inline JSON or path to JSON file containing a package descriptor" )
+    .metavar( "DESCRIPTOR" );
+
+  try
     {
-      std::string_view arg( argv[i] );
-      if ( ( arg == "--quiet" ) || ( arg == "-q" ) )
-        {
-          quiet = true;
-        }
-      if ( ( arg == "--one" ) || ( arg == "-o" ) )
-        {
-          one = true;
-        }
-      else if ( ( arg == "--file" ) || ( arg == "-f" ) )
-        {
-          ++i;
-          if ( argc <= i )
-            {
-              throw ResolverException(
-                "The flag '--file' requires an argument."
-              );
-            }
-          switch ( field )
-            {
-              case 0:
-                ij = nlohmann::json::parse( std::ifstream( argv[i] ) );
-                break;
-              case 1:
-                pj = nlohmann::json::parse( std::ifstream( argv[i] ) );
-                break;
-              case 2:
-                dj = nlohmann::json::parse( std::ifstream( argv[i] ) );
-                break;
-            }
-          ++field;
-        }
-      else
-        {
-          switch ( field )
-            {
-              case 0:
-                ij = nlohmann::json::parse( argv[i] );
-                break;
-              case 1:
-                pj = nlohmann::json::parse( argv[i] );
-                break;
-              case 2:
-                dj = nlohmann::json::parse( argv[i] );
-                break;
-            }
-          ++field;
-        }
+      prog.parse_args( argc, argv );
+    }
+  catch( const std::runtime_error & err )
+    {
+      std::cerr << err.what() << std::endl << prog;
+      return EXIT_FAILURE;
     }
 
-  Inputs      inputs( ij );
-  Preferences prefs( pj );
-  Descriptor  desc( dj );
+  bool one   = prog.get<bool>( "-o" );
+  bool quiet = prog.get<bool>( "-q" );
+
+  std::string    s = prog.get<std::string>( "-i" );
+  nlohmann::json j = readOrParseJSON( s );
+  Inputs         inputs( j );
+
+  s = prog.get<std::string>( "-p" );
+  j = readOrParseJSON( s );
+  Preferences prefs( j );
+
+  s = prog.get<std::string>( "-d" );
+  j = readOrParseJSON( s );
+  Descriptor  desc( j );
 
   if ( one )
     {
