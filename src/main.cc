@@ -97,17 +97,9 @@ main( int argc, char * argv[], char ** envp )
   bool one   = prog.get<bool>( "-o" );
   bool quiet = prog.get<bool>( "-q" );
 
-  std::string    s = prog.get<std::string>( "-i" );
-  nlohmann::json j = readOrParseJSON( s );
-  Inputs         inputs( j );
-
-  s = prog.get<std::string>( "-p" );
-  j = readOrParseJSON( s );
-  Preferences prefs( j );
-
-  s = prog.get<std::string>( "-d" );
-  j = readOrParseJSON( s );
-  Descriptor  desc( j );
+  Inputs      inputs( readOrParseJSON( prog.get<std::string>( "-i" ) );
+  Preferences prefs(  readOrParseJSON( prog.get<std::string>( "-p" ) );
+  Descriptor  desc(   readOrParseJSON( prog.get<std::string>( "-d" ) );
 
   if ( one )
     {

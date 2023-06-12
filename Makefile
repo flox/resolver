@@ -219,7 +219,7 @@ all: bin lib tests
 	    $(CAT) "$(NIX_CC)/nix-support/libcxx-cxxflags";                   \
 	  fi;                                                                 \
 	  echo $(CXXFLAGS) $(sqlite3_CFLAGS) $(nljson_CFLAGS) $(nix_CFLAGS);  \
-	  echo $(nljson_CFLAGS);                                              \
+	  echo $(nljson_CFLAGS) $(argparse_CFLAGS);                           \
 	}|$(TR) ' ' '\n'|$(SED) 's/-std=/%cpp -std=/' >> "$@";
 
 
