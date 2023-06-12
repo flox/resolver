@@ -54,7 +54,7 @@ LIBFLOXRESOLVE = libflox-resolve$(libExt)
 BINS           =  resolver
 LIBS           =  $(LIBFLOXRESOLVE)
 COMMON_HEADERS =  resolve.hh descriptor.hh flox/exceptions.hh flox/types.hh
-COMMON_HEADERS += flox/util.hh
+COMMON_HEADERS += flox/util.hh semver.hh
 TESTS          =  $(wildcard tests/*.cc)
 
 
@@ -72,7 +72,6 @@ ifneq ($(DEBUG),)
 	LDFLAGS  += -ggdb3 -pg
 endif
 
-
 nljson_CFLAGS   =  $(shell $(PKG_CONFIG) --cflags nlohmann_json)
 argparse_CFLAGS =  $(shell $(PKG_CONFIG) --cflags argparse)
 boost_CFLAGS    ?=                                                             \
@@ -88,6 +87,7 @@ nix_CFLAGS +=                                                                 \
   -include $(shell $(PKG_CONFIG) --variable=includedir nix-cmd)/nix/config.h
 nix_LDFLAGS =  $(shell $(PKG_CONFIG) --libs nix-main nix-cmd nix-expr nix-store)
 nix_LDFLAGS += -lnixfetchers
+
 
 floxresolve_LDFLAGS =  '-L$(MAKEFILE_DIR)/lib' -lflox-resolve
 floxresolve_LDFLAGS += -Wl,--enable-new-dtags '-Wl,-rpath,$$ORIGIN/../lib'
@@ -137,7 +137,7 @@ lib/$(LIBFLOXRESOLVE): LDFLAGS  += $(nix_LDFLAGS) $(sqlite3_LDFLAGS)
 lib/$(LIBFLOXRESOLVE): LDFLAGS  += -Wl,--no-as-needed
 lib/$(LIBFLOXRESOLVE): $(addprefix src/,resolve.o descriptor.o preferences.o)
 lib/$(LIBFLOXRESOLVE): $(addprefix src/,inputs.o walk.o util.o attr-path-glob.o)
-lib/$(LIBFLOXRESOLVE): $(addprefix src/,descriptor-functor.o)
+lib/$(LIBFLOXRESOLVE): $(addprefix src/,descriptor-functor.o semver.o)
 	$(CXX) $^ $(LDFLAGS) -o "$@"
 
 

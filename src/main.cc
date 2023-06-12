@@ -26,6 +26,7 @@ using namespace flox::resolve;
 
 /* -------------------------------------------------------------------------- */
 
+/* We don't use a raw string here because it is used in the `--help' message. */
 const std::string defaultInputs = "{"
   "\"nixpkgs\":"      "\"github:NixOS/nixpkgs\","
   "\"nixpkgs-flox\":" "\"github:flox/nixpkgs-flox\","
@@ -35,7 +36,7 @@ const std::string defaultInputs = "{"
 
 /* -------------------------------------------------------------------------- */
 
-  static nlohmann::json
+  static inline nlohmann::json
 readOrParseJSON( const std::string & i )
 {
   nlohmann::json j;
@@ -97,9 +98,9 @@ main( int argc, char * argv[], char ** envp )
   bool one   = prog.get<bool>( "-o" );
   bool quiet = prog.get<bool>( "-q" );
 
-  Inputs      inputs( readOrParseJSON( prog.get<std::string>( "-i" ) );
-  Preferences prefs(  readOrParseJSON( prog.get<std::string>( "-p" ) );
-  Descriptor  desc(   readOrParseJSON( prog.get<std::string>( "-d" ) );
+  Inputs      inputs( readOrParseJSON( prog.get<std::string>( "-i" ) ) );
+  Preferences prefs(  readOrParseJSON( prog.get<std::string>( "-p" ) ) );
+  Descriptor  desc(   readOrParseJSON( prog.get<std::string>( "-d" ) ) );
 
   if ( one )
     {

@@ -10,6 +10,7 @@
 #include <nlohmann/json.hpp>
 #include "descriptor.hh"
 #include "flox/util.hh"
+#include "semver.hh"
 
 
 /* -------------------------------------------------------------------------- */
@@ -173,29 +174,19 @@ DescriptorFunctor::addResult( const FloxFlakeRef                & ref
     {
       pg.path.push_back( path[i] );
     }
+
+  std::optional<std::string> semver;
+  if ( ! version.empty() )
+    {
+       semver = coerceSemver( version );
+    }
+
   /* If this result already exists append `systems', otherwise add. */
   if ( auto search = this->results.find( pg ); search != this->results.end() )
     {
       nlohmann::json & info = search->second.info;
-
-      if ( info.find( "systems" ) == info.end() )
-        {
-          info["systems"] = { path[1] };
-        }
-      else
-        {
-          info.at( "systems" ).push_back( path[1] );
-        }
-
-      if ( info.find( "names" ) == info.end() )
-        {
-          info["names"] = { { path[1], std::string( name ) } };
-        }
-      else
-        {
-          info.at( "names" ).emplace( path[1], std::string( name ) );
-        }
-
+      info.at( "systems" ).push_back( path[1] );
+      info.at( "names" ).emplace( path[1], std::string( name ) );
       if ( ! version.empty() )
         {
           if ( info.find( "versions" ) == info.end() )
@@ -205,6 +196,18 @@ DescriptorFunctor::addResult( const FloxFlakeRef                & ref
           else
             {
               info.at( "versions" ).emplace( path[1], std::string( version ) );
+            }
+
+          if ( semver.has_value() )
+            {
+              if ( info.find( "semvers" ) == info.end() )
+                {
+                  info["semvers"] = { { path[1], semver.value() } };
+                }
+              else
+                {
+                  info.at( "semvers" ).emplace( path[1], semver.value() );
+                }
             }
         }
     }
@@ -226,6 +229,17 @@ DescriptorFunctor::addResult( const FloxFlakeRef                & ref
               r.info.at( "versions" ).emplace( path[1]
                                              , std::string( version )
                                              );
+            }
+          if ( semver.has_value() )
+            {
+              if ( r.info.find( "semvers" ) == r.info.end() )
+                {
+                  r.info["semvers"] = { { path[1], semver.value() } };
+                }
+              else
+                {
+                  r.info.at( "semvers" ).emplace( path[1] , semver.value() );
+                }
             }
         }
       this->results.emplace( std::move( pg ), std::move( r ) );

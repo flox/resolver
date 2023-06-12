@@ -30,6 +30,12 @@ $ ./bin/resolver -i '{"nixpkgs":"github:NixOS/nixpkgs"}' -d '{"name":"hello","ve
         "x86_64-darwin": "hello",
         "x86_64-linux": "hello"
       },
+      "semvers": {
+        "aarch64-darwin": "2.12.1",
+        "aarch64-linux": "2.12.1",
+        "x86_64-darwin": "2.12.1",
+        "x86_64-linux": "2.12.1"
+      },
       "systems": [
         "aarch64-darwin",
         "x86_64-darwin",
@@ -44,11 +50,11 @@ $ ./bin/resolver -i '{"nixpkgs":"github:NixOS/nixpkgs"}' -d '{"name":"hello","ve
       }
     },
     "input": {
-      "lastModified": 1686592866,
-      "narHash": "sha256-riGg89eWhXJcPNrQGcSwTEEm7CGxWC06oSX44hajeMw=",
+      "lastModified": 1686600087,
+      "narHash": "sha256-vvKp4tIiKxm9fXh+Ndi6o1KzSuVhscy48/w93YHVL2M=",
       "owner": "NixOS",
       "repo": "nixpkgs",
-      "rev": "0eeebd64de89e4163f4d3cf34ffe925a5cf67a05",
+      "rev": "80a3b4b7de2fa0570904c1e4bea7fda58be60c5d",
       "type": "github"
     },
     "path": [
@@ -56,7 +62,7 @@ $ ./bin/resolver -i '{"nixpkgs":"github:NixOS/nixpkgs"}' -d '{"name":"hello","ve
       null,
       "hello"
     ],
-    "uri": "github:NixOS/nixpkgs/0eeebd64de89e4163f4d3cf34ffe925a5cf67a05#legacyPackages.{{system}}.hello"
+    "uri": "github:NixOS/nixpkgs/80a3b4b7de2fa0570904c1e4bea7fda58be60c5d#legacyPackages.{{system}}.hello"
   }
 ]
 #+END_SRC
