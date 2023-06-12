@@ -28,6 +28,9 @@ using namespace nlohmann::literals;
 static const std::string nixpkgsRef =
   "github:NixOS/nixpkgs/e8039594435c68eb4f780f3e9bf3972a7399c4b1";
 
+static const std::string nixpkgsFloxRef =
+  "github:flox/nixpkgs-flox/b106c2d78d4258d781488743178a6ec63dc555ba";
+
 
 /* -------------------------------------------------------------------------- */
 
@@ -157,11 +160,9 @@ test_isMatchingAttrPath4( nix::EvalState & state )
   bool
 test_shouldRecur1( nix::EvalState & state )
 {
-  std::string ref = "github:NixOS/nixpkgs/"
-                    "e8039594435c68eb4f780f3e9bf3972a7399c4b1";
-
-  nix::ref<nix::eval_cache::EvalCache>  cache = coerceEvalCache( state, ref );
-  Cursor root  = cache->getRoot();
+  nix::ref<nix::eval_cache::EvalCache> cache =
+    coerceEvalCache( state, nixpkgsRef );
+  Cursor root = cache->getRoot();
 
   Preferences       prefs;
   Descriptor        desc;
@@ -181,6 +182,54 @@ test_shouldRecur1( nix::EvalState & state )
 
   cur = cur->getAttr( "hello" );
   path.push_back( state.symbols.create( "hello" ) );
+  rsl &= ! funk.shouldRecur( cur, path );
+
+  return rsl;
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+  bool
+test_shouldRecur2( nix::EvalState & state )
+{
+  /* Push current verbosity */
+  nix::Verbosity oldV = nix::verbosity;
+  nix::verbosity      = nix::lvlError;
+
+  nix::ref<nix::eval_cache::EvalCache> cache =
+    coerceEvalCache( state, nixpkgsFloxRef );
+  /* Pop verbosity */
+  nix::verbosity = oldV;
+
+  Cursor root = cache->getRoot();
+
+  Preferences       prefs;
+  Descriptor        desc;
+  DescriptorFunctor funk( state, prefs, desc );
+
+  bool rsl = funk.shouldRecur( root, {} );
+
+  Cursor cur = root->getAttr( "catalog" );
+  std::vector<nix::Symbol> path;
+  path.push_back( state.symbols.create( "catalog" ) );
+
+  rsl &= funk.shouldRecur( cur, path );
+
+  cur = cur->getAttr( "x86_64-linux" );
+  path.push_back( state.symbols.create( "x86_64-linux" ) );
+  rsl &= funk.shouldRecur( cur, path );
+
+  cur = cur->getAttr( "stable" );
+  path.push_back( state.symbols.create( "stable" ) );
+  rsl &= funk.shouldRecur( cur, path );
+
+  cur = cur->getAttr( "hello" );
+  path.push_back( state.symbols.create( "hello" ) );
+  rsl &= funk.shouldRecur( cur, path );
+
+  cur = cur->getAttr( "latest" );
+  path.push_back( state.symbols.create( "latest" ) );
   rsl &= ! funk.shouldRecur( cur, path );
 
   return rsl;
@@ -322,6 +371,41 @@ test_packagePredicate4( nix::EvalState & state )
 
 /* -------------------------------------------------------------------------- */
 
+/* Ensure predicates work on catalog packages. */
+  bool
+test_packagePredicate5( nix::EvalState & state )
+{
+  /* Push current verbosity */
+  nix::Verbosity oldV = nix::verbosity;
+  nix::verbosity      = nix::lvlError;
+
+  nix::ref<nix::eval_cache::EvalCache> cache =
+    coerceEvalCache( state, nixpkgsFloxRef );
+  /* Pop verbosity */
+  nix::verbosity = oldV;
+
+  Cursor root = cache->getRoot();
+
+  Preferences       prefs;
+  Descriptor        desc( (nlohmann::json) { { "name", "hello" } } );
+  DescriptorFunctor funk( state, prefs, desc );
+
+  Cursor cur = root->getAttr( "catalog" )
+                    ->getAttr( "x86_64-linux" )
+                    ->getAttr( "stable" )
+                    ->getAttr( "hello" )
+                    ->getAttr( "latest" );
+
+  std::vector<nix::Symbol> path = coerceSymbols( state, {
+    "catalog", "x86_64-linux", "stable", "hello", "latest"
+  } );
+
+  return funk.packagePredicate( cur, path );
+}
+
+
+/* -------------------------------------------------------------------------- */
+
 /* We should just get a single GNU `hello' as a result.
  * This package has the same name/version on all systems. */
   bool
@@ -427,11 +511,13 @@ main( int argc, char * argv[], char ** envp )
   RUN_TEST_WITH_STATE( state, isMatchingAttrPath4 );
 
   RUN_TEST_WITH_STATE( state, shouldRecur1 );
+  RUN_TEST_WITH_STATE( state, shouldRecur2 );
   RUN_TEST_WITH_STATE( state, nameVersionAt1 );
   RUN_TEST_WITH_STATE( state, packagePredicate1 );
   RUN_TEST_WITH_STATE( state, packagePredicate2 );
   RUN_TEST_WITH_STATE( state, packagePredicate3 );
   RUN_TEST_WITH_STATE( state, packagePredicate4 );
+  RUN_TEST_WITH_STATE( state, packagePredicate5 );
 
   RUN_TEST_WITH_STATE( state, walk1 );
   RUN_TEST_WITH_STATE( state, walk2 );

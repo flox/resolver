@@ -102,6 +102,10 @@ main( int argc, char * argv[], char ** envp )
   Preferences prefs(  readOrParseJSON( prog.get<std::string>( "-p" ) ) );
   Descriptor  desc(   readOrParseJSON( prog.get<std::string>( "-d" ) ) );
 
+
+  /* TODO: make an option */
+  nix::verbosity = nix::lvlError;
+
   if ( one )
     {
       std::optional<Resolved> rsl = resolveOne( inputs, prefs, desc );

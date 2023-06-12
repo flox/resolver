@@ -61,14 +61,24 @@ DescriptorFunctor::shouldRecur(
       return false;
     }
 
-  /* Do not search derivation fields. */
-  if ( pos->isDerivation() ) { return false; }
+  /* Push/pop current verbosity to suppress eval traces. */
+  nix::Verbosity oldV = nix::verbosity;
+  nix::verbosity = nix::lvlError;
 
-  /* Handle `recurseForDerivation' field. */
-  MaybeCursor recurseForDrv = pos->maybeGetAttr( "recurseForDerivation" );
-  if ( ( recurseForDrv != nullptr ) )
+  /* Do not search derivation fields. */
+  bool isDrv = pos->isDerivation();
+  if ( isDrv )
     {
-      return recurseForDrv->getBool();
+      nix::verbosity = oldV;
+      return false;
+    }
+
+  /* Handle `recurseForDerivations' field. */
+  MaybeCursor recurseForDrvs = pos->maybeGetAttr( "recurseForDerivations" );
+  nix::verbosity = oldV;
+  if ( recurseForDrvs != nullptr )
+    {
+      return recurseForDrvs->getBool();
     }
 
   return path.size() <= 2;
@@ -83,7 +93,12 @@ DescriptorFunctor::packagePredicate(
 , const std::vector<nix::Symbol>              & path
 )
 {
-  if ( ! pos->isDerivation() )
+  /* Push/pop current verbosity to suppress eval traces. */
+  nix::Verbosity oldV  = nix::verbosity;
+  nix::verbosity = nix::lvlError;
+  bool isDrv = pos->isDerivation();
+  nix::verbosity = oldV;
+  if ( ! isDrv )
     {
       throw DescriptorException(
         "`packagePredicate()' must be run on a derivation."
@@ -282,10 +297,18 @@ DescriptorFunctor::visit(
             }
         }
     }
-  else if ( cur->isDerivation() && this->packagePredicate( cur, attrPath ) )
+  else
     {
-      PkgNameVersion pnv = nameVersionAt( * cur );
-      this->addResult( ref, attrPathS, pnv.getPname(), pnv.getVersion() );
+      /* Push/pop current verbosity to suppress eval traces. */
+      nix::Verbosity oldV  = nix::verbosity;
+      nix::verbosity = nix::lvlError;
+      bool isDrv = cur->isDerivation();
+      nix::verbosity = oldV;
+      if ( isDrv && this->packagePredicate( cur, attrPath ) )
+        {
+          PkgNameVersion pnv = nameVersionAt( * cur );
+          this->addResult( ref, attrPathS, pnv.getPname(), pnv.getVersion() );
+        }
     }
 }
 

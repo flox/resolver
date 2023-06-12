@@ -60,8 +60,6 @@ test_resolveOne1()
   std::vector<Resolved>   rsl = resolve( inputs, prefs, desc );
   std::optional<Resolved> one = resolveOne( inputs, prefs, desc );
 
-  std::cout << one.value().toJSON().dump() << std::endl;
-
   return ( rsl.size() == 1 ) &&
          one.has_value() &&
          ( one.value().toJSON() == rsl[0].toJSON() );

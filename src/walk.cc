@@ -7,7 +7,7 @@
  *
  *
  * ! :: Attribute set also contains extra fields:
- *   - `recurseForDerivation'  ( bool )
+ *   - `recurseForDerivations'  ( bool )
  *   - `latest' ( alias of latest version under catalog `<pname>' attrs )
  *
  *
@@ -108,10 +108,16 @@ nameVersionAt( nix::eval_cache::AttrCursor & pos )
 
   std::shared_ptr<nix::eval_cache::AttrCursor> attr =
     pos.maybeGetAttr( "pname" );
-  if ( attr != nullptr ) { pnv.pname = attr->getString(); }
+  if ( attr != nullptr )
+    {
+      try { pnv.pname = attr->getString(); } catch ( ... ) {}
+    }
 
   attr = pos.maybeGetAttr( "version" );
-  if ( attr != nullptr ) { pnv.version = attr->getString(); }
+  if ( attr != nullptr )
+    {
+      try { pnv.version = attr->getString(); } catch ( ... ) {}
+    }
 
   if ( ! ( pnv.pname.has_value() && pnv.version.has_value() ) )
     {
