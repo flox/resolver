@@ -1,0 +1,48 @@
+#+TITLE: Flox Resolver
+
+Resolve Nix packages from flakes and catalogs from a set of requirements.
+
+** Quick Start
+
+#+BEGIN_SRC console
+# resolver [-o|--one] [-q|--quiet] [-f|--file] INPUTS [-f|--file] PREFERENCES [-f|--file] DESCRIPTOR;
+$ ./bin/resolver '{"nixpkgs":"github:NixOS/nixpkgs"}' '{}' '{"name": "hello","version":"2.12.1"}'|jq;
+[
+  {
+    "info": {
+      "names": {
+        "aarch64-darwin": "hello",
+        "aarch64-linux": "hello",
+        "x86_64-darwin": "hello",
+        "x86_64-linux": "hello"
+      },
+      "systems": [
+        "aarch64-darwin",
+        "x86_64-darwin",
+        "aarch64-linux",
+        "x86_64-linux"
+      ],
+      "versions": {
+        "aarch64-darwin": "2.12.1",
+        "aarch64-linux": "2.12.1",
+        "x86_64-darwin": "2.12.1",
+        "x86_64-linux": "2.12.1"
+      }
+    },
+    "input": {
+      "lastModified": 1686592866,
+      "narHash": "sha256-riGg89eWhXJcPNrQGcSwTEEm7CGxWC06oSX44hajeMw=",
+      "owner": "NixOS",
+      "repo": "nixpkgs",
+      "rev": "0eeebd64de89e4163f4d3cf34ffe925a5cf67a05",
+      "type": "github"
+    },
+    "path": [
+      "legacyPackages",
+      null,
+      "hello"
+    ],
+    "uri": "github:NixOS/nixpkgs/0eeebd64de89e4163f4d3cf34ffe925a5cf67a05#legacyPackages.{{system}}.hello"
+  }
+]
+#+END_SRC
