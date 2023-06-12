@@ -55,7 +55,5 @@ jobs:
         run: nix develop --no-update-lock-file --command make check
 
       - name: Run Resolver
-        run:|
-          ./bin/resolver -d '{"name":"hello"}' -p '{
-              "prefixes": { "nixpkgs-flox": ["catalog", "legacyPackages"] }
-            }'|jq;
+        run: |
+          ./bin/resolver -d '{"name":"hello"}'|jq
