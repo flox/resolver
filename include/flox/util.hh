@@ -181,6 +181,11 @@ std::vector<CursorPos> globSystems(
 
 /* -------------------------------------------------------------------------- */
 
+bool sortByDepth( const AttrPathGlob & a, const AttrPathGlob & b ) noexcept;
+
+
+/* -------------------------------------------------------------------------- */
+
   }  /* End namespace `flox::resolve' */
 }    /* End namespace `flox' */
 

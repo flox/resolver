@@ -157,28 +157,32 @@ resolve( const Inputs      & inputs
 
   // TODO: handle `(abs|rel)AttrPath'
 
+  auto collect = [&]()
+  {
+    std::vector<AttrPathGlob> keys;
+    for ( auto & [path, r] : funk.results ) { keys.push_back( path ); }
+    std::sort( keys.begin(), keys.end(), sortByDepth );
+    for ( auto & path : keys )
+      {
+        rsl.push_back( std::move( funk.results.at( path ) ) );
+      }
+    funk.results.clear();
+  };
+
   std::string  prevId;
   for ( auto s : sysRoots )
     {
-      if ( prevId.empty() )
+      if ( prevId != s.first )
         {
+          if ( ! prevId.empty() ) { collect(); }
           prevId = s.first;
         }
-      else if ( prevId != s.first )
-        {
-          // TODO: sort
-          for ( auto & [path, r] : funk.results )
-            {
-              rsl.push_back( std::move( r ) );
-            }
-          funk.results.clear();
-          prevId = s.first;
-        }
-      const FloxFlakeRef ref = lockedInputs.at( s.first )->flake.lockedRef;
-      funk.visit( ref, s.second.first, s.second.second );
+      funk.visit( lockedInputs.at( s.first )->flake.lockedRef
+                , s.second.first
+                , s.second.second
+                );
     }
-  // TODO: sort
-  for ( auto & [path, r] : funk.results ) { rsl.push_back( std::move( r ) ); }
+  collect();
 
   return rsl;
 }

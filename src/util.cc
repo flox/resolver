@@ -224,6 +224,15 @@ globSystems(       nix::EvalState                  & state
 
 /* -------------------------------------------------------------------------- */
 
+  bool
+sortByDepth( const AttrPathGlob & a, const AttrPathGlob & b ) noexcept
+{
+  return a.path.size() <= b.path.size();
+}
+
+
+/* -------------------------------------------------------------------------- */
+
   }  /* End namespace `flox::resolve' */
 }    /* End namespace `flox' */
 
