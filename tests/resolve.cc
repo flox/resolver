@@ -39,14 +39,30 @@ test_resolve1()
 
   std::vector<Resolved> rsl = resolve( inputs, prefs, desc );
 
-  std::cerr << rsl.size() << std::endl;
-
-  for ( auto & r : rsl )
-    {
-      std::cerr << r.toJSON().dump() << std::endl;
-    }
-
   return rsl.size() == 1;
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+  bool
+test_resolveOne1()
+{
+  nlohmann::json inputsJSON = R"(
+    {
+      "nixpkgs": "github:NixOS/nixpkgs/e8039594435c68eb4f780f3e9bf3972a7399c4b1"
+    }
+  )"_json;
+  Inputs      inputs( inputsJSON );
+  Preferences prefs;
+  Descriptor  desc( (nlohmann::json) { { "name", "hello" } } );
+
+  std::vector<Resolved>   rsl = resolve( inputs, prefs, desc );
+  std::optional<Resolved> one = resolveOne( inputs, prefs, desc );
+
+  return ( rsl.size() == 1 ) &&
+         one.has_value() &&
+         ( one.value().toJSON() == rsl[0].toJSON() );
 }
 
 
@@ -76,8 +92,7 @@ main( int argc, char * argv[], char ** envp )
   int ec = EXIT_SUCCESS;
 
   RUN_TEST( resolve1 );
-
-  test_resolve1();
+  RUN_TEST( resolveOne1 );
 
   return ec;
 }
