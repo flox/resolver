@@ -177,8 +177,25 @@ DescriptorFunctor::addResult( const FloxFlakeRef                & ref
   if ( auto search = this->results.find( pg ); search != this->results.end() )
     {
       nlohmann::json & info = search->second.info;
-      info.at( "systems" ).push_back( path[1] );
-      info.at( "names" ).emplace( path[1], std::string( name ) );
+
+      if ( info.find( "systems" ) == info.end() )
+        {
+          info["systems"] = { path[1] };
+        }
+      else
+        {
+          info.at( "systems" ).push_back( path[1] );
+        }
+
+      if ( info.find( "names" ) == info.end() )
+        {
+          info["names"] = { { path[1], std::string( name ) } };
+        }
+      else
+        {
+          info.at( "names" ).emplace( path[1], std::string( name ) );
+        }
+
       if ( ! version.empty() )
         {
           if ( info.find( "versions" ) == info.end() )
@@ -194,7 +211,7 @@ DescriptorFunctor::addResult( const FloxFlakeRef                & ref
   else
     {
       /* Add a new entry. */
-      Resolved r( ref, std::move( pg ), (nlohmann::json) {
+      Resolved r( ref, pg, (nlohmann::json) {
         { "systems", { path[1] } }
       , { "names",   { { path[1], std::string( name ) } } }
       } );
@@ -211,7 +228,7 @@ DescriptorFunctor::addResult( const FloxFlakeRef                & ref
                                              );
             }
         }
-      this->results.emplace( pg, std::move( r ) );
+      this->results.emplace( std::move( pg ), std::move( r ) );
     }
 }
 

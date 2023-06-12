@@ -78,11 +78,6 @@ from_json( const nlohmann::json & j, Resolved & r )
 
 /* -------------------------------------------------------------------------- */
 
-
-
-
-/* -------------------------------------------------------------------------- */
-
   std::vector<Resolved>
 resolve( const Inputs      & inputs
        , const Preferences & preferences
@@ -116,9 +111,9 @@ resolve( const Inputs      & inputs
    * We enable pure so that we can leverage the eval cache. */
   nix::evalSettings.pureEval = true;
 
-  std::vector<CursorPos> roots;
+  std::vector<std::pair<std::string, CursorPos>> roots;
 
-  for( auto & [id, flake] : lockedInputs )
+  for ( auto & [id, flake] : lockedInputs )
     {
       for ( auto & p : funk.getRoots( id, flake ) )
         {
@@ -132,7 +127,7 @@ resolve( const Inputs      & inputs
             }
           else
             {
-              roots.push_back( std::move( p ) );
+              roots.push_back( std::make_pair( id, std::move( p ) ) );
             }
         }
     }
@@ -151,9 +146,39 @@ resolve( const Inputs      & inputs
     {
       systems = defaultSystems;
     }
-  std::vector<CursorPos> sysRoots = globSystems( * state, roots, systems );
+  std::vector<std::pair<std::string, CursorPos>> sysRoots;
+  for ( auto & p : roots )
+    {
+      for ( auto & c : globSystems( * state, p.second, systems ) )
+        {
+          sysRoots.push_back( std::make_pair( p.first, std::move( c ) ) );
+        }
+    }
 
-  // TODO: walk
+  // TODO: handle `(abs|rel)AttrPath'
+
+  std::string  prevId;
+  for ( auto s : sysRoots )
+    {
+      if ( prevId.empty() )
+        {
+          prevId = s.first;
+        }
+      else if ( prevId != s.first )
+        {
+          // TODO: sort
+          for ( auto & [path, r] : funk.results )
+            {
+              rsl.push_back( std::move( r ) );
+            }
+          funk.results.clear();
+          prevId = s.first;
+        }
+      const FloxFlakeRef ref = lockedInputs.at( s.first )->flake.lockedRef;
+      funk.visit( ref, s.second.first, s.second.second );
+    }
+  // TODO: sort
+  for ( auto & [path, r] : funk.results ) { rsl.push_back( std::move( r ) ); }
 
   return rsl;
 }
