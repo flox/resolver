@@ -122,6 +122,14 @@ DescriptorFunctor::packagePredicate(
       if ( ! isMatchingAttrPath( fuzz, pathS ) ) { return false; }
     }
 
+  /* Stability */
+  if ( this->desc->catalogStability.has_value() &&
+       ( pathS[2] != this->desc->catalogStability.value() )
+     )
+    {
+      return false;
+    }
+
   PkgNameVersion pnv = nameVersionAt( * pos );
 
   /* Check name */
@@ -147,16 +155,16 @@ DescriptorFunctor::packagePredicate(
         }
     }
 
-  if ( this->desc->version.has_value() )
+  std::optional<std::string> version;
+  if ( this->desc->version.has_value() || this->desc->semver.has_value() )
     {
-      std::string_view o;
       if ( pnv.version.has_value() )
         {
-          o = pnv.version.value();
+          version = pnv.version.value();
         }
       else if ( pnv.parsedVersion.has_value() )
         {
-          o = pnv.parsedVersion.value();
+          version = pnv.parsedVersion.value();
         }
       else
         {
@@ -164,10 +172,27 @@ DescriptorFunctor::packagePredicate(
             "Failed to parse derivation version: " + pnv.name
           );
         }
-      if ( this->desc->version.value() != o ) { return false; }
     }
 
-  // TODO: semver
+  /* Exact version */
+  if ( this->desc->version.has_value() &&
+       ( this->desc->version.value() != version.value() )
+     )
+    {
+      return false;
+    }
+
+  /* Semver */
+  if ( this->desc->semver.has_value() )
+    {
+      if ( ! version.has_value() ) { return false; }
+      std::optional<std::string> semver = coerceSemver( version.value() );
+      if ( ! semver.has_value() ) { return false; }
+      std::list<std::string> sat = semverSat(
+        this->desc->semver.value(), { semver.value() }
+      );
+      if ( sat.empty() ) { return false; }
+    }
 
   return this->prefsPredicate( pos, path );
 }

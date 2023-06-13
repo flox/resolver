@@ -68,6 +68,42 @@ $ ./bin/resolver -i '{"nixpkgs":"github:NixOS/nixpkgs"}' -d '{"name":"hello","ve
 #+END_SRC
 
 
+** Descriptors
+
+A /descriptor/ is a set of requirements written by the user describing a
+dependency that they need.
+This is similar to a search query and is used to filter a larger set of
+packages down to a satisfactory set.
+
+The simplest for of descriptor is likely a package name, or an attribute
+path to a package.
+This resolver features a number of additional filters which may be used to
+describe pacakges.
+
+*** Fields
+
+- input :: restrics resolution to the named input.
+- name :: matches package =pname=, parsed =name=, or attribute name.
+- path :: relative or absolute attribute path to derivation.
+- version :: exact match on package =version= or parsed =name=.
+- semver :: semantic version range filter.
+- flake :: whether to search =packages= and =legacyPackages= outputs.
+- catalog :: whether to search =catalog= outputs.
+- stability :: catalog stability channel match - implies catalog.
+
+*** Example Descriptors
+#+BEGIN_SRC json
+{ "name": "hello" }
+{ "path": ["legacyPackages", null, "python3Packages", "pip"] }
+{ "name": "hello", "version": "2.10.1" }
+{ "name": "nodejs", "semver": "^18.16" }
+{ "name": "nodejs", "semver": ">=14 <18.16.0 || >18.16.0" }
+{ "name": "hello", "input": "nixpkgs" }
+{ "name": "hello", "catalog": true }
+{ "name": "flox", "flake": false, "stability": "unstable" }
+#+END_SRC
+
+
 ** Preferences
 
 These settings control resolution behaviors, particularly priority ordering for
@@ -106,15 +142,12 @@ or short-name.
 
 
 ** TODO
-- [ ] Semantic version filtering.
 - [ ] Read Inputs from =flake.lock= and =registry.json=.
 - [ ] Parse descriptor strings.
 - [ ] Optimize with supplemental database.
-- [ ] Stability filtering in =packagePredicate=.
 - [ ] Optimize resolution by =path=.
 - [ ] More sensible =info= structure.
 - [ ] Additional tests.
-- [ ] Document descriptor fields.
 - [ ] Drop unused routines.
 - [ ] Multi-threading.
 - [ ] Disable =builtins.trace= warnings.

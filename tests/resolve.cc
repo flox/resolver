@@ -28,12 +28,7 @@ static const std::string nixpkgsRef =
   bool
 test_resolve1()
 {
-  nlohmann::json inputsJSON = R"(
-    {
-      "nixpkgs": "github:NixOS/nixpkgs/e8039594435c68eb4f780f3e9bf3972a7399c4b1"
-    }
-  )"_json;
-  Inputs      inputs( inputsJSON );
+  Inputs      inputs( (nlohmann::json) { { "nixpkgs", nixpkgsRef } } );
   Preferences prefs;
   Descriptor  desc( (nlohmann::json) { { "name", "hello" } } );
 
@@ -46,14 +41,24 @@ test_resolve1()
 /* -------------------------------------------------------------------------- */
 
   bool
+test_resolve2()
+{
+  Inputs      inputs( (nlohmann::json) { { "nixpkgs", nixpkgsRef } } );
+  Preferences prefs;
+  Descriptor  desc( (nlohmann::json) {
+    { "name", "nodejs" }, { "semver", ">=14" }
+  } );
+  std::vector<Resolved> rsl = resolve( inputs, prefs, desc );
+  return rsl.size() == 10;
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+  bool
 test_resolveOne1()
 {
-  nlohmann::json inputsJSON = R"(
-    {
-      "nixpkgs": "github:NixOS/nixpkgs/e8039594435c68eb4f780f3e9bf3972a7399c4b1"
-    }
-  )"_json;
-  Inputs      inputs( inputsJSON );
+  Inputs      inputs( (nlohmann::json) { { "nixpkgs", nixpkgsRef } } );
   Preferences prefs;
   Descriptor  desc( (nlohmann::json) { { "name", "hello" } } );
 
@@ -92,6 +97,7 @@ main( int argc, char * argv[], char ** envp )
   int ec = EXIT_SUCCESS;
 
   RUN_TEST( resolve1 );
+  RUN_TEST( resolve2 );
   RUN_TEST( resolveOne1 );
 
   return ec;
