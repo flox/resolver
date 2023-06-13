@@ -41,6 +41,11 @@ using MaybeCursor = std::shared_ptr<nix::eval_cache::AttrCursor>;
 
 /* -------------------------------------------------------------------------- */
 
+typedef enum { ST_PACKAGES, ST_LEGACY, ST_CATALOG } subtree_type;
+
+
+/* -------------------------------------------------------------------------- */
+
 struct AttrPathGlob {
 
   attr_parts path;

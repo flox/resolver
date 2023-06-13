@@ -54,7 +54,7 @@ LIBFLOXRESOLVE = libflox-resolve$(libExt)
 BINS           =  resolver
 LIBS           =  $(LIBFLOXRESOLVE)
 COMMON_HEADERS =  resolve.hh descriptor.hh flox/exceptions.hh flox/types.hh
-COMMON_HEADERS += flox/util.hh semver.hh
+COMMON_HEADERS += flox/util.hh semver.hh flox/package.hh
 TESTS          =  $(wildcard tests/*.cc)
 
 
@@ -138,6 +138,7 @@ lib/$(LIBFLOXRESOLVE): LDFLAGS  += -Wl,--no-as-needed
 lib/$(LIBFLOXRESOLVE): $(addprefix src/,resolve.o descriptor.o preferences.o)
 lib/$(LIBFLOXRESOLVE): $(addprefix src/,inputs.o walk.o util.o attr-path-glob.o)
 lib/$(LIBFLOXRESOLVE): $(addprefix src/,descriptor-functor.o semver.o)
+lib/$(LIBFLOXRESOLVE): $(addprefix src/,package.o)
 	$(CXX) $^ $(LDFLAGS) -o "$@"
 
 
