@@ -5,6 +5,7 @@
  * -------------------------------------------------------------------------- */
 
 #include "flox/package.hh"
+#include "semver.hh"
 
 
 /* -------------------------------------------------------------------------- */
@@ -15,8 +16,48 @@ namespace flox {
 /* -------------------------------------------------------------------------- */
 
   void
-Package::init()
+Package::init( bool checkDrv )
 {
+  if ( this->_path.size() < 3 )
+    {
+      throw ResolverException(
+        "Package attrPaths must have at least 3 elements"
+      );
+    }
+
+  if ( checkDrv && ( ! this->_cursor->isDerivation() ) )
+    {
+      throw ResolverException( "Packages must be derivations" );
+    }
+
+  std::vector<nix::SymbolStr> pathS = this->_symtab->resolve( this->_path );
+
+  /* Subtree type */
+  if ( pathS[0] == "packages" )            { this->_subtree = ST_PACKAGES; }
+  else if ( pathS[0] == "catalog" )        { this->_subtree = ST_CATALOG; }
+  else if ( pathS[0] == "legacyPackages" ) { this->_subtree = ST_LEGACY; }
+
+  this->_system = pathS[1];
+
+  MaybeCursor c = this->_cursor->maybeGetAttr( "meta" );
+  this->_hasMetaAttr = c != nullptr;
+
+  c = this->_cursor->maybeGetAttr( "pname" );
+  this->_hasPnameAttr = c != nullptr;
+
+  /* Version and Semver */
+  c = this->_cursor->maybeGetAttr( "version" );
+  if ( c != nullptr )
+    {
+      this->_hasPnameAttr = true;
+      std::string v = c->getString();
+      if ( v.empty() )   { v = this->_dname.version; }
+      if ( ! v.empty() ) { this->_semver = coerceSemver( v ); }
+    }
+  else if ( ! this->_dname.version.empty() )
+    {
+      this->_semver = coerceSemver( this->_dname.version );
+    }
 }
 
 

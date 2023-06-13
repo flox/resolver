@@ -44,30 +44,31 @@ class Package {
     std::string                _system;
     subtree_type               _subtree;
 
-    void init();
+    void init( bool checkDrv = true );
 
 
   public:
     Package( const FloxFlakeRef               & flake
            ,       Cursor                       cursor
            ,       nix::ref<nix::SymbolTable>   symtab
+           ,       bool                         checkDrv = true
            )
-      : _flake( flake )
-      , _cursor( cursor )
-      , _path( cursor->getAttrPath() )
-      , _symtab( symtab )
+      : _flake( flake ), _cursor( cursor ), _path( cursor->getAttrPath() )
+      , _symtab( symtab ), _dname( cursor->getAttr( "name" )->getString() )
     {
-      this->init();
+      this->init( checkDrv );
     }
 
     Package( const FloxFlakeRef               & flake
            ,       Cursor                       cursor
            , const std::vector<nix::Symbol>   & path
            ,       nix::ref<nix::SymbolTable>   symtab
+           ,       bool                         checkDrv = true
            )
       : _flake( flake ), _cursor( cursor ), _path( path ), _symtab( symtab )
+      , _dname( cursor->getAttr( "name" )->getString() )
     {
-      this->init();
+      this->init( checkDrv );
     }
 
     FloxFlakeRef               getFlakeRef()      const;
