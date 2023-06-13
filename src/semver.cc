@@ -3,6 +3,7 @@
  *
  * -------------------------------------------------------------------------- */
 
+#include "semver.hh"
 #include <string>
 #include <regex>
 #include <optional>
@@ -141,6 +142,37 @@ coerceSemver( std::string_view version )
   if ( ! tag.empty() ) { rsl += tag; }
 
   return std::optional<std::string>( rsl );
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+  std::pair<int, std::string>
+runSemver( const std::list<std::string> & args )
+{
+  return nix::runProgram( {
+    .program     = "semver"  // TODO: allow abspath
+  , .searchPath  = true
+  , .args        = args
+  , .environment = nix::getEnv()
+  } );
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+  std::list<std::string>
+semverSat( const std::string & range, const std::list<std::string> & versions )
+{
+  std::list<std::string> args = { "--loose", "--range", range };
+  for ( auto & v : versions ) { args.push_back( v ); }
+  auto [ec, lines] = runSemver( args );
+  if ( ! nix::statusOk( ec ) ) { return {}; }
+  std::list<std::string> rsl;
+  std::stringstream ss( lines );
+  std::string l;
+  while ( std::getline( ss, l, '\n' ) ) { rsl.push_back( l ); }
+  return rsl;
 }
 
 

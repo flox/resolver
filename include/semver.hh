@@ -8,6 +8,8 @@
 #include <string>
 #include <regex>
 #include <optional>
+#include <list>
+#include <nix/util.hh>
 
 
 /* -------------------------------------------------------------------------- */
@@ -24,6 +26,16 @@ bool isCoercibleToSemver( std::string_view version );
 /* -------------------------------------------------------------------------- */
 
 std::optional<std::string> coerceSemver( std::string_view version );
+
+
+/* -------------------------------------------------------------------------- */
+
+/* Pair of error-code and output string. */
+std::pair<int, std::string> runSemver( const std::list<std::string> & args );
+
+std::list<std::string> semverSat( const std::string            & range
+                                , const std::list<std::string> & versions
+                                );
 
 
 /* -------------------------------------------------------------------------- *
