@@ -51,9 +51,16 @@ jobs:
       - name: Nix Flake Check
         run: nix flake check
 
-      - name: Run Tests
-        run: nix develop --no-update-lock-file --command make check
+      - name: Run Build
+        run: nix develop --no-update-lock-file --command make -j4
 
       - name: Run Resolver
         run: |
-          ./bin/resolver -d '{"name":"hello"}'|jq
+          # We can't evaluate `nixpkgs-flox' here without capping the runner
+          # with OOM termination.
+          ./bin/resolver -i '{"nixpkgs":"github:NixOS/nixpkgs"}'  \
+                         -d '{"name":"hello"}'                    \
+            |jq;
+
+      - name: Run Tests
+        run: nix develop --no-update-lock-file --command make check -j4
