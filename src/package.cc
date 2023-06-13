@@ -75,7 +75,18 @@ bool Package::hasMetaAttr()    const { return this->_hasMetaAttr; }
 bool Package::hasPnameAttr()   const { return this->_hasPnameAttr; }
 bool Package::hasVersionAttr() const { return this->_hasVersionAttr; }
 
+
 /* -------------------------------------------------------------------------- */
+
+  nix::flake::Fingerprint
+Package::getFlakeFingerprint() const
+{
+  return this->_fingerprint;
+}
+
+
+/* -------------------------------------------------------------------------- */
+
 
   nix::DrvName
 Package::getParsedDrvName() const
