@@ -58,10 +58,10 @@ jobs:
         run: |
           # We can't evaluate `nixpkgs-flox' here without capping the runner
           # with OOM termination.
-          nix develop --no-update-lock-file --command              \
-          ./bin/resolver -i '{"floco:"github:aakropotkin/floco"}'  \
-                         -p '{"prefixes":{"floco":["packages"]}}'  \
-                         -d '{"name":"semver"}'                    \
+          nix develop --no-update-lock-file --command               \
+          ./bin/resolver -i '{"floco":"github:aakropotkin/floco"}'  \
+                         -p '{"prefixes":{"floco":["packages"]}}'   \
+                         -d '{"name":"semver"}'                     \
             |jq;
 
       - name: Run Tests
