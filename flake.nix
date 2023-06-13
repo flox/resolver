@@ -9,11 +9,12 @@
 # ---------------------------------------------------------------------------- #
 
   inputs.nixpkgs.url = "github:NixOS/nixpkgs";
+  inputs.floco.url   = "github:aakropotkin/floco";
 
 
 # ---------------------------------------------------------------------------- #
 
-  outputs = { nixpkgs, ... }: let
+  outputs = { nixpkgs, floco, ... }: let
 
 # ---------------------------------------------------------------------------- #
 
@@ -28,10 +29,12 @@
 
 # ---------------------------------------------------------------------------- #
 
+    overlays.deps         = floco.overlays.default;
     overlays.flox-resolve = final: prev: {
       flox-resolve = final.callPackage ./pkg-fun.nix {};
     };
-    overlays.default = overlays.flox-resolve;
+    overlays.default = nixpkgs.lib.composeExtensions overlays.deps
+                                                     overlays.flox-resolve;
 
 
 # ---------------------------------------------------------------------------- #

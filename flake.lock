@@ -1,6 +1,38 @@
 {
   "nodes": {
+    "floco": {
+      "inputs": {
+        "nixpkgs": "nixpkgs"
+      },
+      "locked": {
+        "lastModified": 1684245865,
+        "narHash": "sha256-CJSxo7fvAAjdMaQWALyNG6LKMjOGZC/uxlbX1KuegWU=",
+        "owner": "aakropotkin",
+        "repo": "floco",
+        "rev": "e1231f054258f7d62652109725881767765b1efb",
+        "type": "github"
+      },
+      "original": {
+        "owner": "aakropotkin",
+        "repo": "floco",
+        "type": "github"
+      }
+    },
     "nixpkgs": {
+      "locked": {
+        "lastModified": 1674236650,
+        "narHash": "sha256-B4GKL1YdJnII6DQNNJ4wDW1ySJVx2suB1h/v4Ql8J0Q=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "cfb43ad7b941d9c3606fb35d91228da7ebddbfc5",
+        "type": "github"
+      },
+      "original": {
+        "id": "nixpkgs",
+        "type": "indirect"
+      }
+    },
+    "nixpkgs_2": {
       "locked": {
         "lastModified": 1686178082,
         "narHash": "sha256-ll289AxpC7tomi516m5w8yG/U81k3IR68VGui19pRyw=",
@@ -17,7 +49,8 @@
     },
     "root": {
       "inputs": {
-        "nixpkgs": "nixpkgs"
+        "floco": "floco",
+        "nixpkgs": "nixpkgs_2"
       }
     }
   },

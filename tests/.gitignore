@@ -5,3 +5,4 @@ resolved
 walk
 attr-path-glob
 resolve
+semver

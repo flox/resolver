@@ -100,6 +100,14 @@ bin_CXXFLAGS += $(argparse_CFLAGS)
 
 # ---------------------------------------------------------------------------- #
 
+SEMVER_PATH ?=                                                        \
+  $(shell $(NIX) build --no-link --print-out-paths                    \
+	                     'github:aakropotkin/floco#semver')/bin/semver
+CXXFLAGS += -DSEMVER_PATH='$(SEMVER_PATH)'
+
+
+# ---------------------------------------------------------------------------- #
+
 .PHONY: bin lib include
 
 bin: $(addprefix bin/,$(BINS))

@@ -11,6 +11,7 @@
 , nix
 , boost
 , argparse
+, semver
 }: stdenv.mkDerivation {
   pname   = "flox-resolver";
   version = "0.1.0";
@@ -42,9 +43,11 @@
   buildInputs       = [
     sqlite.dev nlohmann_json nix.dev boost argparse
   ];
+  propagatedBuildInputs = [semver];
   makeFlags = [
     "boost_CFLAGS=-I${boost}/include"
     "libExt=${stdenv.hostPlatform.extensions.sharedLibrary}"
+    "SEMVER_PATH=${semver}/bin/semver"
   ];
   configurePhase = ''
     runHook preConfigure;

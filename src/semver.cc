@@ -147,11 +147,19 @@ coerceSemver( std::string_view version )
 
 /* -------------------------------------------------------------------------- */
 
+#ifndef SEMVER_PATH
+#  define SEMVER_PATH  semver
+#endif
+#define _XSTRIZE( _S )   _STRIZE( _S )
+#define _STRIZE( _S )    # _S
+#define SEMVER_PATH_STR  _XSTRIZE( SEMVER_PATH )
+
   std::pair<int, std::string>
 runSemver( const std::list<std::string> & args )
 {
+  // TODO: allow abspath at build time
   return nix::runProgram( {
-    .program     = "semver"  // TODO: allow abspath
+    .program     = nix::getEnv( "SEMVER" ).value_or( SEMVER_PATH_STR )
   , .searchPath  = true
   , .args        = args
   , .environment = nix::getEnv()
@@ -171,7 +179,10 @@ semverSat( const std::string & range, const std::list<std::string> & versions )
   std::list<std::string> rsl;
   std::stringstream ss( lines );
   std::string l;
-  while ( std::getline( ss, l, '\n' ) ) { rsl.push_back( l ); }
+  while ( std::getline( ss, l, '\n' ) )
+    {
+      if ( ! l.empty() ) { rsl.push_back( l ); }
+    }
   return rsl;
 }
 
