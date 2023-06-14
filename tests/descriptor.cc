@@ -20,14 +20,11 @@ using namespace nlohmann::literals;
   bool
 test_DescriptorFromJSON1()
 {
-  nlohmann::json desc = R"(
-    {
-      "name":    "hello"
-    , "flake":   true
-    , "catalog": false
-    }
-  )"_json;
-  Descriptor d( desc );
+  Descriptor d( (nlohmann::json) {
+    { "name",    "hello" }
+  , { "flake",   true    }
+  , { "catalog", false   }
+  } );
   return d.searchFlakes && ( ! d.searchCatalogs ) && ( d.name == "hello" );
 }
 
@@ -38,14 +35,17 @@ test_DescriptorFromJSON1()
   bool
 test_DescriptorFromJSON2()
 {
-  nlohmann::json desc = R"(
+  try
     {
-      "path": ["foo", "bar", null]
+      Descriptor d(
+        (nlohmann::json) { { "path", { "foo", "bar", nullptr } } }
+      );
     }
-  )"_json;
-  bool rsl = false;
-  try { Descriptor d( desc ); } catch( ... ) { rsl = true; }
-  return rsl;
+  catch( ... )
+    {
+      return true;
+    }
+  return false;
 }
 
 
@@ -55,15 +55,17 @@ test_DescriptorFromJSON2()
   bool
 test_DescriptorFromJSON3()
 {
-  nlohmann::json desc = R"(
+  try
     {
-      "flake":   false
-    , "catalog": false
+      Descriptor d(
+        (nlohmann::json) { { "flake", false }, { "catalog", false } }
+      );
     }
-  )"_json;
-  bool rsl = false;
-  try { Descriptor d( desc ); } catch( ... ) { rsl = true; }
-  return rsl;
+  catch( ... )
+    {
+      return true;
+    }
+  return false;
 }
 
 
@@ -73,15 +75,17 @@ test_DescriptorFromJSON3()
   bool
 test_DescriptorFromJSON4()
 {
-  nlohmann::json desc = R"(
+  try
     {
-      "flake":   true
-    , "catalog": { "stability": "stable" }
+      Descriptor d( (nlohmann::json) {
+        { "flake", true }, { "catalog", { { "stability", "stable" } } }
+      } );
     }
-  )"_json;
-  bool rsl = false;
-  try { Descriptor d( desc ); } catch( ... ) { rsl = true; }
-  return rsl;
+  catch( ... )
+    {
+      return true;
+    }
+  return false;
 }
 
 
@@ -90,14 +94,9 @@ test_DescriptorFromJSON4()
   bool
 test_DescriptorToJSON1()
 {
-  nlohmann::json desc = R"(
-    {
-      "name":    "hello"
-    , "flake":   true
-    , "catalog": false
-    }
-  )"_json;
-  Descriptor d( desc );
+  Descriptor d( (nlohmann::json) {
+    { "name", "hello" }, { "flake", true }, { "catalog", false }
+  } );
   nlohmann::json j = d.toJSON();
 
   return ( j["name"].get<std::string>() == "hello" ) &&
@@ -111,15 +110,12 @@ test_DescriptorToJSON1()
   bool
 test_DescriptorToJSON2()
 {
-  nlohmann::json desc = R"(
-    {
-      "name":    "hello"
-    , "flake":   true
-    , "catalog": true
-    , "input":   "foo"
-    }
-  )"_json;
-  Descriptor d( desc );
+  Descriptor d( (nlohmann::json) {
+    { "name",    "hello" }
+  , { "flake",   true    }
+  , { "catalog", true    }
+  , { "input",   "foo"   }
+  } );
   nlohmann::json j = d.toJSON();
 
   return ( j["input"].get<std::string_view>() == "foo" ) &&

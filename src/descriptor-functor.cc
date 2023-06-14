@@ -352,7 +352,7 @@ DescriptorFunctor::getRoots(
     }
 
   nix::ref<nix::eval_cache::EvalCache> cache =
-    coerceEvalCache( * this->state, flake );
+    coerceEvalCache( this->state, flake );
 
   Cursor                 root = cache->getRoot();
   std::vector<CursorPos> roots;

@@ -81,17 +81,17 @@ FloxFlakeRef coerceFlakeRef( FloxFlakeRef & ref );
 /* -------------------------------------------------------------------------- */
 
 std::shared_ptr<nix::flake::LockedFlake> coerceLockedFlake(
-  nix::EvalState   & state
-, std::string_view   uri
+  nix::ref<nix::EvalState> state
+, std::string_view         uri
 );
 
 std::shared_ptr<nix::flake::LockedFlake> coerceLockedFlake(
-        nix::EvalState & state
-, const FloxFlakeRef   & ref
+        nix::ref<nix::EvalState>   state
+, const FloxFlakeRef             & ref
 );
 
 std::shared_ptr<nix::flake::LockedFlake> coerceLockedFlake(
-  nix::EvalState                           & state
+  nix::ref<nix::EvalState>                   state
 , std::shared_ptr<nix::flake::LockedFlake> & locked
 );
 
@@ -99,22 +99,22 @@ std::shared_ptr<nix::flake::LockedFlake> coerceLockedFlake(
 /* -------------------------------------------------------------------------- */
 
 nix::ref<nix::eval_cache::EvalCache> coerceEvalCache(
-  nix::EvalState   & state
-, std::string_view   uri
+  nix::ref<nix::EvalState> state
+, std::string_view         uri
 );
 
 nix::ref<nix::eval_cache::EvalCache> coerceEvalCache(
-        nix::EvalState & state
-, const FloxFlakeRef   & ref
+        nix::ref<nix::EvalState>   state
+, const FloxFlakeRef             & ref
 );
 
 nix::ref<nix::eval_cache::EvalCache> coerceEvalCache(
-  nix::EvalState                           & state
+  nix::ref<nix::EvalState>                   state
 , std::shared_ptr<nix::flake::LockedFlake> & locked
 );
 
 nix::ref<nix::eval_cache::EvalCache> coerceEvalCache(
-  nix::EvalState                       & state
+  nix::ref<nix::EvalState>               state
 , nix::ref<nix::eval_cache::EvalCache> & cache
 );
 
@@ -122,12 +122,12 @@ nix::ref<nix::eval_cache::EvalCache> coerceEvalCache(
 /* -------------------------------------------------------------------------- */
 
 std::vector<nix::Symbol> coerceSymbols(
-        nix::EvalState                & state
+        nix::ref<nix::EvalState>        state
 , const std::vector<std::string_view> & lst
 );
 
 std::vector<nix::Symbol> coerceSymbols(
-  nix::EvalState           & state
+  nix::ref<nix::EvalState>   state
 , std::vector<nix::Symbol> & lst
 );
 
@@ -135,17 +135,17 @@ std::vector<nix::Symbol> coerceSymbols(
 /* -------------------------------------------------------------------------- */
 
 std::vector<nix::SymbolStr> coerceSymbolStrs(
-        nix::EvalState                & state
+        nix::ref<nix::EvalState>        state
 , const std::vector<std::string_view> & lst
 );
 
 std::vector<nix::SymbolStr> coerceSymbolStrs(
-        nix::EvalState           & state
+        nix::ref<nix::EvalState>   state
 , const std::vector<nix::Symbol> & lst
 );
 
 std::vector<nix::SymbolStr> coerceSymbolStrs(
-  nix::EvalState              & state
+  nix::ref<nix::EvalState>      state
 , std::vector<nix::SymbolStr> & lst
 );
 
@@ -167,13 +167,13 @@ std::map<std::string, std::shared_ptr<nix::flake::LockedFlake>> prepInputs(
 /* -------------------------------------------------------------------------- */
 
 std::vector<CursorPos> globSystems(
-        nix::EvalState                  & state
+        nix::ref<nix::EvalState>          state
 ,       CursorPos                       & c
 , const std::unordered_set<std::string> & systems = defaultSystems
 );
 
 std::vector<CursorPos> globSystems(
-        nix::EvalState                  & state
+        nix::ref<nix::EvalState>          state
 ,       std::vector<CursorPos>          & cs
 , const std::unordered_set<std::string> & systems = defaultSystems
 );

@@ -38,7 +38,7 @@ static const std::string nixpkgsFloxRef =
   bool
 test_isMatchingAttrPathPrefix1( nix::ref<nix::EvalState> state )
 {
-  std::vector<nix::SymbolStr> path   = coerceSymbolStrs( * state, {
+  std::vector<nix::SymbolStr> path   = coerceSymbolStrs( state, {
     "packages", "x86_64-linux", "hello"
   } );
   return isMatchingAttrPathPrefix( AttrPathGlob( { "packages", nullptr } )
@@ -53,7 +53,7 @@ test_isMatchingAttrPathPrefix1( nix::ref<nix::EvalState> state )
   bool
 test_isMatchingAttrPathPrefix2( nix::ref<nix::EvalState> state )
 {
-  std::vector<nix::SymbolStr> path = coerceSymbolStrs( * state, {
+  std::vector<nix::SymbolStr> path = coerceSymbolStrs( state, {
     "packages", "x86_64-linux", "hello"
   } );
   return isMatchingAttrPathPrefix( AttrPathGlob( { "packages" } ), path );
@@ -66,7 +66,7 @@ test_isMatchingAttrPathPrefix2( nix::ref<nix::EvalState> state )
   bool
 test_isMatchingAttrPathPrefix3( nix::ref<nix::EvalState> state )
 {
-  std::vector<nix::SymbolStr> path = coerceSymbolStrs( * state, {
+  std::vector<nix::SymbolStr> path = coerceSymbolStrs( state, {
     "packages", "x86_64-linux", "hello"
   } );
   return isMatchingAttrPathPrefix( AttrPathGlob(), path );
@@ -79,7 +79,7 @@ test_isMatchingAttrPathPrefix3( nix::ref<nix::EvalState> state )
   bool
 test_isMatchingAttrPathPrefix4( nix::ref<nix::EvalState> state )
 {
-  std::vector<nix::SymbolStr> path = coerceSymbolStrs( * state, {
+  std::vector<nix::SymbolStr> path = coerceSymbolStrs( state, {
     "packages", "x86_64-linux", "python3", "pkgs", "pip"
   } );
   return isMatchingAttrPathPrefix( AttrPathGlob( { "python3", "pkgs" } )
@@ -95,7 +95,7 @@ test_isMatchingAttrPathPrefix4( nix::ref<nix::EvalState> state )
 test_isMatchingAttrPathPrefix5( nix::ref<nix::EvalState> state )
 {
   std::vector<attr_part>      prefix = { "python3", "pkgs", "pip" };
-  std::vector<nix::SymbolStr> path   = coerceSymbolStrs( * state, {
+  std::vector<nix::SymbolStr> path   = coerceSymbolStrs( state, {
     "packages", "x86_64-linux", "python3", "pkgs", "pip"
   } );
   return isMatchingAttrPathPrefix( AttrPathGlob( prefix ), path );
@@ -109,7 +109,7 @@ test_isMatchingAttrPathPrefix5( nix::ref<nix::EvalState> state )
 test_isMatchingAttrPath1( nix::ref<nix::EvalState> state )
 {
   std::vector<attr_part>      prefix = { "packages", nullptr, "hello" };
-  std::vector<nix::SymbolStr> path   = coerceSymbolStrs( * state, {
+  std::vector<nix::SymbolStr> path   = coerceSymbolStrs( state, {
     "packages", "x86_64-linux", "hello"
   } );
   return isMatchingAttrPath( AttrPathGlob( prefix ), path );
@@ -123,7 +123,7 @@ test_isMatchingAttrPath1( nix::ref<nix::EvalState> state )
 test_isMatchingAttrPath2( nix::ref<nix::EvalState> state )
 {
   std::vector<attr_part>      prefix = { "packages", "x86_64-linux", "hello" };
-  std::vector<nix::SymbolStr> path   = coerceSymbolStrs( * state, {
+  std::vector<nix::SymbolStr> path   = coerceSymbolStrs( state, {
     "packages", "x86_64-linux", "hello"
   } );
   return isMatchingAttrPath( AttrPathGlob( prefix ), path );
@@ -146,7 +146,7 @@ test_isMatchingAttrPath3( nix::ref<nix::EvalState> state )
   bool
 test_isMatchingAttrPath4( nix::ref<nix::EvalState> state )
 {
-  std::vector<nix::SymbolStr> path = coerceSymbolStrs( * state, {
+  std::vector<nix::SymbolStr> path = coerceSymbolStrs( state, {
     "packages", "x86_64-linux", "python3", "pkgs", "pip"
   } );
   return isMatchingAttrPath( AttrPathGlob( { "python3", "pkgs", "pip" } )
@@ -161,7 +161,7 @@ test_isMatchingAttrPath4( nix::ref<nix::EvalState> state )
 test_shouldRecur1( nix::ref<nix::EvalState> state )
 {
   nix::ref<nix::eval_cache::EvalCache> cache =
-    coerceEvalCache( * state, nixpkgsRef );
+    coerceEvalCache( state, nixpkgsRef );
   Cursor root = cache->getRoot();
 
   Preferences       prefs;
@@ -198,7 +198,7 @@ test_shouldRecur2( nix::ref<nix::EvalState> state )
   nix::verbosity      = nix::lvlError;
 
   nix::ref<nix::eval_cache::EvalCache> cache =
-    coerceEvalCache( * state, nixpkgsFloxRef );
+    coerceEvalCache( state, nixpkgsFloxRef );
   /* Pop verbosity */
   nix::verbosity = oldV;
 
@@ -242,7 +242,7 @@ test_shouldRecur2( nix::ref<nix::EvalState> state )
 test_nameVersionAt1( nix::ref<nix::EvalState> state )
 {
   nix::ref<nix::eval_cache::EvalCache> cache =
-    coerceEvalCache( * state, nixpkgsRef );
+    coerceEvalCache( state, nixpkgsRef );
   Cursor root = cache->getRoot();
 
   Preferences       prefs;
@@ -268,7 +268,7 @@ test_nameVersionAt1( nix::ref<nix::EvalState> state )
 test_packagePredicate1( nix::ref<nix::EvalState> state )
 {
   nix::ref<nix::eval_cache::EvalCache> cache =
-    coerceEvalCache( * state, nixpkgsRef );
+    coerceEvalCache( state, nixpkgsRef );
   Cursor root = cache->getRoot();
 
   Preferences       prefs;
@@ -280,7 +280,7 @@ test_packagePredicate1( nix::ref<nix::EvalState> state )
         ->getAttr( "x86_64-linux" )
         ->getAttr( "hello" );
 
-  std::vector<nix::Symbol> path = coerceSymbols( * state, {
+  std::vector<nix::Symbol> path = coerceSymbols( state, {
     "legacyPackages", "x86_64-linux", "hello"
   } );
 
@@ -294,7 +294,7 @@ test_packagePredicate1( nix::ref<nix::EvalState> state )
 test_packagePredicate2( nix::ref<nix::EvalState> state )
 {
   nix::ref<nix::eval_cache::EvalCache> cache =
-    coerceEvalCache( * state, nixpkgsRef );
+    coerceEvalCache( state, nixpkgsRef );
   Cursor root = cache->getRoot();
 
   Preferences prefs;
@@ -309,7 +309,7 @@ test_packagePredicate2( nix::ref<nix::EvalState> state )
         ->getAttr( "x86_64-linux" )
         ->getAttr( "hello" );
 
-  std::vector<nix::Symbol> path = coerceSymbols( * state, {
+  std::vector<nix::Symbol> path = coerceSymbols( state, {
     "legacyPackages", "x86_64-linux", "hello"
   } );
 
@@ -323,7 +323,7 @@ test_packagePredicate2( nix::ref<nix::EvalState> state )
 test_packagePredicate3( nix::ref<nix::EvalState> state )
 {
   nix::ref<nix::eval_cache::EvalCache> cache =
-    coerceEvalCache( * state, nixpkgsRef );
+    coerceEvalCache( state, nixpkgsRef );
   Cursor root = cache->getRoot();
 
   Preferences       prefs;
@@ -335,7 +335,7 @@ test_packagePredicate3( nix::ref<nix::EvalState> state )
         ->getAttr( "x86_64-linux" )
         ->getAttr( "hello" );
 
-  std::vector<nix::Symbol> path = coerceSymbols( * state, {
+  std::vector<nix::Symbol> path = coerceSymbols( state, {
     "legacyPackages", "x86_64-linux", "hello"
   } );
 
@@ -350,7 +350,7 @@ test_packagePredicate3( nix::ref<nix::EvalState> state )
 test_packagePredicate4( nix::ref<nix::EvalState> state )
 {
   nix::ref<nix::eval_cache::EvalCache> cache =
-    coerceEvalCache( * state, nixpkgsRef );
+    coerceEvalCache( state, nixpkgsRef );
   Cursor root = cache->getRoot();
 
   Preferences       prefs;
@@ -361,7 +361,7 @@ test_packagePredicate4( nix::ref<nix::EvalState> state )
                     ->getAttr( "x86_64-linux" )
                     ->getAttr( "hello" );
 
-  std::vector<nix::Symbol> path = coerceSymbols( * state, {
+  std::vector<nix::Symbol> path = coerceSymbols( state, {
     "legacyPackages", "x86_64-linux", "hello"
   } );
 
@@ -380,7 +380,7 @@ test_packagePredicate5( nix::ref<nix::EvalState> state )
   nix::verbosity      = nix::lvlError;
 
   nix::ref<nix::eval_cache::EvalCache> cache =
-    coerceEvalCache( * state, nixpkgsFloxRef );
+    coerceEvalCache( state, nixpkgsFloxRef );
   /* Pop verbosity */
   nix::verbosity = oldV;
 
@@ -396,7 +396,7 @@ test_packagePredicate5( nix::ref<nix::EvalState> state )
                     ->getAttr( "hello" )
                     ->getAttr( "latest" );
 
-  std::vector<nix::Symbol> path = coerceSymbols( * state, {
+  std::vector<nix::Symbol> path = coerceSymbols( state, {
     "catalog", "x86_64-linux", "stable", "hello", "latest"
   } );
 
@@ -412,7 +412,7 @@ test_packagePredicate5( nix::ref<nix::EvalState> state )
 test_walk1( nix::ref<nix::EvalState> state )
 {
   FloxFlakeRef                         ref   = coerceFlakeRef( nixpkgsRef );
-  nix::ref<nix::eval_cache::EvalCache> cache = coerceEvalCache( * state, ref );
+  nix::ref<nix::eval_cache::EvalCache> cache = coerceEvalCache( state, ref );
 
   Preferences       prefs;
   Descriptor        desc( (nlohmann::json) { { "name", "hello" } } );
@@ -437,7 +437,7 @@ test_walk1( nix::ref<nix::EvalState> state )
 test_walk2( nix::ref<nix::EvalState> state )
 {
   FloxFlakeRef                         ref   = coerceFlakeRef( nixpkgsRef );
-  nix::ref<nix::eval_cache::EvalCache> cache = coerceEvalCache( * state, ref );
+  nix::ref<nix::eval_cache::EvalCache> cache = coerceEvalCache( state, ref );
 
   Preferences prefs;
   Descriptor  desc( (nlohmann::json) {

@@ -102,7 +102,7 @@ resolve( const Inputs      & inputs
       std::string id = desc.inputId.value();
       // TODO assert input exists
       std::shared_ptr<nix::flake::LockedFlake> locked =
-        coerceLockedFlake( * state, inputs.inputs.at( id ) );
+        coerceLockedFlake( state, inputs.inputs.at( id ) );
       lockedInputs.emplace( id, locked );
     }
   else
@@ -152,7 +152,7 @@ resolve( const Inputs      & inputs
   std::vector<std::pair<std::string, CursorPos>> sysRoots;
   for ( auto & p : roots )
     {
-      for ( auto & c : globSystems( * state, p.second, systems ) )
+      for ( auto & c : globSystems( state, p.second, systems ) )
         {
           sysRoots.push_back( std::make_pair( p.first, std::move( c ) ) );
         }

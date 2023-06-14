@@ -141,12 +141,12 @@ test_coerceRelative1()
 
 /* Check that `globSystems' helper returns one cursor for each system. */
   bool
-test_globSystems1( nix::EvalState & state )
+test_globSystems1( nix::ref<nix::EvalState> state )
 {
   FloxFlakeRef                         ref   = coerceFlakeRef( nixpkgsRef );
   nix::ref<nix::eval_cache::EvalCache> cache = coerceEvalCache( state, ref );
 
-  std::vector<nix::Symbol> path = { state.symbols.create( "legacyPackages" ) };
+  std::vector<nix::Symbol> path = { state->symbols.create( "legacyPackages" ) };
   Cursor                   cur  = cache->getRoot()->getAttr( path[0] );
   CursorPos                c    = std::make_pair( cur, path );
 
@@ -154,7 +154,7 @@ test_globSystems1( nix::EvalState & state )
 
   return
     ( sysPkgs.size() == defaultSystems.size() ) &&
-    ( state.symbols[sysPkgs[0].second[1]] == ( * defaultSystems.cbegin() ) );
+    ( state->symbols[sysPkgs[0].second[1]] == ( * defaultSystems.cbegin() ) );
 }
 
 
@@ -163,18 +163,18 @@ test_globSystems1( nix::EvalState & state )
 /* Check that `globSystems' helper returns one cursor for each system for
  * multiple prefixes. */
   bool
-test_globSystems2( nix::EvalState & state )
+test_globSystems2( nix::ref<nix::EvalState> state )
 {
   FloxFlakeRef                         ref   = coerceFlakeRef( flocoPkgsRef );
   nix::ref<nix::eval_cache::EvalCache> cache = coerceEvalCache( state, ref );
 
-  std::vector<nix::Symbol> path = { state.symbols.create( "legacyPackages" ) };
+  std::vector<nix::Symbol> path = { state->symbols.create( "legacyPackages" ) };
   Cursor                   cur  = cache->getRoot()->getAttr( path[0] );
   CursorPos                c    = std::make_pair( cur, path );
 
   std::vector<CursorPos> roots = { c };
 
-  path[0] = state.symbols.create( "packages" );
+  path[0] = state->symbols.create( "packages" );
   cur     = cache->getRoot()->getAttr( path[0] );
   c       = std::make_pair( cur, path );
   roots.push_back( c );
@@ -183,8 +183,8 @@ test_globSystems2( nix::EvalState & state )
 
   return
     ( sysPkgs.size() == ( 2 * defaultSystems.size() ) ) &&
-    ( state.symbols[sysPkgs[0].second[1]] == ( * defaultSystems.cbegin() ) ) &&
-    ( state.symbols[sysPkgs[4].second[1]] == ( * defaultSystems.cbegin() ) );
+    ( state->symbols[sysPkgs[0].second[1]] == ( * defaultSystems.cbegin() ) ) &&
+    ( state->symbols[sysPkgs[4].second[1]] == ( * defaultSystems.cbegin() ) );
 }
 
 
@@ -241,7 +241,7 @@ main( int argc, char * argv[], char ** envp )
   nix::initNix();
   nix::initGC();
   nix::evalSettings.pureEval = true;  /* Our reference is locked so we can. */
-  nix::EvalState state( {}, nix::openStore() );
+  nix::ref<nix::EvalState> state( new nix::EvalState( {}, nix::openStore() ) );
 
   RUN_TEST_WITH_STATE( state, globSystems1 );
   RUN_TEST_WITH_STATE( state, globSystems2 );
