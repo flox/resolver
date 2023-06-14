@@ -101,19 +101,18 @@ isMatchingAttrPath( const AttrPathGlob                & prefix
 /* -------------------------------------------------------------------------- */
 
   PkgNameVersion
-nameVersionAt( nix::eval_cache::AttrCursor & pos )
+nameVersionAt( Cursor pos )
 {
-  std::string    name = pos.getAttr( "name" )->getString();
+  std::string    name = pos->getAttr( "name" )->getString();
   PkgNameVersion pnv  = { .name = name };
 
-  std::shared_ptr<nix::eval_cache::AttrCursor> attr =
-    pos.maybeGetAttr( "pname" );
+  MaybeCursor attr = pos->maybeGetAttr( "pname" );
   if ( attr != nullptr )
     {
       try { pnv.pname = attr->getString(); } catch ( ... ) {}
     }
 
-  attr = pos.maybeGetAttr( "version" );
+  attr = pos->maybeGetAttr( "version" );
   if ( attr != nullptr )
     {
       try { pnv.version = attr->getString(); } catch ( ... ) {}

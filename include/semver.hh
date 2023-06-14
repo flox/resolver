@@ -33,7 +33,7 @@ std::optional<std::string> coerceSemver( std::string_view version );
 /* Pair of error-code and output string. */
 std::pair<int, std::string> runSemver( const std::list<std::string> & args );
 
-std::list<std::string> semverSat( const std::string            & range
+std::list<std::string> semverSat( const std::string            &  range
                                 , const std::list<std::string> & versions
                                 );
 

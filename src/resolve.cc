@@ -88,8 +88,11 @@ resolve( const Inputs      & inputs
   nix::initNix();
   nix::initGC();
 
+  // TODO: make this an option. It risks making cross-system eval impossible.
+  nix::evalSettings.enableImportFromDerivation.setDefault( false );
+
   nix::ref<nix::EvalState> state( new nix::EvalState( {}, nix::openStore() ) );
-  DescriptorFunctor funk( * state, preferences, desc );
+  DescriptorFunctor funk( state, preferences, desc );
 
   std::map<std::string, std::shared_ptr<nix::flake::LockedFlake>> lockedInputs;
 

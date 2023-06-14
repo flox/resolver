@@ -82,7 +82,7 @@ describe pacakges.
 
 *** Fields
 
-- input :: restrics resolution to the named input.
+- input :: restricts resolution to the named input.
 - name :: matches package =pname=, parsed =name=, or attribute name.
 - path :: relative or absolute attribute path to derivation.
 - version :: exact match on package =version= or parsed =name=.

@@ -71,20 +71,20 @@ void to_json(         nlohmann::json & j, const Descriptor & p );
 
 class DescriptorFunctor {
   private:
-          nix::EvalState  * state;
-    const Preferences     * prefs;
-    const Descriptor      * desc;
-          PkgPredicate      prefsPredicate = defaultPkgPredicate;
+          nix::ref<nix::EvalState>   state;
+    const Preferences              * prefs;
+    const Descriptor               * desc;
+          PkgPredicate               prefsPredicate = defaultPkgPredicate;
 
   public:
     // TODO: make private
     std::unordered_map<AttrPathGlob, Resolved> results;
 
-    DescriptorFunctor( nix::EvalState       & state
-                     , const Preferences    & prefs
-                     , const Descriptor     & desc
+    DescriptorFunctor( nix::ref<nix::EvalState> & state
+                     , const Preferences        & prefs
+                     , const Descriptor         & desc
                      )
-      : state( & state )
+      : state( state )
       , prefs( & prefs )
       , desc( & desc )
       , prefsPredicate( prefs.pred() )

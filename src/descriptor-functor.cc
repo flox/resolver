@@ -21,10 +21,9 @@ namespace flox {
 /* -------------------------------------------------------------------------- */
 
   bool
-DescriptorFunctor::shouldRecur(
-        nix::ref<nix::eval_cache::AttrCursor>   pos
-, const std::vector<nix::Symbol>              & path
-)
+DescriptorFunctor::shouldRecur(       Cursor                     pos
+                              , const std::vector<nix::Symbol> & path
+                              )
 {
   if ( path.size() < 1 ) { return true; }
 
@@ -88,10 +87,9 @@ DescriptorFunctor::shouldRecur(
 /* -------------------------------------------------------------------------- */
 
   bool
-DescriptorFunctor::packagePredicate(
-        nix::ref<nix::eval_cache::AttrCursor>   pos
-, const std::vector<nix::Symbol>              & path
-)
+DescriptorFunctor::packagePredicate(       Cursor                     pos
+                                   , const std::vector<nix::Symbol> & path
+                                   )
 {
   /* Push/pop current verbosity to suppress eval traces. */
   nix::Verbosity oldV  = nix::verbosity;
@@ -130,7 +128,7 @@ DescriptorFunctor::packagePredicate(
       return false;
     }
 
-  PkgNameVersion pnv = nameVersionAt( * pos );
+  PkgNameVersion pnv = nameVersionAt( pos );
 
   /* Check name */
   if ( this->desc->name.has_value() )
@@ -290,11 +288,10 @@ DescriptorFunctor::addResult( const FloxFlakeRef                & ref
 /* -------------------------------------------------------------------------- */
 
   void
-DescriptorFunctor::visit(
-  const FloxFlakeRef                          & ref
-,       nix::ref<nix::eval_cache::AttrCursor>   cur
-, const std::vector<nix::Symbol>              & attrPath
-)
+DescriptorFunctor::visit( const FloxFlakeRef             & ref
+                        ,       Cursor                     cur
+                        , const std::vector<nix::Symbol> & attrPath
+                        )
 {
   std::vector<nix::SymbolStr> attrPathS =
     this->state->symbols.resolve( attrPath );
@@ -331,7 +328,7 @@ DescriptorFunctor::visit(
       nix::verbosity = oldV;
       if ( isDrv && this->packagePredicate( cur, attrPath ) )
         {
-          PkgNameVersion pnv = nameVersionAt( * cur );
+          PkgNameVersion pnv = nameVersionAt( cur );
           this->addResult( ref, attrPathS, pnv.getPname(), pnv.getVersion() );
         }
     }
@@ -377,7 +374,7 @@ DescriptorFunctor::getRoots(
       if ( c != nullptr )
         {
           std::vector<nix::Symbol> path = { s };
-          CursorPos r = std::make_pair( Cursor( c ), path );
+          CursorPos                r    = std::make_pair( Cursor( c ), path );
           roots.push_back( r );
         }
     }

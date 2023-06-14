@@ -51,7 +51,7 @@ struct PkgNameVersion {
   std::string getVersion();
 };
 
-PkgNameVersion nameVersionAt( nix::eval_cache::AttrCursor & pos );
+PkgNameVersion nameVersionAt( Cursor pos );
 
 
 /* -------------------------------------------------------------------------- */

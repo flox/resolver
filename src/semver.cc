@@ -157,12 +157,14 @@ coerceSemver( std::string_view version )
   std::pair<int, std::string>
 runSemver( const std::list<std::string> & args )
 {
-  // TODO: allow abspath at build time
+  static const std::string semverProg =
+    nix::getEnv( "SEMVER" ).value_or( SEMVER_PATH_STR );
+  static const std::map<std::string, std::string> env = nix::getEnv();
   return nix::runProgram( {
-    .program     = nix::getEnv( "SEMVER" ).value_or( SEMVER_PATH_STR )
+    .program     = semverProg
   , .searchPath  = true
   , .args        = args
-  , .environment = nix::getEnv()
+  , .environment = env
   } );
 }
 
@@ -172,7 +174,9 @@ runSemver( const std::list<std::string> & args )
   std::list<std::string>
 semverSat( const std::string & range, const std::list<std::string> & versions )
 {
-  std::list<std::string> args = { "--loose", "--range", range };
+  std::list<std::string> args = {
+    "--include-prerelease", "--loose", "--range", range
+  };
   for ( auto & v : versions ) { args.push_back( v ); }
   auto [ec, lines] = runSemver( args );
   if ( ! nix::statusOk( ec ) ) { return {}; }
@@ -181,7 +185,7 @@ semverSat( const std::string & range, const std::list<std::string> & versions )
   std::string l;
   while ( std::getline( ss, l, '\n' ) )
     {
-      if ( ! l.empty() ) { rsl.push_back( l ); }
+      if ( ! l.empty() ) { rsl.push_back( std::move( l ) ); }
     }
   return rsl;
 }
