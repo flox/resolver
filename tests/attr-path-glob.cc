@@ -160,36 +160,6 @@ test_globSystems1( nix::ref<nix::EvalState> state )
 
 /* -------------------------------------------------------------------------- */
 
-/* Check that `globSystems' helper returns one cursor for each system for
- * multiple prefixes. */
-  bool
-test_globSystems2( nix::ref<nix::EvalState> state )
-{
-  FloxFlakeRef                         ref   = coerceFlakeRef( flocoPkgsRef );
-  nix::ref<nix::eval_cache::EvalCache> cache = coerceEvalCache( state, ref );
-
-  std::vector<nix::Symbol> path = { state->symbols.create( "legacyPackages" ) };
-  Cursor                   cur  = cache->getRoot()->getAttr( path[0] );
-  CursorPos                c    = std::make_pair( cur, path );
-
-  std::vector<CursorPos> roots = { c };
-
-  path[0] = state->symbols.create( "packages" );
-  cur     = cache->getRoot()->getAttr( path[0] );
-  c       = std::make_pair( cur, path );
-  roots.push_back( c );
-
-  std::vector<CursorPos> sysPkgs = globSystems( state, roots );
-
-  return
-    ( sysPkgs.size() == ( 2 * defaultSystems.size() ) ) &&
-    ( state->symbols[sysPkgs[0].second[1]] == ( * defaultSystems.cbegin() ) ) &&
-    ( state->symbols[sysPkgs[4].second[1]] == ( * defaultSystems.cbegin() ) );
-}
-
-
-/* -------------------------------------------------------------------------- */
-
 #define RUN_TEST( _NAME )                                              \
   try                                                                  \
     {                                                                  \
@@ -244,7 +214,6 @@ main( int argc, char * argv[], char ** envp )
   nix::ref<nix::EvalState> state( new nix::EvalState( {}, nix::openStore() ) );
 
   RUN_TEST_WITH_STATE( state, globSystems1 );
-  RUN_TEST_WITH_STATE( state, globSystems2 );
 
   return ec;
 }

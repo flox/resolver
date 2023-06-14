@@ -38,7 +38,7 @@ static const std::string nixpkgsFloxRef =
   bool
 test_isMatchingAttrPathPrefix1( nix::ref<nix::EvalState> state )
 {
-  std::vector<nix::SymbolStr> path   = coerceSymbolStrs( state, {
+  std::vector<nix::SymbolStr> path = coerceSymbolStrs( state, {
     "packages", "x86_64-linux", "hello"
   } );
   return isMatchingAttrPathPrefix( AttrPathGlob( { "packages", nullptr } )

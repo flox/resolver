@@ -72,15 +72,9 @@ static nix::flake::LockFlags floxFlakeLockFlags = {
 /* -------------------------------------------------------------------------- */
 
 FloxFlakeRef coerceFlakeRef( std::string_view uri );
-FloxFlakeRef coerceFlakeRef( FloxFlakeRef & ref );
 
 
 /* -------------------------------------------------------------------------- */
-
-std::shared_ptr<nix::flake::LockedFlake> coerceLockedFlake(
-  nix::ref<nix::EvalState> state
-, std::string_view         uri
-);
 
 std::shared_ptr<nix::flake::LockedFlake> coerceLockedFlake(
         nix::ref<nix::EvalState>   state
@@ -88,8 +82,8 @@ std::shared_ptr<nix::flake::LockedFlake> coerceLockedFlake(
 );
 
 std::shared_ptr<nix::flake::LockedFlake> coerceLockedFlake(
-  nix::ref<nix::EvalState>                   state
-, std::shared_ptr<nix::flake::LockedFlake> & locked
+  nix::ref<nix::EvalState> state
+, std::string_view         uri
 );
 
 
@@ -110,11 +104,6 @@ nix::ref<nix::eval_cache::EvalCache> coerceEvalCache(
 , std::shared_ptr<nix::flake::LockedFlake> & locked
 );
 
-nix::ref<nix::eval_cache::EvalCache> coerceEvalCache(
-  nix::ref<nix::EvalState>               state
-, nix::ref<nix::eval_cache::EvalCache> & cache
-);
-
 
 /* -------------------------------------------------------------------------- */
 
@@ -123,27 +112,12 @@ std::vector<nix::Symbol> coerceSymbols(
 , const std::vector<std::string_view> & lst
 );
 
-std::vector<nix::Symbol> coerceSymbols(
-  nix::ref<nix::EvalState>   state
-, std::vector<nix::Symbol> & lst
-);
-
 
 /* -------------------------------------------------------------------------- */
 
 std::vector<nix::SymbolStr> coerceSymbolStrs(
         nix::ref<nix::EvalState>        state
 , const std::vector<std::string_view> & lst
-);
-
-std::vector<nix::SymbolStr> coerceSymbolStrs(
-        nix::ref<nix::EvalState>   state
-, const std::vector<nix::Symbol> & lst
-);
-
-std::vector<nix::SymbolStr> coerceSymbolStrs(
-  nix::ref<nix::EvalState>      state
-, std::vector<nix::SymbolStr> & lst
 );
 
 
@@ -169,12 +143,6 @@ std::vector<CursorPos> globSystems(
 , const std::list<std::string>   & systems = defaultSystems
 );
 
-std::vector<CursorPos> globSystems(
-        nix::ref<nix::EvalState> state
-,       std::vector<CursorPos>   & cs
-, const std::list<std::string>   & systems = defaultSystems
-);
-
 
 /* -------------------------------------------------------------------------- */
 
@@ -195,7 +163,7 @@ template <typename T, template <typename, typename> class C>
   static inline bool
 hasElement( const C<T, std::allocator<T>> & container, const T & e )
 {
-  return container.find( e ) != container.end();
+  return std::find( container.cbegin(), container.cend(), e );
 }
 
 
