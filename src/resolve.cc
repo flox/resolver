@@ -136,12 +136,12 @@ resolve( const Inputs      & inputs
     }
 
   /* Get a cursor for every system. */
-  std::unordered_set<std::string> systems;
+  std::list<std::string> systems;
   if ( desc.absAttrPath.has_value() &&
        ( ! desc.absAttrPath.value().hasGlob() )
      )
     {
-      systems.emplace(
+      systems.push_back(
         std::get<std::string>( desc.absAttrPath.value().path[1] )
       );
     }

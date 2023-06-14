@@ -19,11 +19,26 @@
 #include <unordered_set>
 #include "flox/exceptions.hh"
 
+/* In `nix' 2.14.0 they moved some class declarations around, so this
+ * selects the correct header so that we can refer to `InstallableFlake'. */
+#ifdef HAVE_INSTALLABLE_FLAKE
+#  include <nix/installable-flake.hh>
+#else
+#  include <nix/installables.hh>
+#endif
+
 
 /* -------------------------------------------------------------------------- */
 
 namespace flox {
   namespace resolve {
+
+/* -------------------------------------------------------------------------- */
+
+static const std::list<std::string> defaultSystems = {
+ "x86_64-linux", "aarch64-linux", "x86_64-darwin", "aarch64-darwin"
+};
+
 
 /* -------------------------------------------------------------------------- */
 
@@ -172,6 +187,61 @@ struct Preferences {
 
 void from_json( const nlohmann::json & j,       Preferences & p );
 void to_json(         nlohmann::json & j, const Preferences & p );
+
+
+/* -------------------------------------------------------------------------- */
+
+class FloxFlake {
+  private:
+    nix::ref<nix::EvalState> _state;
+    FloxFlakeRef             _flakeRef;
+    std::list<std::string>   _systems;
+    std::list<std::string>   _prefsPrefixes;
+    std::list<std::string>   _prefsStabilities;
+
+    std::shared_ptr<nix::flake::LockedFlake> lockedFlake;
+
+  public:
+    FloxFlake(       nix::ref<nix::EvalState>    state
+             ,       std::string_view            id
+             ,       FloxFlakeRef             && ref
+             , const std::list<std::string>   &  systems = defaultSystems
+             , const Preferences              &  prefs   = {}
+             );
+    std::list<std::string>            getSystems()                      const;
+    std::list<std::list<std::string>> getDefaultFlakeAttrPaths()        const;
+    std::list<std::list<std::string>> getDefaultFlakeAttrPathPrefixes() const;
+    std::list<std::list<std::string>> getFlakeAttrPathPrefixes()        const;
+
+    std::shared_ptr<nix::flake::LockedFlake> getLockedFlake() const;
+    nix::ref<nix::eval_cache::EvalCache>     openEvalCache()  const;
+
+    /* Like `findAttrAlongPath' but without suggestions.
+     * Note that each invocation opens the `EvalCache', so use sparingly. */
+    Cursor      openCursor(      const std::vector<nix::Symbol> & path ) const;
+    MaybeCursor maybeOpenCursor( const std::vector<nix::Symbol> & path ) const;
+
+    /* Opens `EvalCache' once, staying open until all cursors die. */
+    std::list<Cursor> getFlakePrefixCursors() const;
+
+    std::list<std::vector<nix::Symbol>> getActualFlakeAttrPathPrefixes() const;
+};
+
+
+/* -------------------------------------------------------------------------- */
+
+class ResolverState {
+  private:
+    std::shared_ptr<nix::Store>      _store;
+    std::shared_ptr<nix::Store>      evalStore;
+    std::shared_ptr<nix::EvalState>  evalState;
+    std::map<std::string, FloxFlake> inputs;
+
+  public:
+    nix::ref<nix::EvalState> getStore();
+    nix::ref<nix::EvalState> getEvalStore();
+    nix::ref<nix::EvalState> getEvalState();
+};
 
 
 /* -------------------------------------------------------------------------- */

@@ -38,18 +38,14 @@ namespace flox {
 
 /* -------------------------------------------------------------------------- */
 
-static const std::unordered_set<std::string> defaultSystems = {
- "x86_64-linux", "aarch64-linux", "x86_64-darwin", "aarch64-darwin"
-};
-
-
-/* -------------------------------------------------------------------------- */
-
   static inline bool
 shouldSearchSystem( std::string_view system )
 {
-  std::string s( system );
-  return defaultSystems.find( s ) != defaultSystems.end();
+  for ( const std::string & s : defaultSystems )
+    {
+      if ( s == system ) { return true; }
+    }
+  return false;
 }
 
 
@@ -69,6 +65,7 @@ isPkgsSubtree( std::string_view attrName )
 static nix::flake::LockFlags floxFlakeLockFlags = {
   .updateLockFile = false
 , .writeLockFile  = false
+, .applyNixConfig = false
 };
 
 
@@ -167,21 +164,39 @@ std::map<std::string, std::shared_ptr<nix::flake::LockedFlake>> prepInputs(
 /* -------------------------------------------------------------------------- */
 
 std::vector<CursorPos> globSystems(
-        nix::ref<nix::EvalState>          state
-,       CursorPos                       & c
-, const std::unordered_set<std::string> & systems = defaultSystems
+        nix::ref<nix::EvalState>   state
+,       CursorPos                & c
+, const std::list<std::string>   & systems = defaultSystems
 );
 
 std::vector<CursorPos> globSystems(
-        nix::ref<nix::EvalState>          state
-,       std::vector<CursorPos>          & cs
-, const std::unordered_set<std::string> & systems = defaultSystems
+        nix::ref<nix::EvalState> state
+,       std::vector<CursorPos>   & cs
+, const std::list<std::string>   & systems = defaultSystems
 );
 
 
 /* -------------------------------------------------------------------------- */
 
 bool sortByDepth( const AttrPathGlob & a, const AttrPathGlob & b ) noexcept;
+
+
+/* -------------------------------------------------------------------------- */
+
+nix::Value * loadFlakeRoot(
+  nix::ref<nix::EvalState>                 state
+, std::shared_ptr<nix::flake::LockedFlake> lockedFlake
+);
+
+
+/* -------------------------------------------------------------------------- */
+
+template <typename T, template <typename, typename> class C>
+  static inline bool
+hasElement( const C<T, std::allocator<T>> & container, const T & e )
+{
+  return container.find( e ) != container.end();
+}
 
 
 /* -------------------------------------------------------------------------- */

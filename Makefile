@@ -25,6 +25,7 @@ MKDIR_P    ?= $(MKDIR) -p
 CP         ?= cp
 TR         ?= tr
 SED        ?= sed
+TEST       ?= test
 
 
 # ---------------------------------------------------------------------------- #
@@ -80,11 +81,11 @@ boost_CFLAGS    ?=                                                             \
 sqlite3_CFLAGS  = $(shell $(PKG_CONFIG) --cflags sqlite3)
 sqlite3_LDFLAGS =  $(shell $(PKG_CONFIG) --libs sqlite3)
 
-nix_CFLAGS =  $(boost_CFLAGS)
-nix_CFLAGS += $(shell $(PKG_CONFIG) --cflags nix-main nix-cmd nix-expr)
-nix_CFLAGS += -isystem $(shell $(PKG_CONFIG) --variable=includedir nix-cmd)
-nix_CFLAGS +=                                                                 \
-  -include $(shell $(PKG_CONFIG) --variable=includedir nix-cmd)/nix/config.h
+nix_INCDIR  =  $(shell $(PKG_CONFIG) --variable=includedir nix-cmd)
+nix_CFLAGS  =  $(boost_CFLAGS)
+nix_CFLAGS  += $(shell $(PKG_CONFIG) --cflags nix-main nix-cmd nix-expr)
+nix_CFLAGS  += -isystem $(shell $(PKG_CONFIG) --variable=includedir nix-cmd)
+nix_CFLAGS  += -include $(nix_INCDIR)/nix/config.h
 nix_LDFLAGS =  $(shell $(PKG_CONFIG) --libs nix-main nix-cmd nix-expr nix-store)
 nix_LDFLAGS += -lnixfetchers
 
@@ -96,6 +97,17 @@ floxresolve_LDFLAGS += -Wl,--enable-new-dtags '-Wl,-rpath,$$ORIGIN/../lib'
 # ---------------------------------------------------------------------------- #
 
 bin_CXXFLAGS += $(argparse_CFLAGS)
+
+
+# ---------------------------------------------------------------------------- #
+
+HAVE_INSTALLABLE_FLAKE =                                                   \
+	$(shell $(TEST) -r $(nix_INCDIR)/nix/installable-flake.hh && echo 1||:)
+ifeq (,$(HAVE_INSTALLABLE_FLAKE))
+  CXXFLAGS += -UHAVE_INSTALLABLE_FLAKE
+else
+	CXXFLAGS += -DHAVE_INSTALLABLE_FLAKE='$(HAVE_INSTALLABLE_FLAKE)'
+endif
 
 
 # ---------------------------------------------------------------------------- #

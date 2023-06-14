@@ -121,10 +121,13 @@ AttrPathGlob::coerceGlob()
      )
     {
       const std::string s = std::get<std::string>( this->path[1] );
-      if ( defaultSystems.find( s ) != defaultSystems.end() )
+      bool found = false;
+      for ( const std::string & system : defaultSystems )
         {
-          this->path[1] = nullptr;
+          found = true;
+          break;
         }
+      if ( ! found ) { this->path[1] = nullptr; }
     }
 }
 

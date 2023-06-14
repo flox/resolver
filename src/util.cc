@@ -5,6 +5,7 @@
  * -------------------------------------------------------------------------- */
 
 #include <algorithm>
+#include <nix/nixexpr.hh>
 #include "flox/util.hh"
 
 
@@ -182,9 +183,9 @@ prepInputs(       nix::ref<nix::EvalState>   state
 /* -------------------------------------------------------------------------- */
 
   std::vector<CursorPos>
-globSystems(       nix::ref<nix::EvalState>          state
-           ,       CursorPos                       & c
-           , const std::unordered_set<std::string> & systems
+globSystems(       nix::ref<nix::EvalState>   state
+           ,       CursorPos                & c
+           , const std::list<std::string>   & systems
            )
 {
   std::vector<CursorPos> rsl;
@@ -205,9 +206,9 @@ globSystems(       nix::ref<nix::EvalState>          state
 
 
   std::vector<CursorPos>
-globSystems(       nix::ref<nix::EvalState>          state
-           ,       std::vector<CursorPos>          & cs
-           , const std::unordered_set<std::string> & systems
+globSystems(       nix::ref<nix::EvalState>   state
+           ,       std::vector<CursorPos>   & cs
+           , const std::list<std::string>   & systems
            )
 {
   std::vector<CursorPos> rsl;
@@ -228,6 +229,25 @@ globSystems(       nix::ref<nix::EvalState>          state
 sortByDepth( const AttrPathGlob & a, const AttrPathGlob & b ) noexcept
 {
   return a.path.size() <= b.path.size();
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+  nix::Value *
+loadFlakeRoot(
+  nix::ref<nix::EvalState>                 state
+, std::shared_ptr<nix::flake::LockedFlake> lockedFlake
+)
+{
+  nix::Value * vFlake = state->allocValue();
+  nix::flake::callFlake( * state, * lockedFlake, * vFlake );
+  state->forceAttrs( * vFlake, nix::noPos, "while parsing cached flake data" );
+  nix::Attr * aOutputs = vFlake->attrs->get(
+    state->symbols.create( "outputs" )
+  );
+  assert( aOutputs != nullptr );
+  return aOutputs->value;
 }
 
 
