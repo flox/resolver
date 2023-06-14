@@ -73,6 +73,18 @@ test_resolveOne1()
 
 /* -------------------------------------------------------------------------- */
 
+  bool
+test_ResolverStateLocking1()
+{
+  Inputs      inputs( (nlohmann::json) { { "nixpkgs", nixpkgsRef } } );
+  Preferences prefs;
+  return ResolverState( inputs, prefs ).getInputs().at( "nixpkgs" )
+           ->getLockedFlake()->flake.lockedRef.input.isLocked();
+}
+
+
+/* -------------------------------------------------------------------------- */
+
 #define RUN_TEST( _NAME )                                              \
   try                                                                  \
     {                                                                  \
@@ -99,6 +111,7 @@ main( int argc, char * argv[], char ** envp )
   RUN_TEST( resolve1 );
   RUN_TEST( resolve2 );
   RUN_TEST( resolveOne1 );
+  RUN_TEST( ResolverStateLocking1 );
 
   return ec;
 }
