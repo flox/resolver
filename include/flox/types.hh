@@ -191,40 +191,40 @@ void to_json(         nlohmann::json & j, const Preferences & p );
 
 /* -------------------------------------------------------------------------- */
 
-class FloxFlake {
+class FloxFlake :public std::enable_shared_from_this<FloxFlake> {
   private:
     nix::ref<nix::EvalState> _state;
     FloxFlakeRef             _flakeRef;
     std::list<std::string>   _systems;
-    std::list<std::string>   _prefsPrefixes;
-    std::list<std::string>   _prefsStabilities;
+    std::vector<std::string> _prefsPrefixes;
+    std::vector<std::string> _prefsStabilities;
 
     std::shared_ptr<nix::flake::LockedFlake> lockedFlake;
 
   public:
-    FloxFlake(       nix::ref<nix::EvalState>    state
-             ,       std::string_view            id
-             ,       FloxFlakeRef             && ref
-             , const std::list<std::string>   &  systems = defaultSystems
-             , const Preferences              &  prefs   = {}
+    FloxFlake(       nix::ref<nix::EvalState>   state
+             ,       std::string_view           id
+             , const FloxFlakeRef             & ref
+             , const Preferences              & prefs
+             , const std::list<std::string>   & systems = defaultSystems
              );
     std::list<std::string>            getSystems()                      const;
     std::list<std::list<std::string>> getDefaultFlakeAttrPaths()        const;
     std::list<std::list<std::string>> getDefaultFlakeAttrPathPrefixes() const;
     std::list<std::list<std::string>> getFlakeAttrPathPrefixes()        const;
 
-    std::shared_ptr<nix::flake::LockedFlake> getLockedFlake() const;
-    nix::ref<nix::eval_cache::EvalCache>     openEvalCache()  const;
+    std::shared_ptr<nix::flake::LockedFlake> getLockedFlake();
+    nix::ref<nix::eval_cache::EvalCache>     openEvalCache();
 
     /* Like `findAttrAlongPath' but without suggestions.
      * Note that each invocation opens the `EvalCache', so use sparingly. */
-    Cursor      openCursor(      const std::vector<nix::Symbol> & path ) const;
-    MaybeCursor maybeOpenCursor( const std::vector<nix::Symbol> & path ) const;
+    Cursor      openCursor(      const std::vector<nix::Symbol> & path );
+    MaybeCursor maybeOpenCursor( const std::vector<nix::Symbol> & path );
 
     /* Opens `EvalCache' once, staying open until all cursors die. */
-    std::list<Cursor> getFlakePrefixCursors() const;
+    std::list<Cursor> getFlakePrefixCursors();
 
-    std::list<std::vector<nix::Symbol>> getActualFlakeAttrPathPrefixes() const;
+    std::list<std::vector<nix::Symbol>> getActualFlakeAttrPathPrefixes();
 };
 
 
@@ -232,15 +232,49 @@ class FloxFlake {
 
 class ResolverState {
   private:
-    std::shared_ptr<nix::Store>      _store;
-    std::shared_ptr<nix::Store>      evalStore;
-    std::shared_ptr<nix::EvalState>  evalState;
-    std::map<std::string, FloxFlake> inputs;
+    std::shared_ptr<nix::Store>                       _store;
+    std::shared_ptr<nix::Store>                       evalStore;
+    std::shared_ptr<nix::EvalState>                   evalState;
+    std::map<std::string, std::shared_ptr<FloxFlake>> _inputs;
+    const Preferences                                 _prefs;
 
   public:
-    nix::ref<nix::EvalState> getStore();
-    nix::ref<nix::EvalState> getEvalStore();
+    nix::ref<nix::Store>     getStore();
+    nix::ref<nix::Store>     getEvalStore();
     nix::ref<nix::EvalState> getEvalState();
+
+    ResolverState( const Inputs                 & inputs
+                 , const Preferences            & prefs
+                 , const std::list<std::string> & systems = defaultSystems
+                 )
+      : _prefs( prefs )
+    {
+      for ( auto & [id, ref] : inputs.inputs )
+        {
+#if HAVE_BOEHMGC
+          this->_inputs.emplace( id, std::allocate_shared<FloxFlake>(
+            traceable_allocator<FloxFlake>()
+          , this->getEvalState()
+          , id
+          , ref
+          , this->_prefs
+          , systems
+          ) );
+#else
+          this->_inputs.emplace( id, std::make_shared<FloxFlake>(
+            this->getEvalState()
+          , id
+          , ref
+          , this->_prefs
+          , systems
+          ) );
+#endif
+        }
+    }
+
+    Preferences getPreferences() const { return this->_prefs; }
+
+    std::map<std::string, nix::ref<FloxFlake>> getInputs() const;
 };
 
 

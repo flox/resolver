@@ -16,6 +16,7 @@
 #include <map>
 #include <memory>
 #include "flox/types.hh"
+#include "flox/util.hh"
 
 
 /* -------------------------------------------------------------------------- */
@@ -25,22 +26,23 @@ namespace flox {
 
 /* -------------------------------------------------------------------------- */
 
-FloxFlake::FloxFlake(       nix::ref<nix::EvalState>    state
-                    ,       std::string_view            id
-                    ,       FloxFlakeRef             && ref
-                    , const std::list<std::string>   &  systems
-                    , const Preferences              &  prefs
+FloxFlake::FloxFlake(       nix::ref<nix::EvalState>   state
+                    ,       std::string_view           id
+                    , const FloxFlakeRef             & ref
+                    , const Preferences              & prefs
+                    , const std::list<std::string>   & systems
                     )
   : _state( state )
+  , _flakeRef( nix::FlakeRef::fromAttrs( ref.toAttrs() ) )
   , _systems( systems )
   , _prefsStabilities(
-      ( prefs.stabilities.find( id ) != prefs.stabilities.end() )
-      ? prefs.stabilities.at( id )
+      ( prefs.stabilities.find( std::string( id ) ) != prefs.stabilities.end() )
+      ? prefs.stabilities.at( std::string( id ) )
       : defaultCatalogStabilities
     )
   , _prefsPrefixes(
-      ( prefs.prefixes.find( id ) != prefs.prefixes.end() )
-      ? prefs.prefixes.at( id )
+      ( prefs.prefixes.find( std::string( id ) ) != prefs.prefixes.end() )
+      ? prefs.prefixes.at( std::string( id ) )
       : defaultAttrPathPrefixes
     )
 {
@@ -50,7 +52,7 @@ FloxFlake::FloxFlake(       nix::ref<nix::EvalState>    state
 /* -------------------------------------------------------------------------- */
 
   std::shared_ptr<nix::flake::LockedFlake>
-FloxFlake::getLockedFlake() const
+FloxFlake::getLockedFlake()
 {
   if ( this->lockedFlake == nullptr )
     {
@@ -82,7 +84,7 @@ FloxFlake::getDefaultFlakeAttrPaths() const
 {
   std::string system = nix::settings.thisSystem.get();
   if ( hasElement( this->_systems, system ) &&
-       hasElement( this->_prefsPrefixes, "packages" )
+       hasElement<std::string, std::vector>( this->_prefsPrefixes, "packages" )
      )
     {
       return {
@@ -153,16 +155,18 @@ FloxFlake::getFlakeAttrPathPrefixes() const
 /* -------------------------------------------------------------------------- */
 
    nix::ref<nix::eval_cache::EvalCache>
-FloxFlake::openEvalCache() const
+FloxFlake::openEvalCache()
 {
   nix::flake::Fingerprint fingerprint =
     this->getLockedFlake()->getFingerprint();
+  nix::ref<nix::EvalState>                 lState = this->_state;
+  std::shared_ptr<nix::flake::LockedFlake> lFlake = this->getLockedFlake();
   return nix::make_ref<nix::eval_cache::EvalCache>(
     ( nix::evalSettings.useEvalCache && nix::evalSettings.pureEval )
     ? std::optional { std::cref( fingerprint ) }
     : std::nullopt
   , * this->_state
-  , loadFlakeRoot
+  , [&lState, lFlake]() { return loadFlakeRoot( lState, lFlake ); }
   );
 }
 
@@ -170,7 +174,7 @@ FloxFlake::openEvalCache() const
 /* -------------------------------------------------------------------------- */
 
   Cursor
-FloxFlake::openCursor( const std::vector<nix::Symbol> & path ) const
+FloxFlake::openCursor( const std::vector<nix::Symbol> & path )
 {
   Cursor cur = this->openEvalCache()->getRoot();
   for ( const nix::Symbol & p : path ) { cur = cur->getAttr( p ); }
@@ -181,7 +185,7 @@ FloxFlake::openCursor( const std::vector<nix::Symbol> & path ) const
 /* -------------------------------------------------------------------------- */
 
   MaybeCursor
-FloxFlake::maybeOpenCursor( const std::vector<nix::Symbol> & path ) const
+FloxFlake::maybeOpenCursor( const std::vector<nix::Symbol> & path )
 {
   MaybeCursor cur = this->openEvalCache()->getRoot();
   for ( const nix::Symbol & p : path )
@@ -196,7 +200,7 @@ FloxFlake::maybeOpenCursor( const std::vector<nix::Symbol> & path ) const
 /* -------------------------------------------------------------------------- */
 
   std::list<Cursor>
-FloxFlake::getFlakePrefixCursors() const
+FloxFlake::getFlakePrefixCursors()
 {
   std::list<Cursor>                    rsl;
   nix::ref<nix::eval_cache::EvalCache> cache = this->openEvalCache();
@@ -217,7 +221,7 @@ FloxFlake::getFlakePrefixCursors() const
 /* -------------------------------------------------------------------------- */
 
   std::list<std::vector<nix::Symbol>>
-FloxFlake::getActualFlakeAttrPathPrefixes() const
+FloxFlake::getActualFlakeAttrPathPrefixes()
 {
   std::list<std::vector<nix::Symbol>>  rsl;
   for ( const Cursor c : this->getFlakePrefixCursors() )
@@ -239,3 +243,4 @@ FloxFlake::getActualFlakeAttrPathPrefixes() const
  *
  *
  * ========================================================================== */
+

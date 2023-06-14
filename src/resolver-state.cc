@@ -5,8 +5,6 @@
  *
  * -------------------------------------------------------------------------- */
 
-#pragma once
-
 #include <nix/eval-inline.hh>
 #include <nix/eval.hh>
 #include <nix/eval-cache.hh>
@@ -18,7 +16,6 @@
 #include <optional>
 #include <vector>
 #include <map>
-#include <memory>
 
 
 /* -------------------------------------------------------------------------- */
@@ -61,14 +58,14 @@ ResolverState::getEvalState()
     {
 #if HAVE_BOEHMGC
       this->evalState = std::allocate_shared<nix::EvalState>(
-        std::traceable_allocator<nix::EvalState>()
-      , {}
+        traceable_allocator<nix::EvalState>()
+      , std::list<std::string> {}
       , this->getEvalStore()
       , this->getStore()
       );
 #else
       this->evalState = std::make_shared<nix::EvalState>(
-        {}
+        std::list<std::string> {}
       , this->getEvalStore()
       , this->getStore()
       );
@@ -76,6 +73,20 @@ ResolverState::getEvalState()
       this->evalState->repair = nix::NoRepair;
     }
   return nix::ref<nix::EvalState>( this->evalState );
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+  std::map<std::string, nix::ref<FloxFlake>>
+ResolverState::getInputs() const
+{
+  std::map<std::string, nix::ref<FloxFlake>> rsl;
+  for ( auto & [id, flake] : this->_inputs )
+    {
+      rsl.emplace( id, nix::ref<FloxFlake>( flake ) );
+    }
+  return rsl;
 }
 
 

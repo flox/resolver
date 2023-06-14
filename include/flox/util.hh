@@ -163,7 +163,8 @@ template <typename T, template <typename, typename> class C>
   static inline bool
 hasElement( const C<T, std::allocator<T>> & container, const T & e )
 {
-  return std::find( container.cbegin(), container.cend(), e );
+  return std::find( container.cbegin(), container.cend(), e ) !=
+         container.cend();
 }
 
 
