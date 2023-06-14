@@ -111,7 +111,7 @@ class Package {
     bool hasPnameAttr()   const;
     bool hasVersionAttr() const;
 
-    std::string    toURIString() const;
+    std::string toURIString() const;
     //nlohmann::json toJSON()      const;
 };
 

@@ -112,19 +112,6 @@ Package::getPname() const
   std::optional<std::string>
 Package::getVersion() const
 {
-  if ( this->_subtree == ST_CATALOG )
-    {
-      std::string last =
-        (* this->_symtab )[this->_path[this->_path.size() - 1]];
-      if ( ( last != "latest" ) && ( last != "unknown" ) )
-        {
-          for ( size_t i = 0; i < last.size(); ++i )
-            {
-              if ( last[i] == '_' ) { last[i] = '.'; }
-            }
-          return last;
-        }
-    }
   if ( this->_hasVersionAttr )
     {
       return this->_cursor->getAttr( "version" )->getString();

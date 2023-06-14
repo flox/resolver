@@ -143,11 +143,17 @@ DescriptorFunctor::packagePredicate(       Cursor                     pos
             "Failed to parse derivation name: " + pnv.name
           );
         }
-      if ( ! ( ( n == pathS[path.size() - 1] ) ||
-               ( n == pnv.name ) ||
-               ( n == o )
-             )
-         )
+
+      /* AttrPath part indicating name.
+       *   packages.{{system}}.hello                           ->  hello
+       *   packages.{{system}}.python3Packages.pip             ->  pip
+       *   legacyPackages.{{system}}.hello                     ->  hello
+       *   catalog.{{system}}.{{stability}}.hello.{{version}}  ->  hello
+       */
+      std::string_view pkgAttrName =
+        ( pathS[0] == "catalog" ) ? pathS[path.size() - 2]
+                                  : pathS[path.size() - 1];
+      if ( ! ( ( n == pkgAttrName ) || ( n == pnv.name ) || ( n == o ) ) )
         {
           return false;
         }
