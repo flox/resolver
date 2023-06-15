@@ -159,14 +159,28 @@ FloxFlake::openEvalCache()
 {
   nix::flake::Fingerprint fingerprint =
     this->getLockedFlake()->getFingerprint();
-  nix::ref<nix::EvalState>                 lState = this->_state;
-  std::shared_ptr<nix::flake::LockedFlake> lFlake = this->getLockedFlake();
   return nix::make_ref<nix::eval_cache::EvalCache>(
     ( nix::evalSettings.useEvalCache && nix::evalSettings.pureEval )
     ? std::optional { std::cref( fingerprint ) }
     : std::nullopt
   , * this->_state
-  , [&lState, lFlake]() { return loadFlakeRoot( lState, lFlake ); }
+  , [&]()
+    {
+      nix::Value * vFlake = this->_state->allocValue();
+      nix::flake::callFlake(
+        * this->_state
+      , * this->getLockedFlake()
+      , * vFlake
+      );
+      this->_state->forceAttrs(
+        * vFlake, nix::noPos, "while parsing cached flake data"
+      );
+      nix::Attr * aOutputs = vFlake->attrs->get(
+        this->_state->symbols.create( "outputs" )
+      );
+      assert( aOutputs != nullptr );
+      return aOutputs->value;
+    }
   );
 }
 

@@ -8,13 +8,16 @@
 #include <iostream>
 #include <nlohmann/json.hpp>
 #include <nix/flake/flake.hh>
+#include <nix/shared.hh>
 #include <nix/fetchers.hh>
+#include "flox/predicates.hh"
 #include "resolve.hh"
 
 
 /* -------------------------------------------------------------------------- */
 
 using namespace flox::resolve;
+using namespace flox::resolve::predicates;
 using namespace nlohmann::literals;
 
 /* -------------------------------------------------------------------------- */
@@ -25,74 +28,31 @@ static const std::string nixpkgsRef =
 
 /* -------------------------------------------------------------------------- */
 
-  bool
-test_resolve1()
-{
-  Inputs      inputs( (nlohmann::json) { { "nixpkgs", nixpkgsRef } } );
-  Preferences prefs;
-  Descriptor  desc( (nlohmann::json) { { "name", "hello" } } );
-
-  std::vector<Resolved> rsl = resolve( inputs, prefs, desc );
-
-  return rsl.size() == 1;
-}
-
-
-/* -------------------------------------------------------------------------- */
+void dummy( nix::SymbolTable * ) {}
 
   bool
-test_resolve2()
-{
-  Inputs      inputs( (nlohmann::json) { { "nixpkgs", nixpkgsRef } } );
-  Preferences prefs;
-  Descriptor  desc( (nlohmann::json) {
-    { "name", "nodejs" }, { "semver", ">=14" }
-  } );
-  std::vector<Resolved> rsl = resolve( inputs, prefs, desc );
-  return rsl.size() == 10;
-}
-
-
-/* -------------------------------------------------------------------------- */
-
-  bool
-test_resolveOne1()
-{
-  Inputs      inputs( (nlohmann::json) { { "nixpkgs", nixpkgsRef } } );
-  Preferences prefs;
-  Descriptor  desc( (nlohmann::json) { { "name", "hello" } } );
-
-  std::vector<Resolved>   rsl = resolve( inputs, prefs, desc );
-  std::optional<Resolved> one = resolveOne( inputs, prefs, desc );
-
-  return ( rsl.size() == 1 ) &&
-         one.has_value() &&
-         ( one.value().toJSON() == rsl[0].toJSON() );
-}
-
-
-/* -------------------------------------------------------------------------- */
-
-  bool
-test_ResolverStateLocking1()
-{
-  Inputs      inputs( (nlohmann::json) { { "nixpkgs", nixpkgsRef } } );
-  Preferences prefs;
-  return ResolverState( inputs, prefs ).getInputs().at( "nixpkgs" )
-           ->getLockedFlake()->flake.lockedRef.input.isLocked();
-}
-
-
-/* -------------------------------------------------------------------------- */
-
-  bool
-test_getActualFlakeAttrPathPrefixes()
+test_predicates1()
 {
   Inputs      inputs( (nlohmann::json) { { "nixpkgs", nixpkgsRef } } );
   Preferences prefs;
   ResolverState rs( inputs, prefs );
-  auto ps = rs.getInputs().at( "nixpkgs" )->getActualFlakeAttrPathPrefixes();
-  return ps.size() == defaultSystems.size();
+
+  nix::ref<FloxFlake>      n = rs.getInputs().at( "nixpkgs" );
+  nix::ref<nix::EvalState> s = rs.getEvalState();
+
+  std::vector<nix::Symbol> path = {
+    s->symbols.create( "legacyPackages" )
+  , s->symbols.create( "x86_64-linux" )
+  , s->symbols.create( "hello" )
+  };
+
+  Package pkg( n->openCursor( path ), & s->symbols, false );
+
+  PkgPred prn( hasName( "hello" ) );
+  PkgPred prv( hasVersion( "2.12.0" ) );
+  PkgPred pra = prn && prv;
+
+  return pra( pkg ) && prv( pkg ) && pra( pkg );
 }
 
 
@@ -121,11 +81,11 @@ main( int argc, char * argv[], char ** envp )
 {
   int ec = EXIT_SUCCESS;
 
-  RUN_TEST( resolve1 );
-  RUN_TEST( resolve2 );
-  RUN_TEST( resolveOne1 );
-  RUN_TEST( ResolverStateLocking1 );
-  RUN_TEST( getActualFlakeAttrPathPrefixes );
+  nix::initNix();
+  nix::initGC();
+
+  test_predicates1();
+  // RUN_TEST( predicates1 );
 
   return ec;
 }

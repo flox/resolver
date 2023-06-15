@@ -151,14 +151,6 @@ bool sortByDepth( const AttrPathGlob & a, const AttrPathGlob & b ) noexcept;
 
 /* -------------------------------------------------------------------------- */
 
-nix::Value * loadFlakeRoot(
-  nix::ref<nix::EvalState>                 state
-, std::shared_ptr<nix::flake::LockedFlake> lockedFlake
-);
-
-
-/* -------------------------------------------------------------------------- */
-
 template <typename T, template <typename, typename> class C>
   static inline bool
 hasElement( const C<T, std::allocator<T>> & container, const T & e )

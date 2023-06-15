@@ -64,7 +64,6 @@ Package::init( bool checkDrv )
 
 /* -------------------------------------------------------------------------- */
 
-FloxFlakeRef  Package::getFlakeRef()    const { return this->_flake; }
 Cursor        Package::getCursor()      const { return this->_cursor; }
 subtree_type  Package::getSubtreeType() const { return this->_subtree; }
 std::string   Package::getFullName()    const { return this->_dname.fullName; }
@@ -78,16 +77,6 @@ bool Package::hasVersionAttr() const { return this->_hasVersionAttr; }
 
 
 /* -------------------------------------------------------------------------- */
-
-  nix::flake::Fingerprint
-Package::getFlakeFingerprint() const
-{
-  return this->_fingerprint;
-}
-
-
-/* -------------------------------------------------------------------------- */
-
 
   nix::DrvName
 Package::getParsedDrvName() const
@@ -124,6 +113,16 @@ Package::getVersion() const
     {
       return this->_dname.version;
     }
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+  std::optional<std::string>
+Package::getStability() const
+{
+  if ( this->_subtree != ST_CATALOG ) { return std::nullopt; }
+  return ( * this->_symtab )[this->_path[1]];
 }
 
 
@@ -202,15 +201,31 @@ Package::isUnfree() const
 /* -------------------------------------------------------------------------- */
 
   std::string
-Package::toURIString() const
+Package::toURIString( const FloxFlakeRef & ref ) const
 {
-  std::string uri = this->_flake.to_string() + "#";
+  std::string uri = ref.to_string() + "#";
   for ( size_t i = 0; i < this->_path.size(); ++i )
     {
       uri += "\"" + ( * this->_symtab )[this->_path[i]] + "\"";
       if ( ( i + 1 ) < this->_path.size() ) uri += ".";
     }
   return uri;
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+  std::string
+Package::getPkgAttrName() const
+{
+  if ( this->getSubtreeType() == ST_CATALOG )
+    {
+      return ( * this->_symtab )[this->_path[this->_path.size() - 2]];
+    }
+  else
+    {
+      return ( * this->_symtab )[this->_path[this->_path.size() - 1]];
+    }
 }
 
 
