@@ -233,7 +233,10 @@ Preferences::pred_V2() const
   if ( this->allowedLicenses.has_value() )
     {
       std::vector<std::string> ls;
-      for ( auto & l : this->allowedLicenses.value() ) { ls.push_back( l ); }
+      for ( const auto & l : this->allowedLicenses.value() )
+        {
+          ls.push_back( l );
+        }
       pred = pred && predicates::hasLicense( ls );
     }
   return pred;

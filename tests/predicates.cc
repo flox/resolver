@@ -85,6 +85,33 @@ test_predicates2()
 
 /* -------------------------------------------------------------------------- */
 
+/* Assert that an unfree package is properly handled. */
+  bool
+test_Preferences_pred()
+{
+  Inputs      inputs( (nlohmann::json) { { "nixpkgs", nixpkgsRef } } );
+  Preferences prefs( (nlohmann::json) {
+    { "allow", { { "unfree", false } } }
+  } );
+  ResolverState rs( inputs, prefs );
+
+  nix::ref<FloxFlake>      n = rs.getInputs().at( "nixpkgs" );
+  nix::ref<nix::EvalState> s = rs.getEvalState();
+
+  std::vector<nix::Symbol> path = {
+    s->symbols.create( "legacyPackages" )
+  , s->symbols.create( "x86_64-linux" )
+  , s->symbols.create( "LAStools" )
+  };
+
+  Package pkg( n->openCursor( path ), & s->symbols, false );
+
+  return ! prefs.pred_V2()( pkg );
+}
+
+
+/* -------------------------------------------------------------------------- */
+
 #define RUN_TEST( _NAME )                                              \
   try                                                                  \
     {                                                                  \
@@ -113,6 +140,7 @@ main( int argc, char * argv[], char ** envp )
 
   RUN_TEST( predicates1 );
   RUN_TEST( predicates2 );
+  RUN_TEST( Preferences_pred );
 
   return ec;
 }
