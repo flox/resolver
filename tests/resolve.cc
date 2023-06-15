@@ -98,6 +98,7 @@ test_getActualFlakeAttrPathPrefixes()
 
 /* -------------------------------------------------------------------------- */
 
+/* Ensure that iterator ends on final attribute. */
   bool
 test_FlakeIterator1()
 {
@@ -114,9 +115,14 @@ test_FlakeIterator1()
   Cursor c = ps->openCursor( path );
   for ( FloxFlake::Iterator p = ps->beginAt( c ); p != ps->endAt( c ); ++p )
     {
-      std::cerr << p->getAttrPathStr() << std::endl;
+      if ( p->getAttrPathStr() ==
+           "legacyPackages.x86_64-linux.hello.meta.unsupported"
+         )
+        {
+          return true;
+        }
     }
-  return true;
+  return false;
 }
 
 

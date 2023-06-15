@@ -249,9 +249,9 @@ class FloxFlake : public std::enable_shared_from_this<FloxFlake> {
         Iterator( Cursor root, size_t i ) :
           _root( root ), _attrs( root->getAttrs() ), _i( i )
         {
-          if ( this->_attrs.size() <= this->_i )
+          if ( this->_attrs.size() < this->_i )
             {
-              this->_i = this->_attrs.size() - 1;
+              this->_i = this->_attrs.size();
             }
         }
 
@@ -315,12 +315,12 @@ class FloxFlake : public std::enable_shared_from_this<FloxFlake> {
     endAt( const std::vector<nix::Symbol> & path )
     {
       Cursor r = this->openCursor( path );
-      return Iterator( r, r->getAttrs().size() - 1 );
+      return Iterator( r, r->getAttrs().size() );
     }
       Iterator
     endAt( Cursor root )
     {
-      return Iterator( root, root->getAttrs().size() - 1 );
+      return Iterator( root, root->getAttrs().size() );
     }
 };
 
