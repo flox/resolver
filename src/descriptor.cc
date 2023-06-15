@@ -265,6 +265,80 @@ Descriptor::audit( std::string & msg ) const
 
 /* -------------------------------------------------------------------------- */
 
+  predicates::PkgPred
+Descriptor::pred( nix::SymbolTable & st ) const
+{
+  std::list<predicates::PkgPred> preds;
+
+  if ( this->relAttrPath.has_value() )
+    {
+      std::vector<nix::Symbol> prefix;
+      for ( const std::string & p : this->relAttrPath.value() )
+        {
+          prefix.push_back( st.create( p ) );
+        }
+      preds.push_back( predicates::hasRelPathPrefix( std::move( prefix ) ) );
+    }
+
+  // FIXME: handle glob
+  //if ( this->absAttrPath.has_value() )
+  //  {
+  //    std::vector<nix::Symbol> prefix;
+  //    for ( const std::string & p : this->absAttrPath.value().path )
+  //      {
+  //        prefix.push_back( st.create( p ) );
+  //      }
+  //    preds.push_back( predicates::hasAbsPathPrefix( std::move( prefix ) ) );
+  //  }
+  //else if ( ! this->searchCatalogs )
+  if ( ! this->searchCatalogs )
+    {
+      preds.push_back( ! predicates::hasSubtree( ST_CATALOG ) );
+    }
+  else if ( ! this->searchFlakes )
+    {
+      preds.push_back( predicates::hasSubtree( ST_CATALOG ) );
+    }
+
+  if ( this->catalogStability.has_value() )
+    {
+      preds.push_back(
+        predicates::hasStability( this->catalogStability.value() )
+      );
+    }
+
+  if ( this->name.has_value() )
+    {
+      preds.push_back( predicates::hasName( this->name.value() ) );
+    }
+
+  if ( this->version.has_value() )
+    {
+      preds.push_back( predicates::hasVersion( this->version.value() ) );
+    }
+
+  if ( this->semver.has_value() )
+    {
+      preds.push_back( predicates::satisfiesSemver( this->semver.value() ) );
+    }
+
+  if ( preds.size() < 1 )
+    {
+      return predicates::predTrue;
+    }
+  else if ( preds.size() == 1 )
+    {
+      return preds.front();
+    }
+  predicates::PkgPred pred = preds.front();
+  preds.pop_front();
+  for ( auto & p : preds ) { pred = pred && p; }
+  return pred;
+}
+
+
+/* -------------------------------------------------------------------------- */
+
   void
 from_json( const nlohmann::json & j, Descriptor & d )
 {

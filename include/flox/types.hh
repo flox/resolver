@@ -229,103 +229,38 @@ class FloxFlake : public std::enable_shared_from_this<FloxFlake> {
     std::list<Cursor> getFlakePrefixCursors();
 
     std::list<std::vector<nix::Symbol>> getActualFlakeAttrPathPrefixes();
-
-    struct Iterator {
-      private:
-        Cursor                   _root;
-        std::vector<nix::Symbol> _attrs;
-        size_t                   _i      = 0;
-
-      public:
-        using iterator_category = std::input_iterator_tag;
-        using difference_type   = std::ptrdiff_t;
-        using value_type        = nix::eval_cache::AttrCursor;
-        using pointer           = Cursor;
-        using reference         = Cursor;
-
-        Iterator( Cursor root ) :
-          _root( root ), _attrs( root->getAttrs() ), _i( 0 )
-        {}
-        Iterator( Cursor root, size_t i ) :
-          _root( root ), _attrs( root->getAttrs() ), _i( i )
-        {
-          if ( this->_attrs.size() < this->_i )
-            {
-              this->_i = this->_attrs.size();
-            }
-        }
-
-        size_t getIdx() const { return this->_i; }
-        size_t getMax() const { return this->_attrs.size(); }
-
-          reference
-        operator*() const
-        {
-          if ( this->_attrs.size() <= this->_i )
-            {
-              return this->_root->getAttr(
-                this->_attrs[this->_attrs.size() - 1]
-              );
-            }
-          return this->_root->getAttr( this->_attrs[this->_i] );
-        }
-          pointer
-        operator->() const
-        {
-          if ( this->_attrs.size() <= this->_i )
-            {
-              return this->_root->getAttr(
-                this->_attrs[this->_attrs.size() - 1]
-              );
-            }
-          return this->_root->getAttr( this->_attrs[this->_i] );
-        }
-
-        Iterator & operator++() { this->_i++; return * this; }
-
-          Iterator
-        operator++( int )
-        {
-          Iterator tmp = * this;
-          ++( * this );
-          return tmp;
-        }
-
-          friend bool
-        operator==( const Iterator & a, const Iterator & b )
-        {
-          return ( a._i == b._i ) && ( a._attrs == b._attrs );
-        }
-
-          friend bool
-        operator!=( const Iterator & a, const Iterator & b )
-        {
-          return ( a._i != b._i ) || ( a._attrs != b._attrs );
-        }
-    };
-
-      Iterator
-    beginAt( const std::vector<nix::Symbol> & path )
-    {
-      return Iterator( this->openCursor( path ) );
-    }
-    Iterator beginAt( Cursor root ) { return Iterator( root ); }
-
-      Iterator
-    endAt( const std::vector<nix::Symbol> & path )
-    {
-      Cursor r = this->openCursor( path );
-      return Iterator( r, r->getAttrs().size() );
-    }
-      Iterator
-    endAt( Cursor root )
-    {
-      return Iterator( root, root->getAttrs().size() );
-    }
 };
 
 
 /* -------------------------------------------------------------------------- */
+
+class Resolved {
+  private:
+    std::string  uri;
+    FloxFlakeRef input;
+
+  public:
+    AttrPathGlob   path;
+    nlohmann::json info;
+
+    Resolved( const nlohmann::json & attrs );
+    Resolved( const FloxFlakeRef   & input
+            , const AttrPathGlob   & path
+            , const nlohmann::json & info
+            );
+
+    nlohmann::json toJSON()   const;
+    std::string    toString() const { return this->uri; }
+};
+
+
+void from_json( const nlohmann::json & j,       Resolved & p );
+void to_json(         nlohmann::json & j, const Resolved & p );
+
+
+/* -------------------------------------------------------------------------- */
+
+class Descriptor;
 
 class ResolverState {
   private:
@@ -334,6 +269,7 @@ class ResolverState {
     std::shared_ptr<nix::EvalState>                   evalState;
     std::map<std::string, std::shared_ptr<FloxFlake>> _inputs;
     const Preferences                                 _prefs;
+    std::map<std::string, std::list<Resolved>>        _results;
 
   public:
     nix::ref<nix::Store>     getStore();
@@ -372,33 +308,11 @@ class ResolverState {
     Preferences getPreferences() const { return this->_prefs; }
 
     std::map<std::string, nix::ref<FloxFlake>> getInputs() const;
+
+    std::optional<nix::ref<FloxFlake>> getInput( std::string_view id ) const;
+
+    size_t resolveInInput( std::string_view id, const Descriptor & desc );
 };
-
-
-/* -------------------------------------------------------------------------- */
-
-class Resolved {
-  private:
-    std::string  uri;
-    FloxFlakeRef input;
-
-  public:
-    AttrPathGlob   path;
-    nlohmann::json info;
-
-    Resolved( const nlohmann::json & attrs );
-    Resolved( const FloxFlakeRef   & input
-            , const AttrPathGlob   & path
-            , const nlohmann::json & info
-            );
-
-    nlohmann::json toJSON()   const;
-    std::string    toString() const { return this->uri; }
-};
-
-
-void from_json( const nlohmann::json & j,       Resolved & p );
-void to_json(         nlohmann::json & j, const Resolved & p );
 
 
 /* -------------------------------------------------------------------------- */

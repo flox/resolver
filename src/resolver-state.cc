@@ -92,6 +92,30 @@ ResolverState::getInputs() const
 
 /* -------------------------------------------------------------------------- */
 
+  std::optional<nix::ref<FloxFlake>>
+ResolverState::getInput( std::string_view id ) const
+{
+  for ( auto & [_id, flake] : this->_inputs )
+    {
+      if ( _id == id  ) { return nix::ref<FloxFlake>( flake ); }
+    }
+  return std::nullopt;
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+  size_t
+resolveInInput( std::string_view id, const Descriptor & desc )
+{
+  std::list<Resolved> results;
+  // TODO
+  return results.size();
+}
+
+
+/* -------------------------------------------------------------------------- */
+
   }  /* End namespace `flox::resolve' */
 }    /* End namespace `flox' */
 

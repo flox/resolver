@@ -15,6 +15,7 @@
 #include <nix/eval-cache.hh>
 #include "flox/exceptions.hh"
 #include "flox/types.hh"
+#include "flox/predicates.hh"
 
 
 /* -------------------------------------------------------------------------- */
@@ -57,6 +58,8 @@ class Descriptor {
      * "catalog:floxpkgs#hello" -> { catalog.id: "floxpkgs", name: "hello" }
      */
     Descriptor( const std::string_view desc );
+
+    predicates::PkgPred pred( nix::SymbolTable & st ) const;
 
     nlohmann::json toJSON()   const;
     std::string    toString() const;
