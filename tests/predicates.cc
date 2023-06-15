@@ -28,8 +28,6 @@ static const std::string nixpkgsRef =
 
 /* -------------------------------------------------------------------------- */
 
-void dummy( nix::SymbolTable * ) {}
-
   bool
 test_predicates1()
 {
@@ -49,10 +47,39 @@ test_predicates1()
   Package pkg( n->openCursor( path ), & s->symbols, false );
 
   PkgPred prn( hasName( "hello" ) );
-  PkgPred prv( hasVersion( "2.12.0" ) );
+  PkgPred prv( hasVersion( "2.12.1" ) );
   PkgPred pra = prn && prv;
 
-  return pra( pkg ) && prv( pkg ) && pra( pkg );
+  return prn( pkg ) && prv( pkg ) && pra( pkg );
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+  bool
+test_predicates2()
+{
+  Inputs      inputs( (nlohmann::json) { { "nixpkgs", nixpkgsRef } } );
+  Preferences prefs;
+  ResolverState rs( inputs, prefs );
+
+  nix::ref<FloxFlake>      n = rs.getInputs().at( "nixpkgs" );
+  nix::ref<nix::EvalState> s = rs.getEvalState();
+
+  std::vector<nix::Symbol> path = {
+    s->symbols.create( "legacyPackages" )
+  , s->symbols.create( "x86_64-linux" )
+  , s->symbols.create( "hello" )
+  };
+
+  Package pkg( n->openCursor( path ), & s->symbols, false );
+
+  PkgPred prs( hasSubtree( "legacyPackages" ) );
+  PkgPred pre( hasSubtree( ST_LEGACY ) );
+  PkgPred pre2 = ! PkgPred( hasSubtree( ST_CATALOG ) );
+  PkgPred pra  = prs && pre && pre2;
+
+  return prs( pkg ) && pre( pkg ) && pre2( pkg ) && pra( pkg );
 }
 
 
@@ -84,8 +111,8 @@ main( int argc, char * argv[], char ** envp )
   nix::initNix();
   nix::initGC();
 
-  test_predicates1();
-  // RUN_TEST( predicates1 );
+  RUN_TEST( predicates1 );
+  RUN_TEST( predicates2 );
 
   return ec;
 }

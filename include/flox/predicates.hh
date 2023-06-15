@@ -43,6 +43,27 @@ struct PkgPred {
     } );
   }
 
+    PkgPred
+  operator||( const PkgPred & other ) const
+  {
+    pred_fn t = this->pred;
+    pred_fn o = other.pred;
+    return PkgPred( [t, o]( const Package & p )
+    {
+      return t( p ) || o( p );
+    } );
+  }
+
+    PkgPred
+  operator!()
+  {
+    pred_fn t = this->pred;
+    return PkgPred( [t]( const Package & p )
+    {
+      return ! t( p );
+    } );
+  }
+
   bool operator()( const Package & p ) const { return this->pred( p ); }
 };
 

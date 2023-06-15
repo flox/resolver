@@ -23,7 +23,7 @@ namespace flox {
   PkgPred
 hasName( const std::string & name )
 {
-  return (PkgPred::pred_fn) [&name]( const Package & p )
+  return (PkgPred::pred_fn) [name]( const Package & p )
   {
     return ( p.getPkgAttrName() == name ) ||
            ( p.getPname() == name )  ||
@@ -37,7 +37,7 @@ hasName( const std::string & name )
   PkgPred
 hasFullName( const std::string & name )
 {
-  return (PkgPred::pred_fn) [&name]( const Package & p )
+  return (PkgPred::pred_fn) [name]( const Package & p )
   {
     return p.getFullName() == name;
   };
@@ -49,7 +49,7 @@ hasFullName( const std::string & name )
   PkgPred
 hasPname( const std::string & name )
 {
-  return (PkgPred::pred_fn) [&name]( const Package & p )
+  return (PkgPred::pred_fn) [name]( const Package & p )
   {
     return p.getPname() == name;
   };
@@ -61,7 +61,7 @@ hasPname( const std::string & name )
   PkgPred
 hasPkgAttrName( const std::string & name )
 {
-  return (PkgPred::pred_fn) [&name]( const Package & p )
+  return (PkgPred::pred_fn) [name]( const Package & p )
   {
     return p.getPkgAttrName() == name;
   };
@@ -73,7 +73,7 @@ hasPkgAttrName( const std::string & name )
   PkgPred
 hasVersion( const std::string & version )
 {
-  return (PkgPred::pred_fn) [&version]( const Package & p )
+  return (PkgPred::pred_fn) [version]( const Package & p )
   {
     return p.getVersion().has_value() && ( p.getVersion().value() == version );
   };
@@ -85,7 +85,7 @@ hasVersion( const std::string & version )
   PkgPred
 satisfiesSemver( const std::string & range )
 {
-  return (PkgPred::pred_fn) [&range]( const Package & p )
+  return (PkgPred::pred_fn) [range]( const Package & p )
   {
     if ( ! p.getSemver().has_value() ) { return false; }
     std::list<std::string> vs;
@@ -100,7 +100,7 @@ satisfiesSemver( const std::string & range )
   PkgPred
 hasLicense( const std::string & license )
 {
-  return (PkgPred::pred_fn) [&license]( const Package & p )
+  return (PkgPred::pred_fn) [license]( const Package & p )
   {
     return p.getLicense().has_value() && ( p.getLicense().value() == license );
   };
@@ -112,7 +112,7 @@ hasLicense( const std::string & license )
   PkgPred
 hasSubtree( const std::string & subtree )
 {
-  return (PkgPred::pred_fn) [&subtree]( const Package & p )
+  return (PkgPred::pred_fn) [subtree]( const Package & p )
   {
     switch ( p.getSubtreeType() )
       {
@@ -128,7 +128,7 @@ hasSubtree( const std::string & subtree )
   PkgPred
 hasSubtree( subtree_type subtree )
 {
-  return (PkgPred::pred_fn) [&subtree]( const Package & p )
+  return (PkgPred::pred_fn) [subtree]( const Package & p )
   {
     return p.getSubtreeType() == subtree;
   };
@@ -140,7 +140,7 @@ hasSubtree( subtree_type subtree )
   PkgPred
 hasAbsPathPrefix( const std::vector<nix::Symbol> & prefix )
 {
-  return (PkgPred::pred_fn) [&prefix]( const Package & p )
+  return (PkgPred::pred_fn) [prefix]( const Package & p )
   {
     const std::vector<nix::Symbol> path = p.getPath();
     if ( path.size() < prefix.size() ) { return false; }
@@ -155,7 +155,7 @@ hasAbsPathPrefix( const std::vector<nix::Symbol> & prefix )
   PkgPred
 hasRelPathPrefix( const std::vector<nix::Symbol> & prefix )
 {
-  return (PkgPred::pred_fn) [&prefix]( const Package & p )
+  return (PkgPred::pred_fn) [prefix]( const Package & p )
   {
     const std::vector<nix::Symbol> path = p.getPath();
     if ( ( path.size() - 2 ) < prefix.size() ) { return false; }
@@ -216,7 +216,7 @@ notBroken()
   PkgPred
 hasOutput( const std::string & output )
 {
-  return (PkgPred::pred_fn) [&output]( const Package & p )
+  return (PkgPred::pred_fn) [output]( const Package & p )
   {
     const std::vector<std::string> outputs = p.getOutputs();
     return std::find( outputs.cbegin(), outputs.cend(), output ) !=
@@ -227,7 +227,7 @@ hasOutput( const std::string & output )
   PkgPred
 hasOutputs( const std::vector<std::string> & outputs )
 {
-  return (PkgPred::pred_fn) [&outputs]( const Package & p )
+  return (PkgPred::pred_fn) [outputs]( const Package & p )
   {
     const std::vector<std::string> haves = p.getOutputs();
     for ( const auto & o : outputs )
@@ -259,7 +259,7 @@ depthLE( size_t max )
   PkgPred
 hasStability( const std::string & stability )
 {
-  return (PkgPred::pred_fn) [&stability]( const Package & p )
+  return (PkgPred::pred_fn) [stability]( const Package & p )
   {
     return p.getStability().has_value() &&
            ( p.getStability().value() == stability );
