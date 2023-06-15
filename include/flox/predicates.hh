@@ -77,6 +77,7 @@ PkgPred hasPkgAttrName(   const std::string              & name      );
 PkgPred hasVersion(       const std::string              & version   );
 PkgPred satisfiesSemver(  const std::string              & range     );
 PkgPred hasLicense(       const std::string              & license   );
+PkgPred hasLicense(       const std::vector<std::string> & licenses  );
 PkgPred hasSubtree(       const std::string              & subtree   );
 PkgPred hasSubtree(             subtree_type               subtree   );
 PkgPred hasAbsPathPrefix( const std::vector<nix::Symbol> & prefix    );
@@ -87,8 +88,26 @@ PkgPred hasOutputs(       const std::vector<std::string> & outputs   );
 PkgPred depthLE(                size_t                     max       );
 PkgPred hasUnfree(              bool                       value     );
 PkgPred hasBroken(              bool                       value     );
-PkgPred isFree();
-PkgPred notBroken();
+
+
+/* -------------------------------------------------------------------------- */
+
+static const PkgPred predTrue =
+  PkgPred( []( const Package & ) { return true; } );
+
+static const PkgPred predFalse =
+  PkgPred( []( const Package & ) { return false; } );
+
+static const PkgPred hasMeta =
+  PkgPred( []( const Package & p ) { return p.hasMetaAttr(); } );
+
+static const PkgPred isFree = PkgPred( []( const Package & p ) {
+  return ! p.isUnfree().value_or( false );
+} );
+
+static const PkgPred notBroken = PkgPred( []( const Package & p ) {
+  return ! p.isBroken().value_or( false );
+} );
 
 
 /* -------------------------------------------------------------------------- */

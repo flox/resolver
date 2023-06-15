@@ -17,6 +17,7 @@
 #include <unordered_set>
 #include "flox/exceptions.hh"
 #include "flox/types.hh"
+#include "flox/predicates.hh"
 #include "descriptor.hh"
 
 

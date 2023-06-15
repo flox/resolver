@@ -234,6 +234,31 @@ Preferences::pred() const
 
 /* -------------------------------------------------------------------------- */
 
+  predicates::PkgPred
+Preferences::pred_V2() const
+{
+  if ( this->allowUnfree &&
+       this->allowBroken &&
+       ( ! this->allowedLicenses.has_value() )
+     )
+    {
+      return predicates::predTrue;
+    }
+  predicates::PkgPred pred = predicates::hasMeta;
+  if ( ! this->allowUnfree ) { pred = pred && predicates::isFree;    }
+  if ( ! this->allowBroken ) { pred = pred && predicates::notBroken; }
+  if ( this->allowedLicenses.has_value() )
+    {
+      std::vector<std::string> ls;
+      for ( auto & l : this->allowedLicenses.value() ) { ls.push_back( l ); }
+      pred = pred && predicates::hasLicense( ls );
+    }
+  return pred;
+}
+
+
+/* -------------------------------------------------------------------------- */
+
   void
 from_json( const nlohmann::json & j, Preferences & p )
 {

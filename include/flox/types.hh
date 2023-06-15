@@ -139,6 +139,7 @@ static const std::vector<std::string> defaultAttrPathPrefixes = {
   "catalog", "packages", "legacyPackages"
 };
 
+namespace predicates { struct PkgPred; };
 
 struct Preferences {
   std::vector<std::string> inputs;
@@ -157,7 +158,8 @@ struct Preferences {
 
   nlohmann::json toJSON() const;
 
-  PkgPredicate pred() const;
+  PkgPredicate                       pred()    const;
+  flox::resolve::predicates::PkgPred pred_V2() const;
 
   int compareInputs(
         const std::string_view idA, const FloxFlakeRef & a

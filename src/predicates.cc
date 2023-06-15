@@ -106,6 +106,19 @@ hasLicense( const std::string & license )
   };
 }
 
+  PkgPred
+hasLicense( const std::vector<std::string> & licenses )
+{
+  return (PkgPred::pred_fn) [licenses]( const Package & p )
+  {
+    return
+      p.getLicense().has_value() &&
+      ( std::find( licenses.begin(), licenses.end(), p.getLicense().value() ) !=
+        licenses.end()
+      );
+  };
+}
+
 
 /* -------------------------------------------------------------------------- */
 
@@ -179,15 +192,6 @@ hasUnfree( bool value )
   };
 }
 
-  PkgPred
-isFree()
-{
-  return (PkgPred::pred_fn) []( const Package & p )
-  {
-    return ! p.isUnfree().value_or( false );
-  };
-}
-
 
 /* -------------------------------------------------------------------------- */
 
@@ -198,15 +202,6 @@ hasBroken( bool value )
   return (PkgPred::pred_fn) [value]( const Package & p )
   {
     return p.isBroken().has_value() && ( p.isBroken().value() == value );
-  };
-}
-
-  PkgPred
-notBroken()
-{
-  return (PkgPred::pred_fn) []( const Package & p )
-  {
-    return ! p.isBroken().value_or( false );
   };
 }
 
