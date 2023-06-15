@@ -112,7 +112,7 @@ test_FlakeIterator1()
   , rs.getEvalState()->symbols.create( "meta" )
   };
   Cursor c = ps->openCursor( path );
-  for ( FloxFlake::Iterator p = ps->beginAt( c ); p.getIdx() < p.getMax(); ++p )
+  for ( FloxFlake::Iterator p = ps->beginAt( c ); p != ps->endAt( c ); ++p )
     {
       std::cerr << p->getAttrPathStr() << std::endl;
     }
