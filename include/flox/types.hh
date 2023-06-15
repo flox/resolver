@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <iterator>
+#include <cstddef>
 #include <string>
 #include <variant>
 #include <vector>
@@ -193,7 +195,7 @@ void to_json(         nlohmann::json & j, const Preferences & p );
 
 /* -------------------------------------------------------------------------- */
 
-class FloxFlake :public std::enable_shared_from_this<FloxFlake> {
+class FloxFlake : public std::enable_shared_from_this<FloxFlake> {
   private:
     nix::ref<nix::EvalState> _state;
     FloxFlakeRef             _flakeRef;
@@ -227,6 +229,79 @@ class FloxFlake :public std::enable_shared_from_this<FloxFlake> {
     std::list<Cursor> getFlakePrefixCursors();
 
     std::list<std::vector<nix::Symbol>> getActualFlakeAttrPathPrefixes();
+
+    struct Iterator {
+      private:
+        Cursor                   _root;
+        std::vector<nix::Symbol> _attrs;
+        size_t                   _i      = 0;
+
+      public:
+        using iterator_category = std::input_iterator_tag;
+        using difference_type   = std::ptrdiff_t;
+        using value_type        = nix::eval_cache::AttrCursor;
+        using pointer           = Cursor;
+        using reference         = Cursor;
+
+        Iterator( Cursor root ) :
+          _root( root ), _attrs( root->getAttrs() ), _i( 0 )
+        {}
+
+        size_t getIdx() const { return this->_i; }
+        size_t getMax() const { return this->_attrs.size(); }
+
+          reference
+        operator*() const
+        {
+          if ( this->_attrs.size() <= this->_i )
+            {
+              return this->_root->getAttr(
+                this->_attrs[this->_attrs.size() - 1]
+              );
+            }
+          return this->_root->getAttr( this->_attrs[this->_i] );
+        }
+          pointer
+        operator->() const
+        {
+          if ( this->_attrs.size() <= this->_i )
+            {
+              return this->_root->getAttr(
+                this->_attrs[this->_attrs.size() - 1]
+              );
+            }
+          return this->_root->getAttr( this->_attrs[this->_i] );
+        }
+
+        Iterator & operator++() { this->_i++; return * this; }
+
+          Iterator
+        operator++( int )
+        {
+          Iterator tmp = * this;
+          ++( * this );
+          return tmp;
+        }
+
+          friend bool
+        operator==( const Iterator & a, const Iterator & b )
+        {
+          return ( a._i == b._i ) && ( a._attrs == b._attrs );
+        }
+
+          friend bool
+        operator!=( const Iterator & a, const Iterator & b )
+        {
+          return ( a._i != b._i ) || ( a._attrs != b._attrs );
+        }
+    };
+
+      Iterator
+    beginAt( const std::vector<nix::Symbol> & path )
+    {
+      return Iterator( this->openCursor( path ) );
+    }
+    Iterator beginAt( Cursor root ) { return Iterator( root ); }
 };
 
 
