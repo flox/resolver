@@ -166,6 +166,43 @@ hasAbsPathPrefix( const std::vector<nix::Symbol> & prefix )
 }
 
   PkgPred
+hasAbsPathPrefix(       nix::ref<nix::SymbolTable>   st
+                , const AttrPathGlob               & prefix
+                )
+{
+  std::vector<nix::Symbol> sprefix;
+  if ( ! prefix.hasGlob() )
+    {
+      for ( const attr_part & p : prefix.path )
+        {
+          sprefix.push_back( st->create( std::get<std::string>( p ) ) );
+        }
+      return hasAbsPathPrefix( sprefix );
+    }
+  for ( size_t i = 0; i < prefix.path.size(); ++i )
+    {
+      if ( i == 2 ) { continue; }
+      sprefix.push_back(
+        st->create( std::get<std::string>( prefix.path[i] ) )
+      );
+    }
+  return (PkgPred::pred_fn) [sprefix]( const Package & p )
+  {
+    const std::vector<nix::Symbol> path = p.getPath();
+    if ( ( path.size() - 1) < sprefix.size() ) { return false; }
+    for ( size_t i = 0; i < sprefix.size(); ++i )
+      {
+        if ( i == 2 )                { continue; }
+        if ( sprefix[i] != path[i] ) { return false; }
+      }
+    return true;
+  };
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+  PkgPred
 hasRelPathPrefix( const std::vector<nix::Symbol> & prefix )
 {
   return (PkgPred::pred_fn) [prefix]( const Package & p )

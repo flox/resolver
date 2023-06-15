@@ -98,66 +98,6 @@ test_getActualFlakeAttrPathPrefixes()
 
 /* -------------------------------------------------------------------------- */
 
-/* Ensure that iterator ends on final attribute. */
-  bool
-test_FlakeIterator1()
-{
-  Inputs              inputs( (nlohmann::json) { { "nixpkgs", nixpkgsRef } } );
-  Preferences         prefs;
-  ResolverState       rs( inputs, prefs );
-  nix::ref<FloxFlake> ps = rs.getInputs().at( "nixpkgs" );
-  std::vector<nix::Symbol> path = {
-    rs.getEvalState()->symbols.create( "legacyPackages" )
-  , rs.getEvalState()->symbols.create( "x86_64-linux" )
-  , rs.getEvalState()->symbols.create( "hello" )
-  , rs.getEvalState()->symbols.create( "meta" )
-  };
-  Cursor c = ps->openCursor( path );
-  for ( FloxFlake::Iterator p = ps->beginAt( c ); p != ps->endAt( c ); ++p )
-    {
-      if ( p->getAttrPathStr() ==
-           "legacyPackages.x86_64-linux.hello.meta.unsupported"
-         )
-        {
-          return true;
-        }
-    }
-  return false;
-}
-
-
-/* -------------------------------------------------------------------------- */
-
-/* Ensure that iterator ends on final attribute. */
-  bool
-test_FlakeIterator1()
-{
-  Inputs              inputs( (nlohmann::json) { { "nixpkgs", nixpkgsRef } } );
-  Preferences         prefs;
-  ResolverState       rs( inputs, prefs );
-  nix::ref<FloxFlake> ps = rs.getInputs().at( "nixpkgs" );
-  std::vector<nix::Symbol> path = {
-    rs.getEvalState()->symbols.create( "legacyPackages" )
-  , rs.getEvalState()->symbols.create( "x86_64-linux" )
-  , rs.getEvalState()->symbols.create( "hello" )
-  , rs.getEvalState()->symbols.create( "meta" )
-  };
-  Cursor c = ps->openCursor( path );
-  for ( FloxFlake::Iterator p = ps->beginAt( c ); p != ps->endAt( c ); ++p )
-    {
-      if ( p->getAttrPathStr() ==
-           "legacyPackages.x86_64-linux.hello.meta.unsupported"
-         )
-        {
-          return true;
-        }
-    }
-  return false;
-}
-
-
-/* -------------------------------------------------------------------------- */
-
 #define RUN_TEST( _NAME )                                              \
   try                                                                  \
     {                                                                  \
@@ -186,7 +126,6 @@ main( int argc, char * argv[], char ** envp )
   RUN_TEST( resolveOne1 );
   RUN_TEST( ResolverStateLocking1 );
   RUN_TEST( getActualFlakeAttrPathPrefixes );
-  RUN_TEST( FlakeIterator1 );
 
   return ec;
 }

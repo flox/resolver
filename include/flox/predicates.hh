@@ -14,6 +14,9 @@
 
 namespace flox {
   namespace resolve {
+
+    struct AttrPathGlob;
+
     namespace predicates {
 
 /* -------------------------------------------------------------------------- */
@@ -80,14 +83,17 @@ PkgPred hasLicense(       const std::string              & license   );
 PkgPred hasLicense(       const std::vector<std::string> & licenses  );
 PkgPred hasSubtree(       const std::string              & subtree   );
 PkgPred hasSubtree(             subtree_type               subtree   );
-PkgPred hasAbsPathPrefix( const std::vector<nix::Symbol> & prefix    );
-PkgPred hasRelPathPrefix( const std::vector<nix::Symbol> & prefix    );
 PkgPred hasStability(     const std::string              & stability );
 PkgPred hasOutput(        const std::string              & output    );
 PkgPred hasOutputs(       const std::vector<std::string> & outputs   );
 PkgPred depthLE(                size_t                     max       );
 PkgPred hasUnfree(              bool                       value     );
 PkgPred hasBroken(              bool                       value     );
+PkgPred hasRelPathPrefix( const std::vector<nix::Symbol> & prefix    );
+PkgPred hasAbsPathPrefix( const std::vector<nix::Symbol> & prefix    );
+PkgPred hasAbsPathPrefix(       nix::ref<nix::SymbolTable>   st
+                        , const AttrPathGlob               & prefix
+                        );
 
 
 /* -------------------------------------------------------------------------- */
