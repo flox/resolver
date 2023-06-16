@@ -272,6 +272,7 @@ class ResolverState {
     std::map<std::string, std::list<Resolved>>        _results;
 
   public:
+
     nix::ref<nix::Store>     getStore();
     nix::ref<nix::Store>     getEvalStore();
     nix::ref<nix::EvalState> getEvalState();
@@ -308,10 +309,14 @@ class ResolverState {
     Preferences getPreferences() const { return this->_prefs; }
 
     std::map<std::string, nix::ref<FloxFlake>> getInputs() const;
+    std::list<std::string>                     getInputNames() const;
 
     std::optional<nix::ref<FloxFlake>> getInput( std::string_view id ) const;
 
     size_t resolveInInput( std::string_view id, const Descriptor & desc );
+
+    std::map<std::string, std::list<Resolved>> getResults()    const;
+    void                                       clearResults();
 };
 
 

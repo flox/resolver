@@ -72,6 +72,14 @@ std::optional<Resolved> resolveOne( const Inputs      & inputs
 
 /* -------------------------------------------------------------------------- */
 
+std::list<Resolved> resolve_V2(       ResolverState & rs
+                              , const Descriptor    & desc
+                              ,       bool            one
+                              );
+
+
+/* -------------------------------------------------------------------------- */
+
   }  /* End Namespace `flox::resolve' */
 }  /* End Namespace `flox' */
 

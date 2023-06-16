@@ -78,6 +78,20 @@ ResolverState::getEvalState()
 
 /* -------------------------------------------------------------------------- */
 
+  std::list<std::string>
+ResolverState::getInputNames() const
+{
+  std::list<std::string> names;
+  for ( const auto & [id, flake] : this->_inputs )
+    {
+      names.push_back( id );
+    }
+  return names;
+}
+
+
+/* -------------------------------------------------------------------------- */
+
   std::map<std::string, nix::ref<FloxFlake>>
 ResolverState::getInputs() const
 {
@@ -106,11 +120,26 @@ ResolverState::getInput( std::string_view id ) const
 /* -------------------------------------------------------------------------- */
 
   size_t
-resolveInInput( std::string_view id, const Descriptor & desc )
+ResolverState::resolveInInput( std::string_view id, const Descriptor & desc )
 {
   std::list<Resolved> results;
   // TODO
   return results.size();
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+  std::map<std::string, std::list<Resolved>>
+ResolverState::getResults() const
+{
+  return this->_results;
+}
+
+  void
+ResolverState::clearResults()
+{
+  this->_results.clear();
 }
 
 
