@@ -119,17 +119,6 @@ ResolverState::getInput( std::string_view id ) const
 
 /* -------------------------------------------------------------------------- */
 
-  size_t
-ResolverState::resolveInInput( std::string_view id, const Descriptor & desc )
-{
-  std::list<Resolved> results;
-  // TODO
-  return results.size();
-}
-
-
-/* -------------------------------------------------------------------------- */
-
   std::map<std::string, std::list<Resolved>>
 ResolverState::getResults() const
 {
@@ -140,6 +129,89 @@ ResolverState::getResults() const
 ResolverState::clearResults()
 {
   this->_results.clear();
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+  size_t
+ResolverState::resolveInInput( std::string_view id, const Descriptor & desc )
+{
+  std::string _id( id );
+  this->_results.erase( _id );
+  std::list<Resolved> results;
+  std::list<Cursor>   todos;
+
+  /**
+   * 1. Handling of `id' should have already been handled elsewhere.
+   * 2. If we have an `absAttrPath' with no glob we can avoid traversal or
+   *    iteration over subtrees and systems.
+   * 3. If we have a `relAttrPath' we can avoid a full traversal and just
+   *    iterate over subtrees and systesm.
+   * 4. Otherwise we have to do a full traversal.
+   *    The `packages' output can be optimized slightly by avoiding recursive
+   *    descent into `recurseForDerivations' attrs.
+   */
+
+  /* Bail early if `id' isn't a match.
+   * This should have already been handled by the caller but this will clear
+   * existing results in case they do call with a bad input. */
+  if ( desc.inputId.has_value() && ( id != desc.inputId.value() ) )
+    {
+      this->_results.emplace( id, std::move( results ) );
+      return 0;
+    }
+
+  std::shared_ptr<FloxFlake> flake = this->_inputs.at( _id );
+
+  /* Handle `absAttrPath' */
+  if ( desc.absAttrPath.has_value() )
+    {
+      if ( desc.absAttrPath.value().hasGlob() )
+        {
+          std::vector<nix::Symbol> subtree = {
+            this->getEvalState()->symbols.create(
+              std::get<std::string>( desc.absAttrPath.value().path[0] )
+            )
+          };
+          Cursor c = flake->openCursor( subtree );
+          for ( const std::string & system : flake->getSystems() )
+            {
+              MaybeCursor s = c->maybeGetAttr( system );
+              for ( size_t i = 2;
+                    i < desc.absAttrPath.value().path.size();
+                    ++i
+                  )
+                {
+                  if ( s == nullptr ) { break; }
+                  s = s->maybeGetAttr(
+                    std::get<std::string>( desc.absAttrPath.value().path[i] )
+                  );
+                }
+              if ( s != nullptr ) { todos.push_back( (Cursor) s ); }
+            }
+        }
+      else
+        {
+          std::vector<nix::Symbol> path;
+          for ( size_t i = 0; i < desc.absAttrPath.value().path.size(); ++i )
+            {
+              this->getEvalState()->symbols.create(
+                std::get<std::string>( desc.absAttrPath.value().path[i] )
+              );
+            }
+          MaybeCursor c = flake->maybeOpenCursor( path );
+          if ( c != nullptr ) { todos.push_back( (Cursor) c ); }
+        }
+    }
+
+  // TODO: resolve relative
+  // TODO: walk
+  // TODO: sort results
+
+  size_t count = results.size();
+  this->_results.emplace( id, std::move( results ) );
+  return count;
 }
 
 
