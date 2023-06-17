@@ -31,9 +31,9 @@ namespace flox {
 
 class Package {
   private:
-    Cursor                     _cursor;
-    std::vector<nix::Symbol>   _path;
-    nix::SymbolTable         * _symtab;
+    Cursor                      _cursor;
+    std::vector<nix::Symbol>    _path;
+    std::vector<nix::SymbolStr> _pathS;
 
     bool _hasMetaAttr    = false;
     bool _hasPnameAttr   = false;
@@ -52,7 +52,9 @@ class Package {
            , nix::SymbolTable * symtab
            , bool               checkDrv = true
            )
-      : _cursor( cursor ), _path( cursor->getAttrPath() ), _symtab( symtab )
+      : _cursor( cursor )
+      , _path( cursor->getAttrPath() )
+      , _pathS( symtab->resolve( cursor->getAttrPath() ) )
       , _dname( cursor->getAttr( "name" )->getString() )
     {
       this->init( checkDrv );
@@ -63,7 +65,9 @@ class Package {
            ,       nix::SymbolTable         * symtab
            ,       bool                       checkDrv = true
            )
-      : _cursor( cursor ), _path( path ), _symtab( symtab )
+      : _cursor( cursor )
+      , _path( path )
+      , _pathS( symtab->resolve( path ) )
       , _dname( cursor->getAttr( "name" )->getString() )
     {
       this->init( checkDrv );
@@ -73,7 +77,7 @@ class Package {
     Package( const Package & p )
       : _cursor( p._cursor )
       , _path( p._path )
-      , _symtab( p._symtab )
+      , _pathS( p._pathS )
       , _dname( p._dname.fullName )
       , _hasMetaAttr( p._hasMetaAttr )
       , _hasPnameAttr( p._hasPnameAttr )
@@ -87,7 +91,7 @@ class Package {
     Package( Package && p ) noexcept
       : _cursor( std::move( p._cursor ) )
       , _path( std::move( p._path ) )
-      , _symtab( std::move( p._symtab ) )
+      , _pathS( std::move( p._pathS ) )
       , _dname( p._dname.fullName )
       , _hasMetaAttr( std::move( p._hasMetaAttr ) )
       , _hasPnameAttr( std::move( p._hasPnameAttr ) )
@@ -102,7 +106,7 @@ class Package {
     {
       this->_cursor         = p._cursor;
       this->_path           = p._path;
-      this->_symtab         = p._symtab;
+      this->_pathS          = p._pathS;
       this->_dname.fullName = p._dname.fullName;
       this->_dname.name     = p._dname.name;
       this->_dname.version  = p._dname.version;
@@ -121,7 +125,7 @@ class Package {
     {
       this->_cursor         = std::move( p._cursor );
       this->_path           = std::move( p._path );
-      this->_symtab         = std::move( p._symtab );
+      this->_pathS          = std::move( p._pathS );
       this->_dname.fullName = std::move( p._dname.fullName );
       this->_dname.name     = std::move( p._dname.name );
       this->_dname.version  = std::move( p._dname.version );
@@ -135,27 +139,30 @@ class Package {
       return * this;
     }
 
-    std::vector<nix::Symbol>   getPath()             const;
-    Cursor                     getCursor()           const;
-    subtree_type               getSubtreeType()      const;
-    std::optional<std::string> getStability()        const;
-    nix::DrvName               getParsedDrvName()    const;
-    std::string                getFullName()         const;
-    std::string                getPname()            const;
-    std::string                getPkgAttrName()      const;
-    std::optional<std::string> getVersion()          const;
-    std::optional<std::string> getSemver()           const;
-    std::optional<std::string> getLicense()          const;
-    std::vector<std::string>   getOutputs()          const;
-    std::vector<std::string>   getOutputsToInstall() const;
-    std::optional<bool>        isBroken()            const;
-    std::optional<bool>        isUnfree()            const;
-    bool                       hasMetaAttr()         const;
-    bool                       hasPnameAttr()        const;
-    bool                       hasVersionAttr()      const;
+    std::vector<nix::Symbol>    getPath()             const;
+    std::vector<nix::SymbolStr> getPathStrs()         const;
+    Cursor                      getCursor()           const;
+    subtree_type                getSubtreeType()      const;
+    std::optional<std::string>  getStability()        const;
+    nix::DrvName                getParsedDrvName()    const;
+    std::string                 getFullName()         const;
+    std::string                 getPname()            const;
+    std::string                 getPkgAttrName()      const;
+    std::optional<std::string>  getVersion()          const;
+    std::optional<std::string>  getSemver()           const;
+    std::optional<std::string>  getLicense()          const;
+    std::vector<std::string>    getOutputs()          const;
+    std::vector<std::string>    getOutputsToInstall() const;
+    std::optional<bool>         isBroken()            const;
+    std::optional<bool>         isUnfree()            const;
+    bool                        hasMetaAttr()         const;
+    bool                        hasPnameAttr()        const;
+    bool                        hasVersionAttr()      const;
 
     std::string toURIString( const FloxFlakeRef & ref ) const;
     //nlohmann::json toJSON()      const;
+
+    nlohmann::json getInfo() const;
 };
 
 

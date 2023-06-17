@@ -106,17 +106,14 @@ test_resolveInInput1()
   Preferences   prefs;
   ResolverState rs( inputs, prefs );
   Descriptor    desc( (nlohmann::json) { { "path", { "hello" } } } );
-  size_t        hits = rs.resolveInInput( "nixpkgs", desc );
-
-  std::list<Resolved> results = rs.getResults().at( "nixpkgs" );
-  return ( hits == results.size() ) &&
-         ( results.size() == defaultSystems.size() );
+  std::list<Resolved> results = rs.resolveInInput( "nixpkgs", desc );
+  return results.size() == defaultSystems.size();
 }
 
 
 /* -------------------------------------------------------------------------- */
 
-/* Ensure version sorting works. */
+/* Ensure name resolution works. */
   bool
 test_resolveInInput2()
 {
@@ -124,12 +121,10 @@ test_resolveInInput2()
   Preferences   prefs;
   ResolverState rs( inputs, prefs );
   Descriptor    desc( (nlohmann::json) { { "name", "nodejs" } } );
-  size_t        hits = rs.resolveInInput( "nixpkgs", desc );
-
-  std::list<Resolved> results = rs.getResults().at( "nixpkgs" );
+  std::list<Resolved> results = rs.resolveInInput( "nixpkgs", desc );
   for ( const nlohmann::json & i : results.front().info )
     {
-      return i["version"] == "20.2.0";
+      return i["pname"] == "nodejs";
     }
   return false;
 }

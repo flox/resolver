@@ -217,22 +217,16 @@ resolve_V2(       ResolverState & rs
           ,       bool            one  = false
           )
 {
-  rs.clearResults();
   /* See if we can take shortcuts with this descriptor. */
   if ( desc.inputId.has_value() )
     {
-      rs.resolveInInput( desc.inputId.value(), desc );
-      return rs.getResults().at( desc.inputId.value() );
+      return rs.resolveInInput( desc.inputId.value(), desc );
     }
   std::list<Resolved> results;
   for ( std::string & id : rs.getInputNames() )
     {
-      rs.resolveInInput( id, desc );
-      results.splice( results.end(), rs.getResults().at( id ) );
-      if ( one && ( ! results.empty() ) )
-        {
-          break;
-        }
+      results.splice( results.end(), rs.resolveInInput( id, desc ) );
+      if ( one && ( ! results.empty() ) ) { break; }
     }
   return std::move( results );
 }

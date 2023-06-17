@@ -122,26 +122,10 @@ ResolverState::getInput( std::string_view id ) const
 
 /* -------------------------------------------------------------------------- */
 
-  std::map<std::string, std::list<Resolved>>
-ResolverState::getResults() const
-{
-  return this->_results;
-}
-
-  void
-ResolverState::clearResults()
-{
-  this->_results.clear();
-}
-
-
-/* -------------------------------------------------------------------------- */
-
-  size_t
+  std::list<Resolved>
 ResolverState::resolveInInput( std::string_view id, const Descriptor & desc )
 {
-  std::string _id( id );
-  this->_results.erase( _id );
+  std::string                           _id( id );
   std::list<Resolved>                   results;
   std::queue<Cursor, std::list<Cursor>> todos;
 
@@ -161,8 +145,7 @@ ResolverState::resolveInInput( std::string_view id, const Descriptor & desc )
    * existing results in case they do call with a bad input. */
   if ( desc.inputId.has_value() && ( id != desc.inputId.value() ) )
     {
-      this->_results.emplace( id, std::move( results ) );
-      return 0;
+      return {};
     }
 
   std::shared_ptr<FloxFlake> flake = this->_inputs.at( _id );
@@ -237,7 +220,6 @@ ResolverState::resolveInInput( std::string_view id, const Descriptor & desc )
         }
       while ( ! todos.empty() )
         {
-          std::vector<Package> hits;
           std::vector<nix::Symbol> path = todos.front()->getAttrPath();
           for ( const nix::Symbol s : todos.front()->getAttrs() )
             {
@@ -247,7 +229,7 @@ ResolverState::resolveInInput( std::string_view id, const Descriptor & desc )
                   if ( c->isDerivation() )
                     {
                       Package p( c, & this->getEvalState()->symbols, false );
-                      if ( pred( p ) ) { hits.push_back( std::move( p ) ); }
+                      if ( pred( p ) ) { goods.push( std::move( p ) ); }
                     }
                   else if ( this->getEvalState()->symbols[path[0]] !=
                             "packages"
@@ -261,22 +243,11 @@ ResolverState::resolveInInput( std::string_view id, const Descriptor & desc )
                         }
                     }
                 }
-              catch( ... ) {}
+              catch( ... )
+                {
+                  // TODO: Catch errors in `packages'.
+                }
             }
-          /* Sort new hits by version. */
-          std::function<bool( const Package &, const Package & )> sortV = [](
-            const Package & a
-          , const Package & b
-          ) {
-              std::optional<std::string> va = a.getVersion();
-              std::optional<std::string> vb = b.getVersion();
-              if ( va.has_value() && ( ! vb.has_value() ) ) { return true; }
-              if ( vb.has_value() && ( ! va.has_value() ) ) { return false; }
-              /* TODO: handle pre-release tags */
-              return 0 < nix::compareVersions( va.value(), vb.value() );
-            };
-          std::sort( hits.begin(), hits.end(), sortV );
-          for ( Package & p : hits ) { goods.push( std::move( p ) ); }
           todos.pop();
         }
     }
@@ -299,8 +270,7 @@ ResolverState::resolveInInput( std::string_view id, const Descriptor & desc )
 
   while ( ! goods.empty() )
     {
-      std::vector<nix::SymbolStr> path =
-        this->getEvalState()->symbols.resolve( goods.front().getPath() );
+      const std::vector<nix::SymbolStr> path = goods.front().getPathStrs();
       AttrPathGlob gp;
       for ( const nix::SymbolStr & sp : path )
         {
@@ -309,25 +279,15 @@ ResolverState::resolveInInput( std::string_view id, const Descriptor & desc )
       results.push_back( Resolved(
         flake->getFlakeRef()
       , std::move( gp )
-      , (nlohmann::json) { { path[1], {
-          { "name",    goods.front().getFullName() }
-        , { "pname",   goods.front().getPname() }
-        , { "version", goods.front().getVersion().value_or( nullptr ) }
-        , { "semver",  goods.front().getSemver().value_or( nullptr ) }
-        , { "outputs", goods.front().getOutputs() }
-        , { "license", goods.front().getLicense().value_or( nullptr ) }
-        , { "broken",  goods.front().isBroken().value_or( false ) }
-        , { "unfree",  goods.front().isUnfree().value_or( false ) }
-        } } }
+      , goods.front().getInfo()
       ) );
       goods.pop();
     }
 
+  // TODO: Merge results by glob path
   // TODO: Sort results by version and depth.
 
-  size_t count = results.size();
-  this->_results.emplace( id, std::move( results ) );
-  return count;
+  return results;
 }
 
 

@@ -22,23 +22,43 @@ Package::init( bool checkDrv )
   if ( this->_path.size() < 3 )
     {
       throw ResolverException(
-        "Package attrPaths must have at least 3 elements"
+        "Package::init(): Package attribute paths must have at least 3 "
+        "elements - the path '" + this->_cursor->getAttrPathStr() +
+        "' is too short."
       );
     }
 
   if ( checkDrv && ( ! this->_cursor->isDerivation() ) )
     {
-      throw ResolverException( "Packages must be derivations" );
+      throw ResolverException(
+        "Package::init(): Packages must be derivations but the attrset at '"
+        + this->_cursor->getAttrPathStr() +
+        "' does not set `.type = \"derivation\"'."
+      );
     }
 
-  std::vector<nix::SymbolStr> pathS = this->_symtab->resolve( this->_path );
-
   /* Subtree type */
-  if ( pathS[0] == "packages" )            { this->_subtree = ST_PACKAGES; }
-  else if ( pathS[0] == "catalog" )        { this->_subtree = ST_CATALOG; }
-  else if ( pathS[0] == "legacyPackages" ) { this->_subtree = ST_LEGACY; }
+  if ( this->_pathS[0] == "packages" )
+    {
+      this->_subtree = ST_PACKAGES;
+    }
+  else if ( this->_pathS[0] == "catalog" )
+    {
+      this->_subtree = ST_CATALOG;
+    }
+  else if ( this->_pathS[0] == "legacyPackages" )
+    {
+      this->_subtree = ST_LEGACY;
+    }
+  else
+    {
+      throw ResolverException(
+        "Package::init(): Invalid subtree name '" + this->_pathS[0] + "' at "
+        "path '" + this->_cursor->getAttrPathStr() + "'."
+      );
+    }
 
-  this->_system = pathS[1];
+  this->_system = this->_pathS[1];
 
   MaybeCursor c = this->_cursor->maybeGetAttr( "meta" );
   this->_hasMetaAttr = c != nullptr;
@@ -74,6 +94,15 @@ std::optional<std::string> Package::getSemver() const { return this->_semver; }
 bool Package::hasMetaAttr()    const { return this->_hasMetaAttr; }
 bool Package::hasPnameAttr()   const { return this->_hasPnameAttr; }
 bool Package::hasVersionAttr() const { return this->_hasVersionAttr; }
+
+
+/* -------------------------------------------------------------------------- */
+
+  std::vector<nix::SymbolStr>
+Package::getPathStrs() const
+{
+  return this->_pathS;
+}
 
 
 /* -------------------------------------------------------------------------- */
@@ -122,7 +151,7 @@ Package::getVersion() const
 Package::getStability() const
 {
   if ( this->_subtree != ST_CATALOG ) { return std::nullopt; }
-  return ( * this->_symtab )[this->_path[1]];
+  return this->_pathS[2];
 }
 
 
@@ -204,10 +233,10 @@ Package::isUnfree() const
 Package::toURIString( const FloxFlakeRef & ref ) const
 {
   std::string uri = ref.to_string() + "#";
-  for ( size_t i = 0; i < this->_path.size(); ++i )
+  for ( size_t i = 0; i < this->_pathS.size(); ++i )
     {
-      uri += "\"" + ( * this->_symtab )[this->_path[i]] + "\"";
-      if ( ( i + 1 ) < this->_path.size() ) uri += ".";
+      uri += "\"" + this->_pathS[i] + "\"";
+      if ( ( i + 1 ) < this->_pathS.size() ) uri += ".";
     }
   return uri;
 }
@@ -220,11 +249,11 @@ Package::getPkgAttrName() const
 {
   if ( this->getSubtreeType() == ST_CATALOG )
     {
-      return ( * this->_symtab )[this->_path[this->_path.size() - 2]];
+      return this->_pathS[this->_pathS.size() - 2];
     }
   else
     {
-      return ( * this->_symtab )[this->_path[this->_path.size() - 1]];
+      return this->_pathS.back();
     }
 }
 
@@ -232,6 +261,24 @@ Package::getPkgAttrName() const
 /* -------------------------------------------------------------------------- */
 
 // nlohmann::json Package::toJSON() const {}
+
+
+/* -------------------------------------------------------------------------- */
+
+  nlohmann::json
+Package::getInfo() const
+{
+  return { { this->_pathS[1], {
+    { "name",    this->getFullName() }
+  , { "pname",   this->getPname() }
+  , { "version", this->getVersion().value_or( nullptr ) }
+  , { "semver",  this->getSemver().value_or( nullptr ) }
+  , { "outputs", this->getOutputs() }
+  , { "license", this->getLicense().value_or( nullptr ) }
+  , { "broken",  this->isBroken().value_or( false ) }
+  , { "unfree",  this->isUnfree().value_or( false ) }
+  } } };
+}
 
 
 /* -------------------------------------------------------------------------- */

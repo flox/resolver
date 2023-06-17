@@ -58,6 +58,9 @@ using MaybeCursor = std::shared_ptr<nix::eval_cache::AttrCursor>;
 
 /* -------------------------------------------------------------------------- */
 
+class Descriptor;
+class Package;
+
 typedef enum { ST_PACKAGES, ST_LEGACY, ST_CATALOG } subtree_type;
 
 
@@ -263,8 +266,6 @@ void to_json(         nlohmann::json & j, const Resolved & p );
 
 /* -------------------------------------------------------------------------- */
 
-class Descriptor;
-
 class ResolverState {
   private:
     std::shared_ptr<nix::Store>                       _store;
@@ -272,7 +273,6 @@ class ResolverState {
     std::shared_ptr<nix::EvalState>                   evalState;
     std::map<std::string, std::shared_ptr<FloxFlake>> _inputs;
     const Preferences                                 _prefs;
-    std::map<std::string, std::list<Resolved>>        _results;
 
   public:
 
@@ -316,10 +316,9 @@ class ResolverState {
 
     std::optional<nix::ref<FloxFlake>> getInput( std::string_view id ) const;
 
-    size_t resolveInInput( std::string_view id, const Descriptor & desc );
-
-    std::map<std::string, std::list<Resolved>> getResults()    const;
-    void                                       clearResults();
+    std::list<Resolved> resolveInInput(       std::string_view   id
+                                      , const Descriptor       & desc
+                                      );
 };
 
 
