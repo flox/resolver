@@ -19,6 +19,7 @@
 #include <map>
 #include "flox/predicates.hh"
 #include <queue>
+#include "flox/drv-cache.hh"
 
 
 /* -------------------------------------------------------------------------- */
@@ -256,6 +257,8 @@ ResolverState::resolveInInput( std::string_view id, const Descriptor & desc )
 
   if ( todos.empty() )
     {
+      DrvDb cache( flake->getLockedFlake()->getFingerprint() );
+
       for ( Cursor prefix : flake->getFlakePrefixCursors() )
         {
           std::vector<nix::SymbolStr> ppath =
@@ -291,6 +294,7 @@ ResolverState::resolveInInput( std::string_view id, const Descriptor & desc )
                   if ( c->isDerivation() )
                     {
                       Package p( c, & this->getEvalState()->symbols, false );
+                      cache.setDrvInfo( p );
                       if ( pred( p ) ) { goods.push( std::move( p ) ); }
                     }
                   else if ( this->getEvalState()->symbols[path[0]] !=
