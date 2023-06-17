@@ -20,6 +20,49 @@ namespace flox {
 
 /* -------------------------------------------------------------------------- */
 
+class DrvDb;
+
+/* -------------------------------------------------------------------------- */
+
+// TODO: Define base class shared with existing `Package' class.
+class CachedPackage {
+  private:
+    std::string                 _fullname;
+    std::string                 _pname;
+    std::optional<std::string>  _version;
+    std::optional<std::string>  _semver;
+    std::optional<std::string>  _license;
+    std::vector<std::string>    _outputs;
+    std::vector<std::string>    _outputsToInstall;
+    std::optional<bool>         _broken;
+    std::optional<bool>         _unfree;
+
+  public:
+    std::string                 getFullName() const { return this->_fullname; }
+    std::string                 getPname()    const { return this->_pname;    }
+    std::optional<std::string>  getVersion()  const { return this->_version;  }
+    std::optional<std::string>  getSemver()   const { return this->_semver;   }
+    std::optional<std::string>  getLicense()  const { return this->_license;  }
+    std::vector<std::string>    getOutputs()  const { return this->_outputs;  }
+    std::optional<bool>         isBroken()    const { return this->_broken;   }
+    std::optional<bool>         isUnfree()    const { return this->_unfree;   }
+
+      std::vector<std::string>
+    getOutputsToInstall() const
+    {
+      return this->_outputsToInstall;
+    }
+
+    CachedPackage(       DrvDb                    & db
+                 ,       std::string_view           subtree
+                 ,       std::string_view           system
+                 , const std::vector<std::string> & path
+                 );
+};
+
+
+/* -------------------------------------------------------------------------- */
+
 class DrvDb {
 
   private:
@@ -57,8 +100,8 @@ class DrvDb {
     uint64_t setDrvInfo( const Package & p );
 
     std::optional<nlohmann::json> getDrvInfo(
-      std::string_view                 subtree
-    , std::string_view                 system
+            std::string_view           subtree
+    ,       std::string_view           system
     , const std::vector<std::string> & path
     );
 

@@ -306,6 +306,8 @@ DrvDb::getDrvInfo( std::string_view                 subtree
     state->queryDrvInfos.use()( subtree )( system )( relPath.dump() );
   if ( ! query.next() ) { return std::nullopt; }
 
+  // XXX: make sure `nullptr' actually yields `null' here, it might be
+  // misinterpreted as the empty string.
   nlohmann::json info = {
     { "name",    query.getStr( 3 ) }
   , { "pname",   query.getStr( 4 ) }
@@ -369,6 +371,46 @@ DrvDb::setProgress( std::string_view       subtree
     return rowId;
   } );
   return old;
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+CachedPackage::CachedPackage(       DrvDb                    & db
+                            ,       std::string_view           subtree
+                            ,       std::string_view           system
+                            , const std::vector<std::string> & path
+                            )
+{
+  std::optional<nlohmann::json> _info = db.getDrvInfo( subtree, system, path );
+  if ( ! _info.has_value() )
+    {
+      std::string p = std::string( subtree );
+      p += ".";
+      p += system;
+      p += ".";
+      for ( size_t i = 0; i < path.size(); ++i )
+        {
+          p += path[i];
+          if ( ( i + 1 ) < path.size() )
+            {
+              p += ".";
+            }
+        }
+      throw ResolverException( "CachedPackage(): No such path '" + p + "'." );
+    }
+  nlohmann::json info = _info.value();
+  this->_fullname = info["name"];
+  this->_pname    = info["pname"];
+  this->_outputs  = info["outputs"];
+
+  this->_outputsToInstall = info["outputsToInstall"];
+
+  if ( ! info["version"].is_null() ) { this->_version = info["version"]; }
+  if ( ! info["semver"].is_null() )  { this->_semver  = info["semver"];  }
+  if ( ! info["license"].is_null() ) { this->_license = info["license"]; }
+  if ( ! info["broken"].is_null() )  { this->_broken  = info["broken"];  }
+  if ( ! info["unfree"].is_null() )  { this->_unfree  = info["unfree"];  }
 }
 
 

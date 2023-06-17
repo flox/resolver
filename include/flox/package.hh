@@ -30,7 +30,7 @@ namespace flox {
 /* -------------------------------------------------------------------------- */
 
 class Package {
-  private:
+  protected:
     Cursor                      _cursor;
     std::vector<nix::Symbol>    _path;
     std::vector<nix::SymbolStr> _pathS;
