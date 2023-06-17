@@ -97,6 +97,44 @@ class Package {
       , _subtree( std::move( p._subtree ) )
     {}
 
+      Package &
+    operator=( const Package & p )
+    {
+      this->_cursor         = p._cursor;
+      this->_path           = p._path;
+      this->_symtab         = p._symtab;
+      this->_dname.fullName = p._dname.fullName;
+      this->_dname.name     = p._dname.name;
+      this->_dname.version  = p._dname.version;
+      this->_dname.hits     = p._dname.hits;
+      this->_hasMetaAttr    = p._hasMetaAttr;
+      this->_hasPnameAttr   = p._hasPnameAttr;
+      this->_hasVersionAttr = p._hasVersionAttr;
+      this->_semver         = p._semver;
+      this->_system         = p._system;
+      this->_subtree        = p._subtree;
+      return * this;
+    }
+
+      Package &
+    operator=( Package && p ) noexcept
+    {
+      this->_cursor         = std::move( p._cursor );
+      this->_path           = std::move( p._path );
+      this->_symtab         = std::move( p._symtab );
+      this->_dname.fullName = std::move( p._dname.fullName );
+      this->_dname.name     = std::move( p._dname.name );
+      this->_dname.version  = std::move( p._dname.version );
+      this->_dname.hits     = std::move( p._dname.hits );
+      this->_hasMetaAttr    = std::move( p._hasMetaAttr );
+      this->_hasPnameAttr   = std::move( p._hasPnameAttr );
+      this->_hasVersionAttr = std::move( p._hasVersionAttr );
+      this->_semver         = std::move( p._semver );
+      this->_system         = std::move( p._system );
+      this->_subtree        = std::move( p._subtree );
+      return * this;
+    }
+
     std::vector<nix::Symbol>   getPath()             const;
     Cursor                     getCursor()           const;
     subtree_type               getSubtreeType()      const;

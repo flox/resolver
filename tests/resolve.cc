@@ -98,6 +98,7 @@ test_getActualFlakeAttrPathPrefixes()
 
 /* -------------------------------------------------------------------------- */
 
+/* Use relative path. */
   bool
 test_resolveInInput1()
 {
@@ -108,7 +109,29 @@ test_resolveInInput1()
   size_t        hits = rs.resolveInInput( "nixpkgs", desc );
 
   std::list<Resolved> results = rs.getResults().at( "nixpkgs" );
-  return results.size() == defaultSystems.size();
+  return ( hits == results.size() ) &&
+         ( results.size() == defaultSystems.size() );
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+/* Ensure version sorting works. */
+  bool
+test_resolveInInput2()
+{
+  Inputs        inputs( (nlohmann::json) { { "nixpkgs", nixpkgsRef } } );
+  Preferences   prefs;
+  ResolverState rs( inputs, prefs );
+  Descriptor    desc( (nlohmann::json) { { "name", "nodejs" } } );
+  size_t        hits = rs.resolveInInput( "nixpkgs", desc );
+
+  std::list<Resolved> results = rs.getResults().at( "nixpkgs" );
+  for ( auto & r : results )
+    {
+      for ( auto & i : r.info ) { std::cerr << i["version"] << std::endl; }
+    }
+  return ( results[0] == "20.2.0" ) && ( results[2] == "18.16.0" );
 }
 
 
@@ -143,6 +166,7 @@ main( int argc, char * argv[], char ** envp )
   RUN_TEST( ResolverStateLocking1 );
   RUN_TEST( getActualFlakeAttrPathPrefixes );
   RUN_TEST( resolveInInput1 );
+  RUN_TEST( resolveInInput2 );
 
   return ec;
 }

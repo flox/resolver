@@ -237,6 +237,7 @@ ResolverState::resolveInInput( std::string_view id, const Descriptor & desc )
         }
       while ( ! todos.empty() )
         {
+          std::vector<Package> hits;
           std::vector<nix::Symbol> path = todos.front()->getAttrPath();
           for ( const nix::Symbol s : todos.front()->getAttrs() )
             {
@@ -246,7 +247,7 @@ ResolverState::resolveInInput( std::string_view id, const Descriptor & desc )
                   if ( c->isDerivation() )
                     {
                       Package p( c, & this->getEvalState()->symbols, false );
-                      if ( pred( p ) ) { goods.push( std::move( p ) ); }
+                      if ( pred( p ) ) { hits.push_back( std::move( p ) ); }
                     }
                   else if ( this->getEvalState()->symbols[path[0]] !=
                             "packages"
@@ -256,12 +257,26 @@ ResolverState::resolveInInput( std::string_view id, const Descriptor & desc )
                         c->maybeGetAttr( "recurseForDerivations" );
                       if ( ( m != nullptr ) && m->getBool() )
                         {
-                          todos.push( (Cursor) m );
+                          todos.push( (Cursor) c );
                         }
                     }
                 }
               catch( ... ) {}
             }
+          /* Sort new hits by version. */
+          std::function<bool( const Package &, const Package & )> sortV = [](
+            const Package & a
+          , const Package & b
+          ) {
+              std::optional<std::string> va = a.getVersion();
+              std::optional<std::string> vb = b.getVersion();
+              if ( va.has_value() && ( ! vb.has_value() ) ) { return true; }
+              if ( vb.has_value() && ( ! va.has_value() ) ) { return false; }
+              /* TODO: handle pre-release tags */
+              return 0 < nix::compareVersions( va.value(), vb.value() );
+            };
+          std::sort( hits.begin(), hits.end(), sortV );
+          for ( Package & p : hits ) { goods.push( std::move( p ) ); }
           todos.pop();
         }
     }
