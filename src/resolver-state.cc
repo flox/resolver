@@ -286,6 +286,17 @@ ResolverState::resolveInInput( std::string_view id, const Descriptor & desc )
       while ( ! todos.empty() )
         {
           std::vector<nix::Symbol> path = todos.front()->getAttrPath();
+
+          std::string subtree         = this->getEvalState()->symbols[path[0]];
+          std::string system          = this->getEvalState()->symbols[path[1]];
+          DrvDb::progress_status dbps = cache.getProgress( subtree, system );
+          if ( dbps < DrvDb::progress_status::DBPS_PARTIAL )
+            {
+              cache.setProgress(
+                subtree, system, DrvDb::progress_status::DBPS_PARTIAL
+              );
+            }
+
           for ( const nix::Symbol s : todos.front()->getAttrs() )
             {
               try
@@ -293,13 +304,15 @@ ResolverState::resolveInInput( std::string_view id, const Descriptor & desc )
                   Cursor c = todos.front()->getAttr( s );
                   if ( c->isDerivation() )
                     {
+                      // TODO: load from cache if available
                       Package p( c, & this->getEvalState()->symbols, false );
-                      cache.setDrvInfo( p );
+                      if ( dbps < DrvDb::progress_status::DBPS_INFO_DONE )
+                        {
+                          cache.setDrvInfo( p );
+                        }
                       if ( pred( p ) ) { goods.push( std::move( p ) ); }
                     }
-                  else if ( this->getEvalState()->symbols[path[0]] !=
-                            "packages"
-                          )
+                  else if ( subtree != "packages" )
                     {
                       MaybeCursor m =
                         c->maybeGetAttr( "recurseForDerivations" );
@@ -313,6 +326,12 @@ ResolverState::resolveInInput( std::string_view id, const Descriptor & desc )
                 {
                   // TODO: Catch errors in `packages'.
                 }
+            }
+          if ( dbps < DrvDb::progress_status::DBPS_INFO_DONE )
+            {
+              cache.setProgress(
+                subtree, system, DrvDb::progress_status::DBPS_INFO_DONE
+              );
             }
           todos.pop();
         }

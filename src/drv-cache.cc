@@ -1,7 +1,6 @@
 /* ========================================================================== *
  *
- * NOTE: Currently unused.
- * TODO: Integrate into `packagePredicate' and `Packages' abstraction.
+ *
  *
  * -------------------------------------------------------------------------- */
 
@@ -85,13 +84,71 @@ DrvDb::DrvDb( const nix::flake::Fingerprint & fingerprint )
   nix::Path cacheDir = nix::getCacheDir() + "/flox/drv-cache-v0";
   nix::createDirs( cacheDir );
 
-  nix::Path dbPath = cacheDir + "/" +
-                     fingerprint.to_string( nix::Base16, false ) +
-                     ".sqlite";
+  std::string fpStr = fingerprint.to_string( nix::Base16, false );
+
+  nix::Path dbPath = cacheDir + "/" + fpStr + ".sqlite";
 
   state->db = nix::SQLite( dbPath );
   state->db.isCache();
   state->db.exec( schema );
+
+  state->insertFingerprint.create(
+    state->db
+  , "INSERT OR IGNORE INTO Fingerprint VALUES ( ? )"
+  );
+  state->insertFingerprint.use()( fpStr ).exec();
+  state->queryFingerprint.create(
+    state->db
+  , "SELECT fingerprint FROM Fingerprint LIMIT 1"
+  );
+  auto query0 = state->queryFingerprint.use();
+  if ( ! query0.next() )
+    {
+      throw ResolverException(
+        "DrvDb(): Failed to read fingerprint from database"
+      );
+    }
+  if ( query0.getStr( 0 ) != fpStr )
+    {
+      throw ResolverException(
+        "DrvDb(): Fingerprint mismatch in '" + fpStr + ".sqlite' reporting: "
+        + query0.getStr( 0 )
+      );
+    }
+
+  state->queryVersionInfo.create(
+    state->db
+  , "SELECT version FROM VersionInfo WHERE ( id = ? )"
+  );
+  auto query1 = state->queryVersionInfo.use()( "resolver" );
+  if ( ! query1.next() )
+    {
+      throw ResolverException(
+        "DrvDb(): Failed to read resolver version from from database"
+      );
+    }
+  if ( query1.getStr( 0 ) != "0.1.0" )  // TODO: make a var
+    {
+      throw ResolverException(
+        "DrvDb(): Resolver version mismatch in '" + fpStr + ".sqlite' "
+        "reporting: " + query1.getStr( 0 )
+      );
+    }
+
+  auto query2 = state->queryVersionInfo.use()( "drvCacheSchema" );
+  if ( ! query2.next() )
+    {
+      throw ResolverException(
+        "DrvDb(): Failed to read 'drvCacheSchema' from database"
+      );
+    }
+  if ( query2.getStr( 0 ) != "0.1.0" )  // TODO: make a var
+    {
+      throw ResolverException(
+        "DrvDb(): Schema version mismatch in '" + fpStr + ".sqlite' reporting: "
+        + query2.getStr( 0 )
+      );
+    }
 
   state->insertDrv.create(
     state->db
@@ -114,11 +171,6 @@ DrvDb::DrvDb( const nix::flake::Fingerprint & fingerprint )
     "( ?, ?, ? )"
   );
 
-  state->insertFingerprint.create(
-    state->db
-  , "INSERT OR REPLACE INTO Fingerprint VALUES ( ? )"
-  );
-
   state->queryDrvs.create(
     state->db
   , "SELECT * FROM Derivations WHERE ( subtree = ? ) AND ( system = ? )"
@@ -133,16 +185,6 @@ DrvDb::DrvDb( const nix::flake::Fingerprint & fingerprint )
   state->queryProgress.create(
     state->db
   , "SELECT * FROM Progress WHERE ( subtree = ? ) AND ( system = ? )"
-  );
-
-  state->queryFingerprint.create(
-    state->db
-  , "SELECT fingerprint FROM Fingerprint LIMIT 1"
-  );
-
-  state->queryVersionInfo.create(
-    state->db
-  , "SELECT version FROM VersionInfo WHERE ( id = ? )"
   );
 
   state->txn = std::make_unique<nix::SQLiteTxn>( state->db );
@@ -293,6 +335,40 @@ DrvDb::getDrvInfo( std::string_view                 subtree
     }
 
   return info;
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+  DrvDb::progress_status
+DrvDb::getProgress( std::string_view subtree, std::string_view system )
+{
+  auto state( this->_state->lock() );
+  auto query = state->queryProgress.use()( subtree )( system );
+  if ( ! query.next() ) { return DrvDb::progress_status::DBPS_NONE; }
+  return (DrvDb::progress_status) query.getInt( 0 );
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+  DrvDb::progress_status
+DrvDb::setProgress( std::string_view       subtree
+                  , std::string_view       system
+                  , DrvDb::progress_status status
+                  )
+{
+  auto state( this->_state->lock() );
+  auto query = state->queryProgress.use()( subtree )( system );
+  DrvDb::progress_status old = DrvDb::progress_status::DBPS_NONE;
+  if ( query.next() ) { old = (DrvDb::progress_status) query.getInt( 0 ); }
+  doSQLite( [&](){
+    state->insertProgress.use()( subtree )( system )( (int) status ).exec();
+    uint64_t rowId = state->db.getLastInsertedRowId();
+    assert( rowId != 0 );
+    return rowId;
+  } );
+  return old;
 }
 
 
