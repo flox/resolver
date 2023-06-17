@@ -212,6 +212,9 @@ class FloxFlake : public std::enable_shared_from_this<FloxFlake> {
              , const Preferences              & prefs
              , const std::list<std::string>   & systems = defaultSystems
              );
+
+    FloxFlakeRef getFlakeRef() const { return this->_flakeRef; }
+
     std::list<std::string>            getSystems()                      const;
     std::list<std::list<std::string>> getDefaultFlakeAttrPaths()        const;
     std::list<std::list<std::string>> getDefaultFlakeAttrPathPrefixes() const;

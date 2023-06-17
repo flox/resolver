@@ -5,6 +5,7 @@
  *
  * -------------------------------------------------------------------------- */
 
+#include <nlohmann/json.hpp>
 #include <nix/eval-inline.hh>
 #include <nix/eval.hh>
 #include <nix/eval-cache.hh>
@@ -16,6 +17,8 @@
 #include <optional>
 #include <vector>
 #include <map>
+#include "flox/predicates.hh"
+#include <queue>
 
 
 /* -------------------------------------------------------------------------- */
@@ -139,8 +142,8 @@ ResolverState::resolveInInput( std::string_view id, const Descriptor & desc )
 {
   std::string _id( id );
   this->_results.erase( _id );
-  std::list<Resolved> results;
-  std::list<Cursor>   todos;
+  std::list<Resolved>                   results;
+  std::queue<Cursor, std::list<Cursor>> todos;
 
   /**
    * 1. Handling of `id' should have already been handled elsewhere.
@@ -188,7 +191,7 @@ ResolverState::resolveInInput( std::string_view id, const Descriptor & desc )
                     std::get<std::string>( desc.absAttrPath.value().path[i] )
                   );
                 }
-              if ( s != nullptr ) { todos.push_back( (Cursor) s ); }
+              if ( s != nullptr ) { todos.push( (Cursor) s ); }
             }
         }
       else
@@ -201,13 +204,111 @@ ResolverState::resolveInInput( std::string_view id, const Descriptor & desc )
               );
             }
           MaybeCursor c = flake->maybeOpenCursor( path );
-          if ( c != nullptr ) { todos.push_back( (Cursor) c ); }
+          if ( c != nullptr ) { todos.push( (Cursor) c ); }
+        }
+    }
+  else if ( desc.relAttrPath.has_value() )
+    {
+      for ( Cursor c : flake->getFlakePrefixCursors() )
+        {
+          MaybeCursor m = c;
+          for ( const std::string & p : desc.relAttrPath.value() )
+            {
+              if ( m == nullptr ) { break; }
+              m = m->getAttr( p );
+            }
+          if ( m != nullptr ) { todos.push( (Cursor) m ); }
         }
     }
 
-  // TODO: resolve relative
-  // TODO: walk
-  // TODO: sort results
+  std::shared_ptr<nix::SymbolTable> ssymtab =
+    std::make_shared<nix::SymbolTable>( this->getEvalState()->symbols );
+
+  predicates::PkgPred pred = this->_prefs.pred_V2();
+  pred = pred && desc.pred( nix::ref<nix::SymbolTable>( ssymtab ) );
+
+  std::queue<Package, std::list<Package>> goods;
+
+  if ( todos.empty() )
+    {
+      for ( Cursor prefix : flake->getFlakePrefixCursors() )
+        {
+          todos.push( prefix );
+        }
+      while ( ! todos.empty() )
+        {
+          std::vector<nix::Symbol> path = todos.front()->getAttrPath();
+          for ( const nix::Symbol s : todos.front()->getAttrs() )
+            {
+              try
+                {
+                  Cursor c = todos.front()->getAttr( s );
+                  if ( c->isDerivation() )
+                    {
+                      Package p( c, & this->getEvalState()->symbols, false );
+                      if ( pred( p ) ) { goods.push( std::move( p ) ); }
+                    }
+                  else if ( this->getEvalState()->symbols[path[0]] !=
+                            "packages"
+                          )
+                    {
+                      MaybeCursor m =
+                        c->maybeGetAttr( "recurseForDerivations" );
+                      if ( ( m != nullptr ) && m->getBool() )
+                        {
+                          todos.push( (Cursor) m );
+                        }
+                    }
+                }
+              catch( ... ) {}
+            }
+          todos.pop();
+        }
+    }
+  else
+    {
+      /* Run our predicate filters and collect satisfactory packages. */
+      while( ! todos.empty() )
+        {
+          if ( todos.front()->isDerivation() )
+            {
+              Package p( todos.front()
+                       , & this->getEvalState()->symbols
+                       , false
+                       );
+              if ( pred( p ) ) { goods.push( std::move( p ) ); }
+            }
+          todos.pop();
+        }
+    }
+
+  while ( ! goods.empty() )
+    {
+      std::vector<nix::SymbolStr> path =
+        this->getEvalState()->symbols.resolve( goods.front().getPath() );
+      AttrPathGlob gp;
+      for ( const nix::SymbolStr & sp : path )
+        {
+          gp.path.push_back( (std::string) sp );
+        }
+      results.push_back( Resolved(
+        flake->getFlakeRef()
+      , std::move( gp )
+      , (nlohmann::json) { { path[1], {
+          { "name",    goods.front().getFullName() }
+        , { "pname",   goods.front().getPname() }
+        , { "version", goods.front().getVersion().value_or( nullptr ) }
+        , { "semver",  goods.front().getSemver().value_or( nullptr ) }
+        , { "outputs", goods.front().getOutputs() }
+        , { "license", goods.front().getLicense().value_or( nullptr ) }
+        , { "broken",  goods.front().isBroken().value_or( false ) }
+        , { "unfree",  goods.front().isUnfree().value_or( false ) }
+        } } }
+      ) );
+      goods.pop();
+    }
+
+  // TODO: Sort results by version and depth.
 
   size_t count = results.size();
   this->_results.emplace( id, std::move( results ) );

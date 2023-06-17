@@ -88,11 +88,27 @@ test_ResolverStateLocking1()
   bool
 test_getActualFlakeAttrPathPrefixes()
 {
-  Inputs      inputs( (nlohmann::json) { { "nixpkgs", nixpkgsRef } } );
-  Preferences prefs;
+  Inputs        inputs( (nlohmann::json) { { "nixpkgs", nixpkgsRef } } );
+  Preferences   prefs;
   ResolverState rs( inputs, prefs );
   auto ps = rs.getInputs().at( "nixpkgs" )->getActualFlakeAttrPathPrefixes();
   return ps.size() == defaultSystems.size();
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+  bool
+test_resolveInInput1()
+{
+  Inputs        inputs( (nlohmann::json) { { "nixpkgs", nixpkgsRef } } );
+  Preferences   prefs;
+  ResolverState rs( inputs, prefs );
+  Descriptor    desc( (nlohmann::json) { { "path", { "hello" } } } );
+  size_t        hits = rs.resolveInInput( "nixpkgs", desc );
+
+  std::list<Resolved> results = rs.getResults().at( "nixpkgs" );
+  return results.size() == defaultSystems.size();
 }
 
 
@@ -126,6 +142,7 @@ main( int argc, char * argv[], char ** envp )
   RUN_TEST( resolveOne1 );
   RUN_TEST( ResolverStateLocking1 );
   RUN_TEST( getActualFlakeAttrPathPrefixes );
+  RUN_TEST( resolveInInput1 );
 
   return ec;
 }

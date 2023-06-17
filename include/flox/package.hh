@@ -69,6 +69,34 @@ class Package {
       this->init( checkDrv );
     }
 
+    /* Copy */
+    Package( const Package & p )
+      : _cursor( p._cursor )
+      , _path( p._path )
+      , _symtab( p._symtab )
+      , _dname( p._dname.fullName )
+      , _hasMetaAttr( p._hasMetaAttr )
+      , _hasPnameAttr( p._hasPnameAttr )
+      , _hasVersionAttr( p._hasVersionAttr )
+      , _semver( p._semver )
+      , _system( p._system )
+      , _subtree( p._subtree )
+    {}
+
+    /* Move */
+    Package( Package && p ) noexcept
+      : _cursor( std::move( p._cursor ) )
+      , _path( std::move( p._path ) )
+      , _symtab( std::move( p._symtab ) )
+      , _dname( p._dname.fullName )
+      , _hasMetaAttr( std::move( p._hasMetaAttr ) )
+      , _hasPnameAttr( std::move( p._hasPnameAttr ) )
+      , _hasVersionAttr( std::move( p._hasVersionAttr ) )
+      , _semver( std::move( p._semver ) )
+      , _system( std::move( p._system ) )
+      , _subtree( std::move( p._subtree ) )
+    {}
+
     std::vector<nix::Symbol>   getPath()             const;
     Cursor                     getCursor()           const;
     subtree_type               getSubtreeType()      const;
