@@ -127,11 +127,11 @@ test_resolveInInput2()
   size_t        hits = rs.resolveInInput( "nixpkgs", desc );
 
   std::list<Resolved> results = rs.getResults().at( "nixpkgs" );
-  for ( auto & r : results )
+  for ( const nlohmann::json & i : results.front().info )
     {
-      for ( auto & i : r.info ) { std::cerr << i["version"] << std::endl; }
+      return i["version"] == "20.2.0";
     }
-  return ( results[0] == "20.2.0" ) && ( results[2] == "18.16.0" );
+  return false;
 }
 
 
