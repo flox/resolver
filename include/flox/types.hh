@@ -283,31 +283,7 @@ class ResolverState {
     ResolverState( const Inputs                 & inputs
                  , const Preferences            & prefs
                  , const std::list<std::string> & systems = defaultSystems
-                 )
-      : _prefs( prefs )
-    {
-      for ( auto & [id, ref] : inputs.inputs )
-        {
-#if HAVE_BOEHMGC
-          this->_inputs.emplace( id, std::allocate_shared<FloxFlake>(
-            traceable_allocator<FloxFlake>()
-          , this->getEvalState()
-          , id
-          , ref
-          , this->_prefs
-          , systems
-          ) );
-#else
-          this->_inputs.emplace( id, std::make_shared<FloxFlake>(
-            this->getEvalState()
-          , id
-          , ref
-          , this->_prefs
-          , systems
-          ) );
-#endif
-        }
-    }
+                 );
 
     Preferences getPreferences() const { return this->_prefs; }
 

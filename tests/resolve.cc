@@ -120,11 +120,11 @@ test_resolveInInput2()
   Inputs        inputs( (nlohmann::json) { { "nixpkgs", nixpkgsRef } } );
   Preferences   prefs;
   ResolverState rs( inputs, prefs );
-  Descriptor    desc( (nlohmann::json) { { "name", "nodejs" } } );
+  Descriptor    desc( (nlohmann::json) { { "name", "hello" } } );
   std::list<Resolved> results = rs.resolveInInput( "nixpkgs", desc );
   for ( const nlohmann::json & i : results.front().info )
     {
-      return i["pname"] == "nodejs";
+      return i["pname"] == "hello";
     }
   return false;
 }

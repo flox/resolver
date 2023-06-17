@@ -28,6 +28,46 @@ namespace flox {
 
 /* -------------------------------------------------------------------------- */
 
+ResolverState::ResolverState(
+  const Inputs                 & inputs
+, const Preferences            & prefs
+, const std::list<std::string> & systems
+)
+: _prefs( prefs )
+{
+  nix::initNix();
+  nix::initGC();
+  // TODO: make this an option. It risks making cross-system eval impossible.
+  nix::evalSettings.enableImportFromDerivation.setDefault( false );
+  nix::evalSettings.pureEval.setDefault( true );
+  nix::evalSettings.useEvalCache.setDefault( true );
+
+  for ( auto & [id, ref] : inputs.inputs )
+    {
+#if HAVE_BOEHMGC
+      this->_inputs.emplace( id, std::allocate_shared<FloxFlake>(
+        traceable_allocator<FloxFlake>()
+      , this->getEvalState()
+      , id
+      , ref
+      , this->_prefs
+      , systems
+      ) );
+#else
+      this->_inputs.emplace( id, std::make_shared<FloxFlake>(
+        this->getEvalState()
+      , id
+      , ref
+      , this->_prefs
+      , systems
+      ) );
+#endif
+    }
+}
+
+
+/* -------------------------------------------------------------------------- */
+
   nix::ref<nix::Store>
 ResolverState::getStore()
 {
@@ -208,7 +248,9 @@ ResolverState::resolveInInput( std::string_view id, const Descriptor & desc )
     std::make_shared<nix::SymbolTable>( this->getEvalState()->symbols );
 
   predicates::PkgPred pred = this->_prefs.pred_V2();
-  pred = pred && desc.pred( nix::ref<nix::SymbolTable>( ssymtab ) );
+  pred = pred && desc.pred( nix::ref<nix::SymbolTable>( ssymtab )
+                          , todos.empty()
+                          );
 
   std::queue<Package, std::list<Package>> goods;
 
@@ -216,6 +258,26 @@ ResolverState::resolveInInput( std::string_view id, const Descriptor & desc )
     {
       for ( Cursor prefix : flake->getFlakePrefixCursors() )
         {
+          std::vector<nix::SymbolStr> ppath =
+            this->getEvalState()->symbols.resolve( prefix->getAttrPath() );
+          if ( ( ! desc.searchCatalogs ) && ( ppath[0] == "catalog" ) )
+            {
+              continue;
+            }
+          else if ( desc.catalogStability.has_value() &&
+                    ( desc.catalogStability.value() != ppath[2] )
+                  )
+            {
+              continue;
+            }
+          if ( ( ! desc.searchFlakes ) &&
+               ( ( ppath[0] == "legacyPackages" ) ||
+                 ( ppath[0] == "packages" )
+               )
+             )
+            {
+              continue;
+            }
           todos.push( prefix );
         }
       while ( ! todos.empty() )

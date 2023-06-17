@@ -59,7 +59,9 @@ class Descriptor {
      */
     Descriptor( const std::string_view desc );
 
-    predicates::PkgPred pred( nix::ref<nix::SymbolTable> st ) const;
+    predicates::PkgPred pred( nix::ref<nix::SymbolTable> st
+                            , bool                       checkPath = false
+                            ) const;
 
     nlohmann::json toJSON()   const;
     std::string    toString() const;

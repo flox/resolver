@@ -56,12 +56,15 @@ FloxFlake::getLockedFlake()
 {
   if ( this->lockedFlake == nullptr )
     {
+      bool oldPurity = nix::evalSettings.pureEval;
+      nix::evalSettings.pureEval = false;
       this->lockedFlake = std::make_shared<nix::flake::LockedFlake>(
         nix::flake::lockFlake( * this->_state
                              , this->_flakeRef
                              , floxFlakeLockFlags
                              )
       );
+      nix::evalSettings.pureEval = oldPurity;
   }
   return this->lockedFlake;
 }

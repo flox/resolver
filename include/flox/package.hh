@@ -74,35 +74,41 @@ class Package {
     }
 
     /* Copy */
-    Package( const Package & p )
+    Package( const Package & p ) noexcept
       : _cursor( p._cursor )
       , _path( p._path )
       , _pathS( p._pathS )
-      , _dname( p._dname.fullName )
       , _hasMetaAttr( p._hasMetaAttr )
       , _hasPnameAttr( p._hasPnameAttr )
       , _hasVersionAttr( p._hasVersionAttr )
       , _semver( p._semver )
       , _system( p._system )
       , _subtree( p._subtree )
-    {}
+    {
+      this->_dname.fullName = p._dname.fullName;
+      this->_dname.name     = p._dname.name;
+      this->_dname.version  = p._dname.version;
+    }
 
     /* Move */
     Package( Package && p ) noexcept
       : _cursor( std::move( p._cursor ) )
       , _path( std::move( p._path ) )
       , _pathS( std::move( p._pathS ) )
-      , _dname( p._dname.fullName )
       , _hasMetaAttr( std::move( p._hasMetaAttr ) )
       , _hasPnameAttr( std::move( p._hasPnameAttr ) )
       , _hasVersionAttr( std::move( p._hasVersionAttr ) )
       , _semver( std::move( p._semver ) )
       , _system( std::move( p._system ) )
       , _subtree( std::move( p._subtree ) )
-    {}
+    {
+      this->_dname.fullName = p._dname.fullName;
+      this->_dname.name     = p._dname.name;
+      this->_dname.version  = p._dname.version;
+    }
 
       Package &
-    operator=( const Package & p )
+    operator=( const Package & p ) noexcept
     {
       this->_cursor         = p._cursor;
       this->_path           = p._path;

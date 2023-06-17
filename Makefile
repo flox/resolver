@@ -63,12 +63,13 @@ lib_SRCS       =  $(filter-out $(bin_SRCS), $(SRCS))
 
 # ---------------------------------------------------------------------------- #
 
-CXXFLAGS     ?=
+CXXFLAGS     ?= $(EXTRA_CFLAGS)
 CXXFLAGS     += '-I$(MAKEFILE_DIR)/include'
-lib_CXXFLAGS =  -shared -fPIC
-lib_LDFLAGS  =  -shared -fPIC -Wl,--no-undefined
-bin_CXXFLAGS =
-bin_LDFLAGS  =
+LDFLAGS      ?= $(EXTRA_LDFLAGS)
+lib_CXXFLAGS ?= -shared -fPIC
+lib_LDFLAGS  ?= -shared -fPIC -Wl,--no-undefined
+bin_CXXFLAGS ?=
+bin_LDFLAGS  ?=
 
 ifneq ($(DEBUG),)
 	CXXFLAGS += -ggdb3 -pg
@@ -91,9 +92,10 @@ nix_CFLAGS  += -include $(nix_INCDIR)/nix/config.h
 nix_LDFLAGS =  $(shell $(PKG_CONFIG) --libs nix-main nix-cmd nix-expr nix-store)
 nix_LDFLAGS += -lnixfetchers
 
-
-floxresolve_LDFLAGS =  '-L$(MAKEFILE_DIR)/lib' -lflox-resolve
-floxresolve_LDFLAGS += -Wl,--enable-new-dtags '-Wl,-rpath,$$ORIGIN/../lib'
+ifndef floxresolve_LDFLAGS
+	floxresolve_LDFLAGS =  '-L$(MAKEFILE_DIR)/lib' -lflox-resolve
+	floxresolve_LDFLAGS += -Wl,--enable-new-dtags '-Wl,-rpath,$$ORIGIN/../lib'
+endif
 
 
 # ---------------------------------------------------------------------------- #
@@ -143,7 +145,7 @@ clean: FORCE
 # ---------------------------------------------------------------------------- #
 
 %.o: %.cc $(COMMON_HEADERS)
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) -c "$<" -o "$@"
+	$(CXX) $(CXXFLAGS) -c "$<" -o "$@"
 
 $(info $(lib_SRCS:.cc=.o))
 
@@ -197,8 +199,8 @@ install-include: $(addprefix $(INCLUDEDIR)/,$(COMMON_HEADERS))
 
 tests/%: CXXFLAGS += $(sqlite3_CFLAGS) $(nljson_CFLAGS)
 tests/%: CXXFLAGS += $(nix_CFLAGS) $(nljson_CFLAGS) $(bin_CXXFLAGS)
-tests/%: LDFLAGS  += $(sqlite3_LDFLAGS) $(nix_LDFLAGS)
 tests/%: LDFLAGS  += $(floxresolve_LDFLAGS) $(bin_LDFLAGS)
+tests/%: LDFLAGS  += $(sqlite3_LDFLAGS) $(nix_LDFLAGS)
 $(TESTS:.cc=): %: %.o lib/$(LIBFLOXRESOLVE)
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) "$<" -o "$@"
 

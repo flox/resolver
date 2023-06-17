@@ -266,40 +266,47 @@ Descriptor::audit( std::string & msg ) const
 /* -------------------------------------------------------------------------- */
 
   predicates::PkgPred
-Descriptor::pred( nix::ref<nix::SymbolTable> st ) const
+Descriptor::pred( nix::ref<nix::SymbolTable> st
+                , bool                       checkPath
+                ) const
 {
   std::list<predicates::PkgPred> preds;
 
-  if ( this->relAttrPath.has_value() )
+  if ( checkPath )
     {
-      std::vector<nix::Symbol> prefix;
-      for ( const std::string & p : this->relAttrPath.value() )
+      if ( this->relAttrPath.has_value() )
         {
-          prefix.push_back( st->create( p ) );
+          std::vector<nix::Symbol> prefix;
+          for ( const std::string & p : this->relAttrPath.value() )
+            {
+              prefix.push_back( st->create( p ) );
+            }
+          preds.push_back(
+            predicates::hasRelPathPrefix( std::move( prefix ) )
+          );
         }
-      preds.push_back( predicates::hasRelPathPrefix( std::move( prefix ) ) );
-    }
 
-  if ( this->absAttrPath.has_value() )
-    {
-      preds.push_back(
-        predicates::hasAbsPathPrefix( st, this->absAttrPath.value() )
-      );
-    }
-  else if ( ! this->searchCatalogs )
-    {
-      preds.push_back( ! predicates::hasSubtree( ST_CATALOG ) );
-    }
-  else if ( ! this->searchFlakes )
-    {
-      preds.push_back( predicates::hasSubtree( ST_CATALOG ) );
-    }
+      if ( this->absAttrPath.has_value() )
+        {
+          preds.push_back(
+            predicates::hasAbsPathPrefix( st, this->absAttrPath.value() )
+          );
+        }
+      else if ( ! this->searchCatalogs )
+        {
+          preds.push_back( ! predicates::hasSubtree( ST_CATALOG ) );
+        }
+      else if ( ! this->searchFlakes )
+        {
+          preds.push_back( predicates::hasSubtree( ST_CATALOG ) );
+        }
 
-  if ( this->catalogStability.has_value() )
-    {
-      preds.push_back(
-        predicates::hasStability( this->catalogStability.value() )
-      );
+      if ( this->catalogStability.has_value() )
+        {
+          preds.push_back(
+            predicates::hasStability( this->catalogStability.value() )
+          );
+        }
     }
 
   if ( this->name.has_value() )
