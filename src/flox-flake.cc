@@ -239,13 +239,16 @@ FloxFlake::getActualFlakeAttrPathPrefixes()
 /* -------------------------------------------------------------------------- */
 
   progress_status
-FloxFlake::populateDerivations( std::string_view subtree
-                              , std::string_view system
-                              )
+FloxFlake::derivationsDo( std::string_view subtree
+                        , std::string_view system
+                        , progress_status  doneStatus
+                        , derivation_op    drvOp
+                        , cursor_op        nonDrvOp
+                        )
 {
   DrvDb db( this->getLockedFlake()->getFingerprint() );
   progress_status old = db.getProgress( subtree, system );
-  if ( DBPS_PATHS_DONE <= old ) { return old; }
+  if ( doneStatus <= old ) { return old; }
 
   std::vector<nix::Symbol> rootPath = {
     this->_state->symbols.create( subtree )
@@ -260,20 +263,38 @@ FloxFlake::populateDerivations( std::string_view subtree
       return DBPS_EMPTY;
     }
 
+  subtree_type stt = parseSubtreeType( subtree );
+
+  todo_queue todos;
+
+  auto runDrvOp = [&](
+    const std::vector<std::string> & parentRelPath
+  ,       std::string_view           attrName
+  ,       Cursor                     cur
+  ) { drvOp( db, stt, subtree, system, parentRelPath, attrName, cur ); };
+  auto runNonDrvOp = [&](
+    const std::vector<std::string> & parentRelPath
+  ,       std::string_view           attrName
+  ,       Cursor                     cur
+  ) { nonDrvOp( stt, system, todos, parentRelPath, attrName, cur ); };
+
   db.promoteProgress( subtree, system, DBPS_PARTIAL );
 
   /* For `packages' prefix we can just fill attrnames. */
-  if ( subtree == "packages" )
+  if ( stt == ST_PACKAGES )
     {
+      const std::vector<std::string> parentRelPath;
       for ( const nix::Symbol & a : mc->getAttrs() )
         {
           // TODO: Maybe ensure these are derivations?
-          db.setDrv( subtree, system, { this->_state->symbols[a] } );
+          runDrvOp( parentRelPath
+                  , (std::string_view) this->_state->symbols[a]
+                  , mc->getAttr( a )
+                  );
         }
     }
   else
     {
-      std::queue<Cursor, std::list<Cursor>> todos;
       todos.push( (Cursor) mc );
       while ( ! todos.empty() )
         {
@@ -291,19 +312,17 @@ FloxFlake::populateDerivations( std::string_view subtree
                   Cursor c = todos.front()->getAttr( s );
                   if ( c->isDerivation() )
                     {
-                      /* Cache the evaluated result. */
-                      relPath.push_back( this->_state->symbols[s] );
-                      db.setDrv( subtree, system, relPath );
-                      relPath.pop_back();
+                      runDrvOp( relPath
+                              , (std::string_view) this->_state->symbols[s]
+                              , c
+                              );
                     }
-                  else if ( subtree != "packages" )
+                  else
                     {
-                      MaybeCursor m =
-                        c->maybeGetAttr( "recurseForDerivations" );
-                      if ( ( m != nullptr ) && m->getBool() )
-                        {
-                          todos.push( (Cursor) c );
-                        }
+                      runNonDrvOp( relPath
+                                 , (std::string_view) this->_state->symbols[s]
+                                 , c
+                                 );
                     }
                 }
               catch( ... )
@@ -313,8 +332,41 @@ FloxFlake::populateDerivations( std::string_view subtree
             }
         }
     }
-  db.promoteProgress( subtree, system, DBPS_PATHS_DONE );
-  return DBPS_PATHS_DONE;
+  db.promoteProgress( subtree, system, doneStatus );
+  return doneStatus;
+}
+
+
+
+/* -------------------------------------------------------------------------- */
+
+  progress_status
+FloxFlake::populateDerivations( std::string_view subtree
+                              , std::string_view system
+                              )
+{
+  return derivationsDo( subtree, system, DBPS_PATHS_DONE, [](
+          DrvDb                    & db
+  ,       subtree_type               subtreeType
+  ,       std::string_view           subtree
+  ,       std::string_view           system
+  , const std::vector<std::string> & parentRelPath
+  ,       std::string_view           attrName
+  ,       Cursor                     cur
+  )
+  {
+    std::vector<std::string> path;
+    if ( subtreeType == ST_PACKAGES )
+      {
+        path = { std::string( attrName ) };
+      }
+    else
+      {
+        path = parentRelPath;
+        path.push_back( std::string( attrName ) );
+      }
+    db.setDrv( subtree, system, path );
+  } );
 }
 
 

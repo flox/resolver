@@ -20,6 +20,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include "flox/exceptions.hh"
+#include <queue>
 
 /* In `nix' 2.14.0 they moved some class declarations around, so this
  * selects the correct header so that we can refer to `InstallableFlake'. */
@@ -60,8 +61,26 @@ using MaybeCursor = std::shared_ptr<nix::eval_cache::AttrCursor>;
 
 class Descriptor;
 class Package;
+class DrvDb;
+
+
+/* -------------------------------------------------------------------------- */
 
 typedef enum { ST_PACKAGES, ST_LEGACY, ST_CATALOG } subtree_type;
+
+  static subtree_type
+parseSubtreeType( std::string_view subtree )
+{
+  if ( subtree == "legacyPackages" ) { return ST_LEGACY;   }
+  if ( subtree == "packages" )       { return ST_PACKAGES; }
+  if ( subtree == "catalog" )        { return ST_CATALOG;  }
+  throw ResolverException(
+    "Failed to parse invalid subtree '" + std::string( subtree ) + "'."
+  );
+}
+
+
+/* -------------------------------------------------------------------------- */
 
 typedef enum {
   DBPS_NONE       = 0
@@ -206,6 +225,47 @@ void to_json(         nlohmann::json & j, const Preferences & p );
 
 /* -------------------------------------------------------------------------- */
 
+using todo_queue = std::queue<Cursor, std::list<Cursor>>;
+
+using cursor_op = std::function<void(
+        subtree_type               subtreeType
+,       std::string_view           system
+,       todo_queue               & todos
+, const std::vector<std::string> & parentRelPath
+,       std::string_view           attrName
+,       Cursor                     cur
+)>;
+
+using derivation_op = std::function<void(
+        DrvDb                    & db
+,       subtree_type               subtreeType
+,       std::string_view           subtree
+,       std::string_view           system
+, const std::vector<std::string> & parentRelPath
+,       std::string_view           attrName
+,       Cursor                     cur
+)>;
+
+  static const cursor_op
+handleRecurseForDerivations = [](
+        subtree_type               subtreeType
+,       std::string_view           system
+,       todo_queue               & todos
+, const std::vector<std::string> & parentRelPath
+,       std::string_view           attrName
+,       Cursor                     cur
+)
+{
+  if ( subtreeType != ST_PACKAGES )
+    {
+      MaybeCursor m = cur->maybeGetAttr( "recurseForDerivations" );
+      if ( ( m != nullptr ) && m->getBool() ) { todos.push( (Cursor) cur ); }
+    }
+};
+
+
+/* -------------------------------------------------------------------------- */
+
 class FloxFlake : public std::enable_shared_from_this<FloxFlake> {
   private:
     nix::ref<nix::EvalState> _state;
@@ -254,6 +314,14 @@ class FloxFlake : public std::enable_shared_from_this<FloxFlake> {
     progress_status populateDerivations( std::string_view subtree
                                        , std::string_view system
                                        );
+
+    progress_status derivationsDo(
+      std::string_view subtree
+    , std::string_view system
+    , progress_status  doneStatus
+    , derivation_op    drvOp
+    , cursor_op        nonDrvOp   = handleRecurseForDerivations
+    );
 };
 
 
