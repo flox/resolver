@@ -4,9 +4,6 @@
  *
  * -------------------------------------------------------------------------- */
 
-// XXX remove
-#include <iostream>
-
 #include <string>
 #include <nlohmann/json.hpp>
 #include <nix/flake/flake.hh>

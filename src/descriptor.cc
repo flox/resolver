@@ -4,8 +4,6 @@
  *
  * -------------------------------------------------------------------------- */
 
-#include <iostream>
-
 #include <variant>
 #include <vector>
 #include <optional>
