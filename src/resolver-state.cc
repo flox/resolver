@@ -271,6 +271,7 @@ ResolverState::resolveInInput( std::string_view id, const Descriptor & desc )
   if ( todos.empty() )
     {
       DrvDb cache( flake->getLockedFlake()->getFingerprint() );
+      std::list<std::vector<std::string>> tops;
 
       /* Drop any prefixes that are disabled by our descriptor. */
       for ( Cursor prefix : flake->getFlakePrefixCursors() )
@@ -296,6 +297,9 @@ ResolverState::resolveInInput( std::string_view id, const Descriptor & desc )
               continue;
             }
           todos.push( prefix );
+          std::vector<std::string> strs;
+          for ( auto & sp : ppath ) { strs.push_back( sp ); }
+          tops.push_back( std::move( strs ) );
         }
 
       while ( ! todos.empty() )
@@ -351,11 +355,6 @@ ResolverState::resolveInInput( std::string_view id, const Descriptor & desc )
                       // TODO: Catch errors in `packages'.
                     }
                 }
-
-              /* Mark this prefix as complete. */
-              cache.setProgress(
-                subtree, system, DrvDb::progress_status::DBPS_INFO_DONE
-              );
             }
           else  /* If progress is past `DBPS_INFO_DONE' use cached info. */
             {
@@ -370,6 +369,13 @@ ResolverState::resolveInInput( std::string_view id, const Descriptor & desc )
             }
           /* Move on to the next one. */
           todos.pop();
+        }
+      /* Mark prefixes as complete in our cache. */
+      for ( const std::vector<std::string> absPath : tops )
+        {
+            cache.setProgress(
+              absPath[0], absPath[1], DrvDb::progress_status::DBPS_INFO_DONE
+            );
         }
     }
   else  /* Handle case where we have relative/absolute path, so no waling. */

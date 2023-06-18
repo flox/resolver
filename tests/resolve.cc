@@ -156,12 +156,12 @@ main( int argc, char * argv[], char ** envp )
 {
   int ec = EXIT_SUCCESS;
 
-  //RUN_TEST( resolve1 );
-  //RUN_TEST( resolve2 );
-  //RUN_TEST( resolveOne1 );
-  //RUN_TEST( ResolverStateLocking1 );
-  //RUN_TEST( getActualFlakeAttrPathPrefixes );
-  //RUN_TEST( resolveInInput1 );
+  RUN_TEST( resolve1 );
+  RUN_TEST( resolve2 );
+  RUN_TEST( resolveOne1 );
+  RUN_TEST( ResolverStateLocking1 );
+  RUN_TEST( getActualFlakeAttrPathPrefixes );
+  RUN_TEST( resolveInInput1 );
   RUN_TEST( resolveInInput2 );
 
   return ec;

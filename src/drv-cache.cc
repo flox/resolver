@@ -4,6 +4,9 @@
  *
  * -------------------------------------------------------------------------- */
 
+// XXX remove
+#include <iostream>
+
 #include <string>
 #include <nlohmann/json.hpp>
 #include <nix/flake/flake.hh>
@@ -45,10 +48,13 @@ CREATE TABLE IF NOT EXISTS DerivationInfos (
 , version          TEXT
 , semver           TEXT
 , license          TEXT
-, outputs          JSON  DEFAULT '[]'
-, outputsToInstall JSON  DEFAULT '["out"]'
+, outputs          JSON  NOT NULL DEFAULT '[]'
+, outputsToInstall JSON  NOT NULL DEFAULT '["out"]'
 , broken           BOOL
 , unfree           BOOL
+, hasMetaAttr      BOOL  NOT NULL
+, hasPnameAttr     BOOL  NOT NULL
+, hasVersionAttr   BOOL  NOT NULL
 
 , PRIMARY  KEY ( subtree, system, path )
 );
@@ -56,7 +62,7 @@ CREATE TABLE IF NOT EXISTS DerivationInfos (
 CREATE TABLE IF NOT EXISTS Progress (
   subtree  TEXT     NOT NULL
 , system   TEXT     NOT NULL
-, status   INTEGER  DEFAULT 0
+, status   INTEGER  NOT NULL DEFAULT 0
 , PRIMARY  KEY ( subtree, system )
 );
 
@@ -161,8 +167,8 @@ DrvDb::DrvDb( const nix::flake::Fingerprint & fingerprint )
   , "INSERT OR REPLACE INTO DerivationInfos ("
     "  subtree, system, path"
     ", fullName, pname, version, semver, license, outputs, outputsToInstall"
-    ", broken, unfree"
-    ") VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )"
+    ", broken, unfree, hasMetaAttr, hasPnameAttr, hasVersionAttr"
+    ") VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )"
   );
 
   state->insertProgress.create(
@@ -287,6 +293,9 @@ DrvDb::setDrvInfo( const Package & p )
       ( outputs.dump())(outputsToInstall.dump() )
       ( p.isBroken().value_or( false ), p.isBroken().has_value() )
       ( p.isUnfree().value_or( false ), p.isUnfree().has_value() )
+      ( p.hasMetaAttr() )
+      ( p.hasPnameAttr() )
+      ( p.hasVersionAttr() )
       .exec();
     rowId = state->db.getLastInsertedRowId();
     assert( rowId != 0 );
@@ -355,6 +364,10 @@ infoFromQuery( nix::SQLiteStmt::Use & query )
     {
       info.emplace( "unfree", ( query.getInt( 11 ) != 0 ) );
     }
+
+  info.emplace( "hasMetaAttr",    ( query.getInt( 12 ) != 0 ) );
+  info.emplace( "hasPnameAttr",   ( query.getInt( 13 ) != 0 ) );
+  info.emplace( "hasVersionAttr", ( query.getInt( 14 ) != 0 ) );
 
   return info;
 }
@@ -426,6 +439,29 @@ DrvDb::setProgress( std::string_view       subtree
 
 /* -------------------------------------------------------------------------- */
 
+  DrvDb::progress_status
+DrvDb::promoteProgress( std::string_view       subtree
+                      , std::string_view       system
+                      , DrvDb::progress_status status
+                      )
+{
+  auto state( this->_state->lock() );
+  auto query = state->queryProgress.use()( subtree )( system );
+  DrvDb::progress_status old = DrvDb::progress_status::DBPS_NONE;
+  if ( query.next() ) { old = (DrvDb::progress_status) query.getInt( 0 ); }
+  if ( status <= old ) { return old; }
+  doSQLite( [&](){
+    state->insertProgress.use()( subtree )( system )( (int) status ).exec();
+    uint64_t rowId = state->db.getLastInsertedRowId();
+    assert( rowId != 0 );
+    return rowId;
+  } );
+  return old;
+}
+
+
+/* -------------------------------------------------------------------------- */
+
 CachedPackage::CachedPackage(       DrvDb                    & db
                             ,       std::string_view           subtree
                             ,       std::string_view           system
@@ -464,42 +500,48 @@ CachedPackage::CachedPackage(       DrvDb                    & db
   if ( ! info["license"].is_null() ) { this->_license = info["license"]; }
   if ( ! info["broken"].is_null() )  { this->_broken  = info["broken"];  }
   if ( ! info["unfree"].is_null() )  { this->_unfree  = info["unfree"];  }
+
+  this->_hasMetaAttr    = info["hasMetaAttr"];
+  this->_hasPnameAttr   = info["hasPnameAttr"];
+  this->_hasVersionAttr = info["hasVersionAttr"];
 }
 
 
 /* -------------------------------------------------------------------------- */
 
-CachedPackage::CachedPackage( const nlohmann::json & info )
+CachedPackage::CachedPackage( const nlohmann::json & drvInfo )
+  : _pathS()
+  , _fullname( drvInfo.at( "name" ) )
+  , _pname( drvInfo.at( "pname" ) )
+  , _outputs( drvInfo.at( "outputs" ) )
+  , _outputsToInstall( drvInfo.at( "outputsToInstall" ) )
+  , _version( drvInfo.at( "version" ).is_null()
+              ? std::nullopt
+              : std::make_optional( drvInfo.at( "version" ).get<std::string>() )
+            )
+  , _semver( drvInfo.at( "semver" ).is_null()
+              ? std::nullopt
+              : std::make_optional( drvInfo.at( "semver" ).get<std::string>() )
+            )
+  , _license( drvInfo.at( "license" ).is_null()
+              ? std::nullopt
+              : std::make_optional( drvInfo.at( "license" ).get<std::string>() )
+            )
+  , _broken( drvInfo.at( "broken" ).is_null()
+              ? std::nullopt
+              : std::make_optional( drvInfo.at( "broken" ).get<bool>() )
+            )
+  , _unfree( drvInfo.at( "unfree" ).is_null()
+              ? std::nullopt
+              : std::make_optional( drvInfo.at( "unfree" ).get<bool>() )
+            )
+  , _hasMetaAttr( drvInfo.at( "hasMetaAttr" ).get<bool>() )
+  , _hasPnameAttr( drvInfo.at( "hasPnameAttr" ).get<bool>() )
+  , _hasVersionAttr( drvInfo.at( "hasVersionAttr" ).get<bool>() )
 {
-  this->_pathS.push_back( info["subtree"] );
-  this->_pathS.push_back( info["system"] );
-  for ( auto & p : info["path"] ) { this->_pathS.push_back( p ); }
-  this->_fullname = info.at( "name" );
-  this->_pname    = info.at( "pname" );
-  this->_outputs  = info.at( "outputs" );
-
-  this->_outputsToInstall = info.at( "outputsToInstall" );
-
-  if ( ! info.at( "version" ).is_null() )
-    {
-      this->_version = info.at( "version" );
-    }
-  if ( ! info.at( "semver" ).is_null() )
-    {
-      this->_semver  = info.at( "semver" );
-    }
-  if ( ! info.at( "license" ).is_null() )
-    {
-      this->_license = info.at( "license" );
-    }
-  if ( ! info.at( "broken" ).is_null() )
-    {
-      this->_broken  = info.at( "broken" );
-    }
-  if ( ! info.at( "unfree" ).is_null() )
-    {
-      this->_unfree  = info.at( "unfree" );
-    }
+  this->_pathS.push_back( drvInfo["subtree"] );
+  this->_pathS.push_back( drvInfo["system"] );
+  for ( auto & p : drvInfo["path"] ) { this->_pathS.push_back( p ); }
 }
 
 

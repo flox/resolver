@@ -151,23 +151,23 @@ class EvalPackage : public Package {
     }
 
     std::vector<nix::Symbol>    getPath()             const;
-    std::vector<std::string>    getPathStrs()         const;
     Cursor                      getCursor()           const;
-    subtree_type                getSubtreeType()      const;
-    std::optional<std::string>  getStability()        const;
-    nix::DrvName                getParsedDrvName()    const;
-    std::string                 getFullName()         const;
-    std::string                 getPname()            const;
-    std::optional<std::string>  getVersion()          const;
-    std::optional<std::string>  getSemver()           const;
-    std::optional<std::string>  getLicense()          const;
-    std::vector<std::string>    getOutputs()          const;
-    std::vector<std::string>    getOutputsToInstall() const;
-    std::optional<bool>         isBroken()            const;
-    std::optional<bool>         isUnfree()            const;
-    bool                        hasMetaAttr()         const;
-    bool                        hasPnameAttr()        const;
-    bool                        hasVersionAttr()      const;
+    std::vector<std::string>    getPathStrs()         const override;
+    subtree_type                getSubtreeType()      const override;
+    std::optional<std::string>  getStability()        const override;
+    nix::DrvName                getParsedDrvName()    const override;
+    std::string                 getFullName()         const override;
+    std::string                 getPname()            const override;
+    std::optional<std::string>  getVersion()          const override;
+    std::optional<std::string>  getSemver()           const override;
+    std::optional<std::string>  getLicense()          const override;
+    std::vector<std::string>    getOutputs()          const override;
+    std::vector<std::string>    getOutputsToInstall() const override;
+    std::optional<bool>         isBroken()            const override;
+    std::optional<bool>         isUnfree()            const override;
+    bool                        hasMetaAttr()         const override;
+    bool                        hasPnameAttr()        const override;
+    bool                        hasVersionAttr()      const override;
 };
 
 
