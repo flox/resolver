@@ -306,17 +306,15 @@ ResolverState::resolveInInput( std::string_view id, const Descriptor & desc )
         {
           std::vector<nix::Symbol> path = todos.front()->getAttrPath();
 
-          std::string subtree         = ( * this->getSymbolTable() )[path[0]];
-          std::string system          = ( * this->getSymbolTable() )[path[1]];
-          DrvDb::progress_status dbps = cache.getProgress( subtree, system );
+          std::string subtree  = ( * this->getSymbolTable() )[path[0]];
+          std::string system   = ( * this->getSymbolTable() )[path[1]];
+          progress_status dbps = cache.getProgress( subtree, system );
 
           /* If our cached database is incomplete we evaluate. */
-          if ( dbps < DrvDb::progress_status::DBPS_INFO_DONE )
+          if ( dbps < DBPS_INFO_DONE )
             {
               /* Mark this prefix as being "in progress". */
-              cache.promoteProgress(
-                subtree, system, DrvDb::progress_status::DBPS_PARTIAL
-              );
+              cache.promoteProgress( subtree, system, DBPS_PARTIAL );
 
               for ( const nix::Symbol s : todos.front()->getAttrs() )
                 {
@@ -370,9 +368,7 @@ ResolverState::resolveInInput( std::string_view id, const Descriptor & desc )
       /* Mark prefixes as complete in our cache. */
       for ( const std::vector<std::string> absPath : tops )
         {
-            cache.setProgress(
-              absPath[0], absPath[1], DrvDb::progress_status::DBPS_INFO_DONE
-            );
+            cache.setProgress( absPath[0], absPath[1], DBPS_INFO_DONE );
         }
     }
   else  /* Handle case where we have relative/absolute path, so no waling. */

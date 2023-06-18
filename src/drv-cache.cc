@@ -239,6 +239,25 @@ DrvDb::doSQLite( F && fun )
 /* -------------------------------------------------------------------------- */
 
   uint64_t
+DrvDb::setDrv( std::string_view                 subtree
+             , std::string_view                 system
+             , const std::vector<std::string> & path
+             )
+{
+  nlohmann::json relPath = path;
+  return doSQLite( [&]() {
+    auto state( this->_state->lock() );
+    state->insertDrv.use()( subtree )( system )( relPath.dump() ).exec();
+    uint64_t rowId = state->db.getLastInsertedRowId();
+    assert( rowId != 0 );
+    return rowId;
+  } );
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+  uint64_t
 DrvDb::setDrv( const Package & p )
 {
   std::vector<std::string> path    = p.getPathStrs();
@@ -402,28 +421,28 @@ DrvDb::getDrvInfos( std::string_view subtree, std::string_view system )
 
 /* -------------------------------------------------------------------------- */
 
-  DrvDb::progress_status
+  progress_status
 DrvDb::getProgress( std::string_view subtree, std::string_view system )
 {
   auto state( this->_state->lock() );
   auto query = state->queryProgress.use()( subtree )( system );
-  if ( ! query.next() ) { return DrvDb::progress_status::DBPS_NONE; }
-  return (DrvDb::progress_status) query.getInt( 0 );
+  if ( ! query.next() ) { return DBPS_NONE; }
+  return (progress_status) query.getInt( 0 );
 }
 
 
 /* -------------------------------------------------------------------------- */
 
-  DrvDb::progress_status
-DrvDb::setProgress( std::string_view       subtree
-                  , std::string_view       system
-                  , DrvDb::progress_status status
+  progress_status
+DrvDb::setProgress( std::string_view subtree
+                  , std::string_view system
+                  , progress_status  status
                   )
 {
   auto state( this->_state->lock() );
   auto query = state->queryProgress.use()( subtree )( system );
-  DrvDb::progress_status old = DrvDb::progress_status::DBPS_NONE;
-  if ( query.next() ) { old = (DrvDb::progress_status) query.getInt( 0 ); }
+  progress_status old = DBPS_NONE;
+  if ( query.next() ) { old = (progress_status) query.getInt( 0 ); }
   doSQLite( [&](){
     state->insertProgress.use()( subtree )( system )( (int) status ).exec();
     uint64_t rowId = state->db.getLastInsertedRowId();
@@ -436,16 +455,16 @@ DrvDb::setProgress( std::string_view       subtree
 
 /* -------------------------------------------------------------------------- */
 
-  DrvDb::progress_status
-DrvDb::promoteProgress( std::string_view       subtree
-                      , std::string_view       system
-                      , DrvDb::progress_status status
+  progress_status
+DrvDb::promoteProgress( std::string_view subtree
+                      , std::string_view system
+                      , progress_status  status
                       )
 {
   auto state( this->_state->lock() );
   auto query = state->queryProgress.use()( subtree )( system );
-  DrvDb::progress_status old = DrvDb::progress_status::DBPS_NONE;
-  if ( query.next() ) { old = (DrvDb::progress_status) query.getInt( 0 ); }
+  progress_status old = DBPS_NONE;
+  if ( query.next() ) { old = (progress_status) query.getInt( 0 ); }
   if ( status <= old ) { return old; }
   doSQLite( [&](){
     state->insertProgress.use()( subtree )( system )( (int) status ).exec();

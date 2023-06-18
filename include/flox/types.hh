@@ -63,6 +63,14 @@ class Package;
 
 typedef enum { ST_PACKAGES, ST_LEGACY, ST_CATALOG } subtree_type;
 
+typedef enum {
+  DBPS_NONE       = 0
+, DBPS_PARTIAL    = 1
+, DBPS_PATHS_DONE = 2
+, DBPS_INFO_DONE  = 3
+, DBPS_EMPTY      = 4  /* This should always have highest value. */
+}  progress_status;
+
 
 /* -------------------------------------------------------------------------- */
 
@@ -234,7 +242,11 @@ class FloxFlake : public std::enable_shared_from_this<FloxFlake> {
     /* Opens `EvalCache' once, staying open until all cursors die. */
     std::list<Cursor> getFlakePrefixCursors();
 
-    std::list<std::vector<nix::Symbol>> getActualFlakeAttrPathPrefixes();
+    std::list<std::vector<std::string>> getActualFlakeAttrPathPrefixes();
+
+    progress_status populateDerivations( std::string_view subtree
+                                       , std::string_view system
+                                       );
 };
 
 

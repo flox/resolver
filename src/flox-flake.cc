@@ -17,6 +17,8 @@
 #include <memory>
 #include "flox/types.hh"
 #include "flox/util.hh"
+#include "flox/drv-cache.hh"
+#include <queue>
 
 
 /* -------------------------------------------------------------------------- */
@@ -76,26 +78,6 @@ FloxFlake::getLockedFlake()
 FloxFlake::getSystems() const
 {
   return this->_systems;
-}
-
-
-/* -------------------------------------------------------------------------- */
-
-/* TODO: check additional preferences. */
-  std::list<std::list<std::string>>
-FloxFlake::getDefaultFlakeAttrPaths() const
-{
-  std::string system = nix::settings.thisSystem.get();
-  if ( hasElement( this->_systems, system ) &&
-       hasElement<std::string, std::vector>( this->_prefsPrefixes, "packages" )
-     )
-    {
-      return {
-        { "packages", system, "default" }
-      , { "defaultPackage", std::move( system ) }
-      };
-    }
-  return {};
 }
 
 
@@ -237,16 +219,104 @@ FloxFlake::getFlakePrefixCursors()
 
 /* -------------------------------------------------------------------------- */
 
-  std::list<std::vector<nix::Symbol>>
+  std::list<std::vector<std::string>>
 FloxFlake::getActualFlakeAttrPathPrefixes()
 {
-  std::list<std::vector<nix::Symbol>>  rsl;
+  std::list<std::vector<std::string>> rsl;
   for ( const Cursor c : this->getFlakePrefixCursors() )
     {
-      rsl.push_back( c->getAttrPath() );
+      std::vector<std::string> path;
+      for ( const nix::Symbol & s : c->getAttrPath() )
+        {
+          path.push_back( this->_state->symbols[s] );
+        }
+      rsl.push_back( std::move( path ) );
     }
   return rsl;
 }
+
+
+/* -------------------------------------------------------------------------- */
+
+  progress_status
+FloxFlake::populateDerivations( std::string_view subtree
+                              , std::string_view system
+                              )
+{
+  DrvDb db( this->getLockedFlake()->getFingerprint() );
+  progress_status old = db.getProgress( subtree, system );
+  if ( DBPS_PATHS_DONE <= old ) { return old; }
+
+  std::vector<nix::Symbol> rootPath = {
+    this->_state->symbols.create( subtree )
+  , this->_state->symbols.create( system )
+  };
+  MaybeCursor mc = this->maybeOpenCursor( rootPath );
+
+  /* If there is no such prefix mark it as empty and bail. */
+  if ( mc == nullptr )
+    {
+      db.promoteProgress( subtree, system, DBPS_EMPTY );
+      return DBPS_EMPTY;
+    }
+
+  db.promoteProgress( subtree, system, DBPS_PARTIAL );
+
+  /* For `packages' prefix we can just fill attrnames. */
+  if ( subtree == "packages" )
+    {
+      for ( const nix::Symbol & a : mc->getAttrs() )
+        {
+          // TODO: Maybe ensure these are derivations?
+          db.setDrv( subtree, system, { this->_state->symbols[a] } );
+        }
+    }
+  else
+    {
+      std::queue<Cursor, std::list<Cursor>> todos;
+      todos.push( (Cursor) mc );
+      while ( ! todos.empty() )
+        {
+          std::vector<std::string> relPath;
+          size_t pi = 0;
+          for ( const nix::Symbol & s : todos.front()->getAttrPath() )
+            {
+              if ( pi < 2 ) { ++pi; continue; }
+              relPath.push_back( this->_state->symbols[s] );
+            }
+          for ( const nix::Symbol s : todos.front()->getAttrs() )
+            {
+              try
+                {
+                  Cursor c = todos.front()->getAttr( s );
+                  if ( c->isDerivation() )
+                    {
+                      /* Cache the evaluated result. */
+                      relPath.push_back( this->_state->symbols[s] );
+                      db.setDrv( subtree, system, relPath );
+                      relPath.pop_back();
+                    }
+                  else if ( subtree != "packages" )
+                    {
+                      MaybeCursor m =
+                        c->maybeGetAttr( "recurseForDerivations" );
+                      if ( ( m != nullptr ) && m->getBool() )
+                        {
+                          todos.push( (Cursor) c );
+                        }
+                    }
+                }
+              catch( ... )
+                {
+                  // TODO: Catch errors in `packages'.
+                }
+            }
+        }
+    }
+  db.promoteProgress( subtree, system, DBPS_PATHS_DONE );
+  return DBPS_PATHS_DONE;
+}
+
 
 
 /* -------------------------------------------------------------------------- */

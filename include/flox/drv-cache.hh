@@ -144,18 +144,16 @@ class DrvDb {
 
   public:
 
-    typedef enum {
-      DBPS_NONE       = 0
-    , DBPS_PARTIAL    = 1
-    , DBPS_PATHS_DONE = 2
-    , DBPS_INFO_DONE  = 3
-    }  progress_status;
-
     DrvDb( const nix::flake::Fingerprint & fingerprint );
     ~DrvDb();
     template<typename F> uint64_t doSQLite( F && fun );
     uint64_t setDrv( const Package & p );
     uint64_t setDrvInfo( const Package & p );
+
+    uint64_t setDrv( std::string_view                 subtree
+                   , std::string_view                 system
+                   , const std::vector<std::string> & path
+                   );
 
     std::optional<nlohmann::json> getDrvInfo(
             std::string_view           subtree
@@ -173,16 +171,16 @@ class DrvDb {
                                , std::string_view system
                                );
     /* Set status of a subtree/system collection, returning the old value. */
-    progress_status setProgress( std::string_view       subtree
-                               , std::string_view       system
-                               , DrvDb::progress_status status
+    progress_status setProgress( std::string_view subtree
+                               , std::string_view system
+                               , progress_status  status
                                );
     /* Set status of a subtree/system collection if `status' is "higher" than
      * the existing value.
      * Returns the old value. */
-    progress_status promoteProgress( std::string_view       subtree
-                                   , std::string_view       system
-                                   , DrvDb::progress_status status
+    progress_status promoteProgress( std::string_view subtree
+                                   , std::string_view system
+                                   , progress_status  status
                                    );
 
 };  /* End class `DrvDb' */
