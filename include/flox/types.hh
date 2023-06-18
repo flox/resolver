@@ -244,6 +244,13 @@ class FloxFlake : public std::enable_shared_from_this<FloxFlake> {
 
     std::list<std::vector<std::string>> getActualFlakeAttrPathPrefixes();
 
+    /* Populate this flake's `DrvDb' with paths for all derivations under the
+     * given prefix.
+     * This does NOT populate "info" fields, it only records paths to
+     * all derivations.
+     * This routine is significantly more lightweight than ones focused on
+     * scraping "info" fields making it suitable for quickly resolving
+     * absolute and relative path descriptors. */
     progress_status populateDerivations( std::string_view subtree
                                        , std::string_view system
                                        );
