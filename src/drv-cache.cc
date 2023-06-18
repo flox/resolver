@@ -189,7 +189,7 @@ DrvDb::DrvDb( const nix::flake::Fingerprint & fingerprint )
 
   state->queryProgress.create(
     state->db
-  , "SELECT * FROM Progress WHERE ( subtree = ? ) AND ( system = ? )"
+  , "SELECT status FROM Progress WHERE ( subtree = ? ) AND ( system = ? )"
   );
 
   state->txn = std::make_unique<nix::SQLiteTxn>( state->db );
@@ -301,17 +301,42 @@ DrvDb::setDrvInfo( const Package & p )
   static nlohmann::json
 infoFromQuery( nix::SQLiteStmt::Use & query )
 {
-  // XXX: make sure `nullptr' actually yields `null' here, it might be
-  // misinterpreted as the empty string.
   nlohmann::json info = {
-    { "name",    query.getStr( 3 ) }
-  , { "pname",   query.getStr( 4 ) }
-  , { "version", ( query.isNull( 5 ) ? nullptr : query.getStr( 5 ) ) }
-  , { "semver",  ( query.isNull( 6 ) ? nullptr : query.getStr( 6 ) ) }
-  , { "license", ( query.isNull( 7 ) ? nullptr : query.getStr( 7 ) ) }
+    { "subtree",          query.getStr( 0 ) }
+  , { "system",           query.getStr( 1 ) }
+  , { "path",             nlohmann::json::parse( query.getStr( 2 ) ) }
+  , { "name",             query.getStr( 3 ) }
+  , { "pname",            query.getStr( 4 ) }
   , { "outputs",          nlohmann::json::parse( query.getStr( 8 ) ) }
   , { "outputsToInstall", nlohmann::json::parse( query.getStr( 9 ) ) }
   };
+
+  if ( query.isNull( 5 ) )
+    {
+      info.emplace( "version", nullptr );
+    }
+  else
+    {
+      info.emplace( "version", query.getStr( 5 ) );
+    }
+
+  if ( query.isNull( 6 ) )
+    {
+      info.emplace( "semver", nullptr );
+    }
+  else
+    {
+      info.emplace( "semver", query.getStr( 6 ) );
+    }
+
+  if ( query.isNull( 7 ) )
+    {
+      info.emplace( "license", nullptr );
+    }
+  else
+    {
+      info.emplace( "license", query.getStr( 7 ) );
+    }
 
   if ( query.isNull( 10 ) )
     {
@@ -425,6 +450,9 @@ CachedPackage::CachedPackage(       DrvDb                    & db
       throw ResolverException( "CachedPackage(): No such path '" + p + "'." );
     }
   nlohmann::json info = _info.value();
+  this->_pathS.push_back( info["subtree"] );
+  this->_pathS.push_back( info["system"] );
+  for ( auto & p : info["path"] ) { this->_pathS.push_back( p ); }
   this->_fullname = info["name"];
   this->_pname    = info["pname"];
   this->_outputs  = info["outputs"];
@@ -443,6 +471,9 @@ CachedPackage::CachedPackage(       DrvDb                    & db
 
 CachedPackage::CachedPackage( const nlohmann::json & info )
 {
+  this->_pathS.push_back( info["subtree"] );
+  this->_pathS.push_back( info["system"] );
+  for ( auto & p : info["path"] ) { this->_pathS.push_back( p ); }
   this->_fullname = info.at( "name" );
   this->_pname    = info.at( "pname" );
   this->_outputs  = info.at( "outputs" );

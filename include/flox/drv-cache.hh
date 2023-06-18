@@ -27,7 +27,6 @@ class DrvDb;
 class CachedPackage : public Package {
   private:
     std::vector<std::string>    _pathS;
-    subtree_type                _subtree;
     std::string                 _fullname;
     std::string                 _pname;
     std::optional<std::string>  _version;
@@ -69,80 +68,6 @@ class CachedPackage : public Package {
                  );
 
     CachedPackage( const nlohmann::json & info );
-
-    CachedPackage( const CachedPackage & p ) noexcept
-      : _pathS( p._pathS )
-      , _subtree( p._subtree )
-      , _fullname( p._fullname )
-      , _pname( p._pname )
-      , _version( p._version )
-      , _semver( p._semver )
-      , _license( p._license )
-      , _outputs( p._outputs )
-      , _outputsToInstall( p._outputsToInstall )
-      , _broken( p._broken )
-      , _unfree( p._unfree )
-      , _hasMeta( p._hasMeta )
-      , _hasPnameAttr( p._hasPnameAttr )
-      , _hasVersionAttr( p._hasVersionAttr )
-    {}
-
-    CachedPackage( const CachedPackage && p ) noexcept
-      : _pathS( std::move(  p._pathS ) )
-      , _subtree( std::move(  p._subtree ) )
-      , _fullname( std::move(  p._fullname ) )
-      , _pname( std::move(  p._pname ) )
-      , _version( std::move(  p._version ) )
-      , _semver( std::move(  p._semver ) )
-      , _license( std::move(  p._license ) )
-      , _outputs( std::move(  p._outputs ) )
-      , _outputsToInstall( std::move(  p._outputsToInstall ) )
-      , _broken( std::move(  p._broken ) )
-      , _unfree( std::move(  p._unfree ) )
-      , _hasMeta( std::move(  p._hasMeta ) )
-      , _hasPnameAttr( std::move(  p._hasPnameAttr ) )
-      , _hasVersionAttr( std::move(  p._hasVersionAttr ) )
-    {}
-
-      CachedPackage &
-    operator=( const CachedPackage & p ) noexcept
-    {
-      _pathS            = p._pathS;
-      _subtree          = p._subtree;
-      _fullname         = p._fullname;
-      _pname            = p._pname;
-      _version          = p._version;
-      _semver           = p._semver;
-      _license          = p._license;
-      _outputs          = p._outputs;
-      _outputsToInstall = p._outputsToInstall;
-      _broken           = p._broken;
-      _unfree           = p._unfree;
-      _hasMeta          = p._hasMeta;
-      _hasPnameAttr     = p._hasPnameAttr;
-      _hasVersionAttr   = p._hasVersionAttr;
-      return * this;
-    }
-
-      CachedPackage &
-    operator=( CachedPackage && p ) noexcept
-    {
-      _pathS            = std::move( p._pathS );
-      _subtree          = std::move( p._subtree );
-      _fullname         = std::move( p._fullname );
-      _pname            = std::move( p._pname );
-      _version          = std::move( p._version );
-      _semver           = std::move( p._semver );
-      _license          = std::move( p._license );
-      _outputs          = std::move( p._outputs );
-      _outputsToInstall = std::move( p._outputsToInstall );
-      _broken           = std::move( p._broken );
-      _unfree           = std::move( p._unfree );
-      _hasMeta          = std::move( p._hasMeta );
-      _hasPnameAttr     = std::move( p._hasPnameAttr );
-      _hasVersionAttr   = std::move( p._hasVersionAttr );
-      return * this;
-    }
 
 };  /* End class `CachedPackage' */
 

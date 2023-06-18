@@ -123,6 +123,22 @@ ResolverState::getEvalState()
 
 /* -------------------------------------------------------------------------- */
 
+  nix::SymbolTable *
+ResolverState::getSymbolTable()
+{
+  if ( this->evalState == nullptr )
+    {
+      return & this->getEvalState()->symbols;
+    }
+  else
+    {
+      return & this->evalState->symbols;
+    }
+}
+
+
+/* -------------------------------------------------------------------------- */
+
   std::list<std::string>
 ResolverState::getInputNames() const
 {
@@ -198,7 +214,7 @@ ResolverState::resolveInInput( std::string_view id, const Descriptor & desc )
       if ( desc.absAttrPath.value().hasGlob() )
         {
           std::vector<nix::Symbol> subtree = {
-            this->getEvalState()->symbols.create(
+            this->getSymbolTable()->create(
               std::get<std::string>( desc.absAttrPath.value().path[0] )
             )
           };
@@ -224,7 +240,7 @@ ResolverState::resolveInInput( std::string_view id, const Descriptor & desc )
           std::vector<nix::Symbol> path;
           for ( size_t i = 0; i < desc.absAttrPath.value().path.size(); ++i )
             {
-              this->getEvalState()->symbols.create(
+              this->getSymbolTable()->create(
                 std::get<std::string>( desc.absAttrPath.value().path[i] )
               );
             }
@@ -246,24 +262,21 @@ ResolverState::resolveInInput( std::string_view id, const Descriptor & desc )
         }
     }
 
-  std::shared_ptr<nix::SymbolTable> ssymtab =
-    std::make_shared<nix::SymbolTable>( this->getEvalState()->symbols );
-
   predicates::PkgPred pred = this->_prefs.pred_V2();
-  pred = pred && desc.pred( nix::ref<nix::SymbolTable>( ssymtab )
-                          , todos.empty()
-                          );
+  pred = pred && desc.pred( todos.empty() );
 
   std::queue<Package *, std::list<Package *>> goods;
 
+  /* Walk the flake's outputs checking each package. */
   if ( todos.empty() )
     {
       DrvDb cache( flake->getLockedFlake()->getFingerprint() );
 
+      /* Drop any prefixes that are disabled by our descriptor. */
       for ( Cursor prefix : flake->getFlakePrefixCursors() )
         {
           std::vector<nix::SymbolStr> ppath =
-            this->getEvalState()->symbols.resolve( prefix->getAttrPath() );
+            this->getSymbolTable()->resolve( prefix->getAttrPath() );
           if ( ( ! desc.searchCatalogs ) && ( ppath[0] == "catalog" ) )
             {
               continue;
@@ -284,18 +297,26 @@ ResolverState::resolveInInput( std::string_view id, const Descriptor & desc )
             }
           todos.push( prefix );
         }
+
       while ( ! todos.empty() )
         {
           std::vector<nix::Symbol> path = todos.front()->getAttrPath();
 
-          std::string subtree         = this->getEvalState()->symbols[path[0]];
-          std::string system          = this->getEvalState()->symbols[path[1]];
+          std::string subtree         = ( * this->getSymbolTable() )[path[0]];
+          std::string system          = ( * this->getSymbolTable() )[path[1]];
           DrvDb::progress_status dbps = cache.getProgress( subtree, system );
-          if ( dbps < DrvDb::progress_status::DBPS_PARTIAL )
+
+          /* If our cached database is incomplete we evaluate. */
+          if ( dbps < DrvDb::progress_status::DBPS_INFO_DONE )
             {
-              cache.setProgress(
-                subtree, system, DrvDb::progress_status::DBPS_PARTIAL
-              );
+              /* Mark this prefix as being "in progress". */
+              if ( dbps < DrvDb::progress_status::DBPS_PARTIAL )
+                {
+                  cache.setProgress(
+                    subtree, system, DrvDb::progress_status::DBPS_PARTIAL
+                  );
+                }
+
               for ( const nix::Symbol s : todos.front()->getAttrs() )
                 {
                   EvalPackage * p = nullptr;
@@ -305,14 +326,14 @@ ResolverState::resolveInInput( std::string_view id, const Descriptor & desc )
                       if ( c->isDerivation() )
                         {
                           p = new EvalPackage(
-                            c, & this->getEvalState()->symbols, false
+                            c, this->getSymbolTable(), false
                           );
-                          if ( dbps < DrvDb::progress_status::DBPS_INFO_DONE )
-                            {
-                              cache.setDrvInfo( (Package &) * p );
-                            }
-                          if ( pred( (Package &) * p ) ) { goods.push( p ); }
-                          else                           { delete p; }
+
+                          /* Cache the evaluated result. */
+                          cache.setDrvInfo( * p );
+
+                          if ( pred( * p ) ) { goods.push( p ); }
+                          else               { delete p; }
                         }
                       else if ( subtree != "packages" )
                         {
@@ -330,28 +351,28 @@ ResolverState::resolveInInput( std::string_view id, const Descriptor & desc )
                       // TODO: Catch errors in `packages'.
                     }
                 }
-              if ( dbps < DrvDb::progress_status::DBPS_INFO_DONE )
-                {
-                  cache.setProgress(
-                    subtree, system, DrvDb::progress_status::DBPS_INFO_DONE
-                  );
-                }
+
+              /* Mark this prefix as complete. */
+              cache.setProgress(
+                subtree, system, DrvDb::progress_status::DBPS_INFO_DONE
+              );
             }
-          else
+          else  /* If progress is past `DBPS_INFO_DONE' use cached info. */
             {
               std::list<nlohmann::json> infos =
                 cache.getDrvInfos( subtree, system );
               for ( const nlohmann::json & info : infos )
                 {
                   CachedPackage * p = new CachedPackage( info );
-                  if ( pred( (Package &) * p ) ) { goods.push( p ); }
-                  else                           { delete p; }
+                  if ( pred( * p ) ) { goods.push( p ); }
+                  else               { delete p; }
                 }
             }
+          /* Move on to the next one. */
           todos.pop();
         }
     }
-  else
+  else  /* Handle case where we have relative/absolute path, so no waling. */
     {
       /* Run our predicate filters and collect satisfactory packages. */
       while( ! todos.empty() )
@@ -359,16 +380,17 @@ ResolverState::resolveInInput( std::string_view id, const Descriptor & desc )
           if ( todos.front()->isDerivation() )
             {
               EvalPackage * p = new EvalPackage( todos.front()
-                                               , & this->getEvalState()->symbols
+                                               , this->getSymbolTable()
                                                , false
                                                );
-              if ( pred( (Package &) * p ) ) { goods.push( p ); }
-              else                           { delete p; }
+              if ( pred( * p ) ) { goods.push( p ); }
+              else               { delete p; }
             }
           todos.pop();
         }
     }
 
+  /* Convert `Package' to `Resolved'. */
   while ( ! goods.empty() )
     {
       results.push_back( Resolved(

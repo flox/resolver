@@ -44,14 +44,13 @@ class Package {
     virtual bool                        hasPnameAttr()        const = 0;
     virtual bool                        hasVersionAttr()      const = 0;
 
-
       virtual subtree_type
     getSubtreeType() const
     {
       std::vector<std::string> pathS = this->getPathStrs();
-      if ( pathS[0] == "legacyPackage" ) { return ST_LEGACY; }
-      if ( pathS[0] == "package" )       { return ST_PACKAGES; }
-      if ( pathS[0] == "catalog" )       { return ST_PACKAGES; }
+      if ( pathS[0] == "legacyPackages" ) { return ST_LEGACY;   }
+      if ( pathS[0] == "packages" )       { return ST_PACKAGES; }
+      if ( pathS[0] == "catalog" )        { return ST_PACKAGES; }
       throw ResolverException(
         "Package::getSubtreeType(): Unrecognized subtree '" + pathS[0] + "'."
       );
@@ -74,7 +73,7 @@ class Package {
     getPkgAttrName() const
     {
       std::vector<std::string> pathS = this->getPathStrs();
-      if ( this->getSubtreeType() != ST_CATALOG )
+      if ( this->getSubtreeType() == ST_CATALOG )
         {
           return pathS[pathS.size() - 2];
         }

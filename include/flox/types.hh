@@ -276,9 +276,10 @@ class ResolverState {
 
   public:
 
-    nix::ref<nix::Store>     getStore();
-    nix::ref<nix::Store>     getEvalStore();
-    nix::ref<nix::EvalState> getEvalState();
+    nix::ref<nix::Store>       getStore();
+    nix::ref<nix::Store>       getEvalStore();
+    nix::ref<nix::EvalState>   getEvalState();
+    nix::SymbolTable         * getSymbolTable();
 
     ResolverState( const Inputs                 & inputs
                  , const Preferences            & prefs

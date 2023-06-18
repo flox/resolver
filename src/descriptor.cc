@@ -4,6 +4,8 @@
  *
  * -------------------------------------------------------------------------- */
 
+#include <iostream>
+
 #include <variant>
 #include <vector>
 #include <optional>
@@ -266,9 +268,7 @@ Descriptor::audit( std::string & msg ) const
 /* -------------------------------------------------------------------------- */
 
   predicates::PkgPred
-Descriptor::pred( nix::ref<nix::SymbolTable> st
-                , bool                       checkPath
-                ) const
+Descriptor::pred( bool checkPath ) const
 {
   std::list<predicates::PkgPred> preds;
 
@@ -322,10 +322,6 @@ Descriptor::pred( nix::ref<nix::SymbolTable> st
   if ( preds.size() < 1 )
     {
       return predicates::predTrue;
-    }
-  else if ( preds.size() == 1 )
-    {
-      return preds.front();
     }
   predicates::PkgPred pred = preds.front();
   preds.pop_front();

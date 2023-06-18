@@ -7,3 +7,4 @@ attr-path-glob
 resolve
 semver
 predicates
+drv-cache

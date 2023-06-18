@@ -6,16 +6,13 @@
 
 #include <cstddef>
 #include <iostream>
-#include <nlohmann/json.hpp>
-#include <nix/flake/flake.hh>
-#include <nix/fetchers.hh>
 #include "resolve.hh"
+#include "flox/drv-cache.hh"
 
 
 /* -------------------------------------------------------------------------- */
 
 using namespace flox::resolve;
-using namespace nlohmann::literals;
 
 /* -------------------------------------------------------------------------- */
 
@@ -25,109 +22,76 @@ static const std::string nixpkgsRef =
 
 /* -------------------------------------------------------------------------- */
 
-  bool
-test_resolve1()
-{
-  Inputs      inputs( (nlohmann::json) { { "nixpkgs", nixpkgsRef } } );
-  Preferences prefs;
-  Descriptor  desc( (nlohmann::json) { { "name", "hello" } } );
-
-  std::vector<Resolved> rsl = resolve( inputs, prefs, desc );
-
-  return rsl.size() == 1;
-}
-
-
-/* -------------------------------------------------------------------------- */
-
-  bool
-test_resolve2()
-{
-  Inputs      inputs( (nlohmann::json) { { "nixpkgs", nixpkgsRef } } );
-  Preferences prefs;
-  Descriptor  desc( (nlohmann::json) {
-    { "name", "nodejs" }, { "semver", ">=14" }
-  } );
-  std::vector<Resolved> rsl = resolve( inputs, prefs, desc );
-  return rsl.size() == 10;
-}
-
-
-/* -------------------------------------------------------------------------- */
-
-  bool
-test_resolveOne1()
-{
-  Inputs      inputs( (nlohmann::json) { { "nixpkgs", nixpkgsRef } } );
-  Preferences prefs;
-  Descriptor  desc( (nlohmann::json) { { "name", "hello" } } );
-
-  std::vector<Resolved>   rsl = resolve( inputs, prefs, desc );
-  std::optional<Resolved> one = resolveOne( inputs, prefs, desc );
-
-  return ( rsl.size() == 1 ) &&
-         one.has_value() &&
-         ( one.value().toJSON() == rsl[0].toJSON() );
-}
-
-
-/* -------------------------------------------------------------------------- */
-
-  bool
-test_ResolverStateLocking1()
-{
-  Inputs      inputs( (nlohmann::json) { { "nixpkgs", nixpkgsRef } } );
-  Preferences prefs;
-  return ResolverState( inputs, prefs ).getInputs().at( "nixpkgs" )
-           ->getLockedFlake()->flake.lockedRef.input.isLocked();
-}
-
-
-/* -------------------------------------------------------------------------- */
-
-  bool
-test_getActualFlakeAttrPathPrefixes()
-{
-  Inputs        inputs( (nlohmann::json) { { "nixpkgs", nixpkgsRef } } );
-  Preferences   prefs;
-  ResolverState rs( inputs, prefs );
-  auto ps = rs.getInputs().at( "nixpkgs" )->getActualFlakeAttrPathPrefixes();
-  return ps.size() == defaultSystems.size();
-}
-
-
-/* -------------------------------------------------------------------------- */
-
-/* Use relative path. */
-  bool
-test_resolveInInput1()
-{
-  Inputs        inputs( (nlohmann::json) { { "nixpkgs", nixpkgsRef } } );
-  Preferences   prefs;
-  ResolverState rs( inputs, prefs );
-  Descriptor    desc( (nlohmann::json) { { "path", { "hello" } } } );
-  std::list<Resolved> results = rs.resolveInInput( "nixpkgs", desc );
-  return results.size() == defaultSystems.size();
-}
-
-
-/* -------------------------------------------------------------------------- */
-
 /* Ensure name resolution works. */
   bool
-test_resolveInInput2()
+test_getProgress1()
 {
   Inputs        inputs( (nlohmann::json) { { "nixpkgs", nixpkgsRef } } );
   Preferences   prefs;
   ResolverState rs( inputs, prefs );
-  Descriptor    desc( (nlohmann::json) { { "name", "hello" } } );
-  std::list<Resolved> results = rs.resolveInInput( "nixpkgs", desc );
-  if ( results.empty() ) { return false; }
-  for ( const nlohmann::json & i : results.front().info )
-    {
-      return i["pname"] == "hello";
-    }
-  return false;
+  std::optional<nix::ref<FloxFlake>> mf    = rs.getInput( "nixpkgs" );
+  nix::ref<FloxFlake>                flake = mf.value();
+  DrvDb cache( flake->getLockedFlake()->getFingerprint() );
+  // TODO: you need a phony temp DB.
+  return true;
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+  bool
+test_getDrvInfo1()
+{
+  Inputs        inputs( (nlohmann::json) { { "nixpkgs", nixpkgsRef } } );
+  Preferences   prefs;
+  ResolverState rs( inputs, prefs );
+  std::optional<nix::ref<FloxFlake>> mf    = rs.getInput( "nixpkgs" );
+  nix::ref<FloxFlake>                flake = mf.value();
+  DrvDb cache( flake->getLockedFlake()->getFingerprint() );
+  std::optional<nlohmann::json> _info = cache.getDrvInfo(
+    "legacyPackages", "x86_64-linux", { "hello" }
+  );
+  if ( ! _info.has_value() ) { return false; }
+  nlohmann::json info = _info.value();
+  return info.at( "pname" ) == "hello";
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+  bool
+test_getDrvInfos1()
+{
+  Inputs        inputs( (nlohmann::json) { { "nixpkgs", nixpkgsRef } } );
+  Preferences   prefs;
+  ResolverState rs( inputs, prefs );
+  std::optional<nix::ref<FloxFlake>> mf    = rs.getInput( "nixpkgs" );
+  nix::ref<FloxFlake>                flake = mf.value();
+  DrvDb cache( flake->getLockedFlake()->getFingerprint() );
+  std::list<nlohmann::json> infos = cache.getDrvInfos(
+    "legacyPackages", "x86_64-linux"
+  );
+  /* While I don't like hard coding this, we explicitly want to ensure we aren't
+   * off by one and dropping the "first" or "last" query result.
+   * Because we are using a pinned flake this shouldn't be a real issue. */
+  return infos.size() == 46535;
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+  bool
+test_CachedPackageFromDb1()
+{
+  Inputs        inputs( (nlohmann::json) { { "nixpkgs", nixpkgsRef } } );
+  Preferences   prefs;
+  ResolverState rs( inputs, prefs );
+  std::optional<nix::ref<FloxFlake>> mf    = rs.getInput( "nixpkgs" );
+  nix::ref<FloxFlake>                flake = mf.value();
+  DrvDb cache( flake->getLockedFlake()->getFingerprint() );
+  CachedPackage p( cache, "legacyPackages", "x86_64-linux", { "hello" } );
+  std::cerr << p.getInfo().dump() << std::endl;
+  return p.getPname() == "hello";
 }
 
 
@@ -156,13 +120,10 @@ main( int argc, char * argv[], char ** envp )
 {
   int ec = EXIT_SUCCESS;
 
-  //RUN_TEST( resolve1 );
-  //RUN_TEST( resolve2 );
-  //RUN_TEST( resolveOne1 );
-  //RUN_TEST( ResolverStateLocking1 );
-  //RUN_TEST( getActualFlakeAttrPathPrefixes );
-  //RUN_TEST( resolveInInput1 );
-  RUN_TEST( resolveInInput2 );
+  RUN_TEST( getProgress1 );
+  RUN_TEST( getDrvInfo1 );
+  RUN_TEST( getDrvInfos1 );
+  RUN_TEST( CachedPackageFromDb1 );
 
   return ec;
 }
