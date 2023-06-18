@@ -21,6 +21,7 @@
 #include <unordered_set>
 #include "flox/exceptions.hh"
 #include <queue>
+#include <any>
 
 /* In `nix' 2.14.0 they moved some class declarations around, so this
  * selects the correct header so that we can refer to `InstallableFlake'. */
@@ -83,11 +84,12 @@ parseSubtreeType( std::string_view subtree )
 /* -------------------------------------------------------------------------- */
 
 typedef enum {
-  DBPS_NONE       = 0
-, DBPS_PARTIAL    = 1
-, DBPS_PATHS_DONE = 2
-, DBPS_INFO_DONE  = 3
-, DBPS_EMPTY      = 4  /* This should always have highest value. */
+  DBPS_NONE       = 0 /* Indicates that a DB is completely fresh. */
+, DBPS_PARTIAL    = 1 /* Indicates some partially populated state. */
+, DBPS_PATHS_DONE = 2 /* Indicates that we know all derivation paths. */
+, DBPS_INFO_DONE  = 3 /* Indicates that we have collected info metadata. */
+, DBPS_EMPTY      = 4 /* Indicates that a prefix has no values. */
+, DBPS_FORCE      = 5 /* This should always have highest value. */
 }  progress_status;
 
 
@@ -315,12 +317,29 @@ class FloxFlake : public std::enable_shared_from_this<FloxFlake> {
                                        , std::string_view system
                                        );
 
+    /* Apply a function to all derivations with access to an `AttrCursor'.
+     * `nonDrvOp' allows you to control recursive descent into additional
+     * subtrees by appending the `todos' argument passed to `cursor_op'. */
     progress_status derivationsDo(
       std::string_view subtree
     , std::string_view system
-    , progress_status  doneStatus
+    , progress_status  doneStatus  /* Use `DBPS_FORCE' to avoid skipping. */
     , derivation_op    drvOp
     , cursor_op        nonDrvOp   = handleRecurseForDerivations
+    );
+
+    /* Apply a function to all `Packages' under a prefix.
+     * This abstracts lookups in caches vs. eval, and will implicitly populate
+     * missing cache members unless `allowCache' disables this behavior.
+     * Arbitrary auxilary data can be accessed within `op' by the `aux'
+     * argument ( optional ). */
+    void packagesDo(
+      std::string_view                                         subtree
+    , std::string_view                                         system
+    , std::function<void( std::any * aux, const Package & p )> op
+
+    , std::any * aux        = nullptr
+    , bool       allowCache = true
     );
 };
 

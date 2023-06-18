@@ -19,6 +19,7 @@
 #include "flox/util.hh"
 #include "flox/drv-cache.hh"
 #include <queue>
+#include "flox/eval-package.hh"
 
 
 /* -------------------------------------------------------------------------- */
@@ -332,7 +333,10 @@ FloxFlake::derivationsDo( std::string_view subtree
             }
         }
     }
-  db.promoteProgress( subtree, system, doneStatus );
+  if ( doneStatus != DBPS_FORCE )
+    {
+      db.promoteProgress( subtree, system, doneStatus );
+    }
   return doneStatus;
 }
 
@@ -369,6 +373,77 @@ FloxFlake::populateDerivations( std::string_view subtree
   } );
 }
 
+
+
+/* -------------------------------------------------------------------------- */
+
+  void
+FloxFlake::packagesDo(
+  std::string_view                                         subtree
+, std::string_view                                         system
+, std::function<void(std::any * aux, const Package & p)>   op
+, std::any                                               * aux
+, bool                                                     allowCache
+)
+{
+  DrvDb db( this->getLockedFlake()->getFingerprint() );
+  if ( allowCache )
+    {
+      progress_status old = db.getProgress( subtree, system );
+      if ( DBPS_INFO_DONE <= old )
+        {
+          for ( auto & dinfo : db.getDrvInfos( subtree, system ) )
+            {
+              op( aux, CachedPackage( dinfo ) );
+            }
+        }
+      else if ( DBPS_PATHS_DONE <= old )
+        {
+          const std::list<std::vector<std::string>> relPaths =
+            db.getDrvPaths( subtree, system ).value();
+          if ( relPaths.empty() )
+            {
+              db.promoteProgress( subtree, system, DBPS_EMPTY );
+              return;
+            }
+          std::vector<nix::Symbol> path = {
+            this->_state->symbols.create( subtree )
+          , this->_state->symbols.create( system )
+          };
+          Cursor prefix = this->openCursor( path );
+          for ( std::vector<std::string> rel : relPaths )
+            {
+              Cursor c = prefix;
+              for ( std::string a : rel ) { c = c->getAttr( a ); }
+              EvalPackage p( c, & this->_state->symbols, false );
+              /* Cache the result for next time. */
+              db.setDrvInfo( p );
+              /* Run our operation. */
+              op( aux, p );
+            }
+          db.promoteProgress( subtree, system, DBPS_INFO_DONE );
+          return;
+        }
+    }
+
+  nix::SymbolTable * st = & this->_state->symbols;
+  this->derivationsDo( subtree, system, DBPS_FORCE, [&](
+          DrvDb                    & db
+  ,       subtree_type               subtreeType
+  ,       std::string_view           subtree
+  ,       std::string_view           system
+  , const std::vector<std::string> & parentRelPath
+  ,       std::string_view           attrName
+  ,       Cursor                     cur
+  ) {
+    EvalPackage p( cur, st, false );
+    /* Cache the result for next time. */
+    if ( allowCache ) { db.setDrvInfo( p ); }
+    /* Run our operation. */
+    op( aux, p );
+  } );
+  if ( allowCache ) { db.promoteProgress( subtree, system, DBPS_INFO_DONE ); }
+}
 
 
 /* -------------------------------------------------------------------------- */

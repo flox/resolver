@@ -174,6 +174,12 @@ DrvDb::DrvDb( const nix::flake::Fingerprint & fingerprint )
     "( ?, ?, ? )"
   );
 
+  state->hasDrv.create(
+    state->db
+  , "SELECT COUNT( * ) FROM Derivations "
+    "WHERE ( subtree = ? ) AND ( system = ? ) AND ( path = ? )"
+  );
+
   state->queryDrvs.create(
     state->db
   , "SELECT * FROM Derivations WHERE ( subtree = ? ) AND ( system = ? )"
@@ -273,6 +279,47 @@ DrvDb::setDrv( const Package & p )
     assert( rowId != 0 );
     return rowId;
   } );
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+  std::optional<bool>
+DrvDb::hasDrv(       std::string_view           subtree
+             ,       std::string_view           system
+             , const std::vector<std::string> & path
+             )
+{
+  progress_status s = this->getProgress( subtree, system );
+  if ( s < DBPS_PARTIAL ) { return std::nullopt; }
+  nlohmann::json relPath = path;
+  auto state( this->_state->lock() );
+  nix::SQLiteStmt::Use query =
+    state->hasDrv.use()( subtree )( system )( relPath.dump() );
+  assert( query.next() );
+  if ( query.getInt( 0 ) != 0 )    { return true; }
+  else if ( DBPS_PATHS_DONE <= s ) { return false; }
+  return std::nullopt;  /* Inconclusive */
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+  std::optional<std::list<std::vector<std::string>>>
+DrvDb::getDrvPaths( std::string_view subtree, std::string_view system )
+{
+  if ( this->getProgress( subtree, system ) < DBPS_PATHS_DONE )
+    {
+      return std::nullopt;
+    }
+  std::list<std::vector<std::string>> rsl;
+  auto state( this->_state->lock() );
+  auto query = state->queryDrvs.use()( subtree )( system );
+  while ( query.next() )
+    {
+      rsl.push_back( nlohmann::json::parse( query.getStr( 2 ) ) );
+    }
+  return rsl;
 }
 
 
@@ -392,8 +439,8 @@ infoFromQuery( nix::SQLiteStmt::Use & query )
 /* -------------------------------------------------------------------------- */
 
   std::optional<nlohmann::json>
-DrvDb::getDrvInfo( std::string_view                 subtree
-                 , std::string_view                 system
+DrvDb::getDrvInfo(       std::string_view           subtree
+                 ,       std::string_view           system
                  , const std::vector<std::string> & path
                  )
 {
@@ -439,6 +486,7 @@ DrvDb::setProgress( std::string_view subtree
                   , progress_status  status
                   )
 {
+  if ( status == DBPS_FORCE ) { return DBPS_FORCE; }
   auto state( this->_state->lock() );
   auto query = state->queryProgress.use()( subtree )( system );
   progress_status old = DBPS_NONE;
@@ -461,6 +509,7 @@ DrvDb::promoteProgress( std::string_view subtree
                       , progress_status  status
                       )
 {
+  if ( status == DBPS_FORCE ) { return DBPS_FORCE; }
   auto state( this->_state->lock() );
   auto query = state->queryProgress.use()( subtree )( system );
   progress_status old = DBPS_NONE;

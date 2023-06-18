@@ -128,6 +128,7 @@ class DrvDb {
     struct State {
       nix::SQLite                     db;
       nix::SQLiteStmt                 insertDrv;
+      nix::SQLiteStmt                 hasDrv;
       nix::SQLiteStmt                 queryDrvs;
       nix::SQLiteStmt                 insertDrvInfo;
       nix::SQLiteStmt                 queryDrvInfo;
@@ -154,6 +155,16 @@ class DrvDb {
                    , std::string_view                 system
                    , const std::vector<std::string> & path
                    );
+
+    std::optional<bool> hasDrv(       std::string_view           subtree
+                              ,       std::string_view           system
+                              , const std::vector<std::string> & path
+                              );
+
+    std::optional<std::list<std::vector<std::string>>> getDrvPaths(
+      std::string_view subtree
+    , std::string_view system
+    );
 
     std::optional<nlohmann::json> getDrvInfo(
             std::string_view           subtree
