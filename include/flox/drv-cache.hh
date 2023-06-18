@@ -24,9 +24,10 @@ class DrvDb;
 
 /* -------------------------------------------------------------------------- */
 
-// TODO: Define base class shared with existing `Package' class.
-class CachedPackage {
+class CachedPackage : public Package {
   private:
+    std::vector<std::string>    _pathS;
+    subtree_type                _subtree;
     std::string                 _fullname;
     std::string                 _pname;
     std::optional<std::string>  _version;
@@ -36,8 +37,12 @@ class CachedPackage {
     std::vector<std::string>    _outputsToInstall;
     std::optional<bool>         _broken;
     std::optional<bool>         _unfree;
+    bool                        _hasMeta;
+    bool                        _hasPnameAttr;
+    bool                        _hasVersionAttr;
 
   public:
+    std::vector<std::string>    getPathStrs() const { return this->_pathS;    }
     std::string                 getFullName() const { return this->_fullname; }
     std::string                 getPname()    const { return this->_pname;    }
     std::optional<std::string>  getVersion()  const { return this->_version;  }
@@ -46,6 +51,10 @@ class CachedPackage {
     std::vector<std::string>    getOutputs()  const { return this->_outputs;  }
     std::optional<bool>         isBroken()    const { return this->_broken;   }
     std::optional<bool>         isUnfree()    const { return this->_unfree;   }
+
+    bool hasMetaAttr()    const { return this->_hasMeta;        }
+    bool hasPnameAttr()   const { return this->_hasPnameAttr;   }
+    bool hasVersionAttr() const { return this->_hasVersionAttr; }
 
       std::vector<std::string>
     getOutputsToInstall() const
@@ -58,6 +67,80 @@ class CachedPackage {
                  ,       std::string_view           system
                  , const std::vector<std::string> & path
                  );
+
+    CachedPackage( const CachedPackage & p ) noexcept
+      : _pathS( p._pathS )
+      , _subtree( p._subtree )
+      , _fullname( p._fullname )
+      , _pname( p._pname )
+      , _version( p._version )
+      , _semver( p._semver )
+      , _license( p._license )
+      , _outputs( p._outputs )
+      , _outputsToInstall( p._outputsToInstall )
+      , _broken( p._broken )
+      , _unfree( p._unfree )
+      , _hasMeta( p._hasMeta )
+      , _hasPnameAttr( p._hasPnameAttr )
+      , _hasVersionAttr( p._hasVersionAttr )
+    {}
+
+    CachedPackage( const CachedPackage && p ) noexcept
+      : _pathS( std::move(  p._pathS ) )
+      , _subtree( std::move(  p._subtree ) )
+      , _fullname( std::move(  p._fullname ) )
+      , _pname( std::move(  p._pname ) )
+      , _version( std::move(  p._version ) )
+      , _semver( std::move(  p._semver ) )
+      , _license( std::move(  p._license ) )
+      , _outputs( std::move(  p._outputs ) )
+      , _outputsToInstall( std::move(  p._outputsToInstall ) )
+      , _broken( std::move(  p._broken ) )
+      , _unfree( std::move(  p._unfree ) )
+      , _hasMeta( std::move(  p._hasMeta ) )
+      , _hasPnameAttr( std::move(  p._hasPnameAttr ) )
+      , _hasVersionAttr( std::move(  p._hasVersionAttr ) )
+    {}
+
+      CachedPackage &
+    operator=( const CachedPackage & p ) noexcept
+    {
+      _pathS            = p._pathS;
+      _subtree          = p._subtree;
+      _fullname         = p._fullname;
+      _pname            = p._pname;
+      _version          = p._version;
+      _semver           = p._semver;
+      _license          = p._license;
+      _outputs          = p._outputs;
+      _outputsToInstall = p._outputsToInstall;
+      _broken           = p._broken;
+      _unfree           = p._unfree;
+      _hasMeta          = p._hasMeta;
+      _hasPnameAttr     = p._hasPnameAttr;
+      _hasVersionAttr   = p._hasVersionAttr;
+      return * this;
+    }
+
+      CachedPackage &
+    operator=( CachedPackage && p ) noexcept
+    {
+      _pathS            = std::move( p._pathS );
+      _subtree          = std::move( p._subtree );
+      _fullname         = std::move( p._fullname );
+      _pname            = std::move( p._pname );
+      _version          = std::move( p._version );
+      _semver           = std::move( p._semver );
+      _license          = std::move( p._license );
+      _outputs          = std::move( p._outputs );
+      _outputsToInstall = std::move( p._outputsToInstall );
+      _broken           = std::move( p._broken );
+      _unfree           = std::move( p._unfree );
+      _hasMeta          = std::move( p._hasMeta );
+      _hasPnameAttr     = std::move( p._hasPnameAttr );
+      _hasVersionAttr   = std::move( p._hasVersionAttr );
+      return * this;
+    }
 };
 
 

@@ -89,11 +89,9 @@ PkgPred hasOutputs(       const std::vector<std::string> & outputs   );
 PkgPred depthLE(                size_t                     max       );
 PkgPred hasUnfree(              bool                       value     );
 PkgPred hasBroken(              bool                       value     );
-PkgPred hasRelPathPrefix( const std::vector<nix::Symbol> & prefix    );
-PkgPred hasAbsPathPrefix( const std::vector<nix::Symbol> & prefix    );
-PkgPred hasAbsPathPrefix(       nix::ref<nix::SymbolTable>   st
-                        , const AttrPathGlob               & prefix
-                        );
+PkgPred hasRelPathPrefix( const std::vector<std::string> & prefix    );
+PkgPred hasAbsPathPrefix( const std::vector<std::string> & prefix    );
+PkgPred hasAbsPathPrefix( const AttrPathGlob             & prefix    );
 
 
 /* -------------------------------------------------------------------------- */

@@ -151,11 +151,11 @@ hasSubtree( subtree_type subtree )
 /* -------------------------------------------------------------------------- */
 
   PkgPred
-hasAbsPathPrefix( const std::vector<nix::Symbol> & prefix )
+hasAbsPathPrefix( const std::vector<std::string> & prefix )
 {
   return (PkgPred::pred_fn) [prefix]( const Package & p )
   {
-    const std::vector<nix::Symbol> path = p.getPath();
+    const std::vector<std::string> path = p.getPathStrs();
     if ( path.size() < prefix.size() ) { return false; }
     for ( size_t i = 0; i < prefix.size(); ++i )
       {
@@ -166,29 +166,25 @@ hasAbsPathPrefix( const std::vector<nix::Symbol> & prefix )
 }
 
   PkgPred
-hasAbsPathPrefix(       nix::ref<nix::SymbolTable>   st
-                , const AttrPathGlob               & prefix
-                )
+hasAbsPathPrefix( const AttrPathGlob & prefix )
 {
-  std::vector<nix::Symbol> sprefix;
+  std::vector<std::string> sprefix;
   if ( ! prefix.hasGlob() )
     {
       for ( const attr_part & p : prefix.path )
         {
-          sprefix.push_back( st->create( std::get<std::string>( p ) ) );
+          sprefix.push_back( std::get<std::string>( p ) );
         }
       return hasAbsPathPrefix( sprefix );
     }
   for ( size_t i = 0; i < prefix.path.size(); ++i )
     {
       if ( i == 2 ) { continue; }
-      sprefix.push_back(
-        st->create( std::get<std::string>( prefix.path[i] ) )
-      );
+      sprefix.push_back( std::get<std::string>( prefix.path[i] ) );
     }
   return (PkgPred::pred_fn) [sprefix]( const Package & p )
   {
-    const std::vector<nix::Symbol> path = p.getPath();
+    const std::vector<std::string> path = p.getPathStrs();
     if ( ( path.size() - 1) < sprefix.size() ) { return false; }
     for ( size_t i = 0; i < sprefix.size(); ++i )
       {
@@ -203,11 +199,11 @@ hasAbsPathPrefix(       nix::ref<nix::SymbolTable>   st
 /* -------------------------------------------------------------------------- */
 
   PkgPred
-hasRelPathPrefix( const std::vector<nix::Symbol> & prefix )
+hasRelPathPrefix( const std::vector<std::string> & prefix )
 {
   return (PkgPred::pred_fn) [prefix]( const Package & p )
   {
-    const std::vector<nix::Symbol> path = p.getPath();
+    const std::vector<std::string> path = p.getPathStrs();
     if ( ( path.size() - 2 ) < prefix.size() ) { return false; }
     for ( size_t i = 0; i < prefix.size(); ++i )
       {
@@ -281,7 +277,7 @@ depthLE( size_t max )
 {
   return (PkgPred::pred_fn) [max]( const Package & p )
   {
-    return p.getPath().size() <= max;
+    return p.getPathStrs().size() <= max;
   };
 }
 

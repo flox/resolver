@@ -233,8 +233,8 @@ DrvDb::doSQLite( F && fun )
   uint64_t
 DrvDb::setDrv( const Package & p )
 {
-  std::vector<nix::SymbolStr> path = p.getPathStrs();
-  nlohmann::json relPath           = nlohmann::json::array();
+  std::vector<std::string> path    = p.getPathStrs();
+  nlohmann::json           relPath = nlohmann::json::array();
   for ( size_t i = 2; i < path.size(); ++i )
     {
       relPath.push_back( path[i] );
@@ -254,9 +254,8 @@ DrvDb::setDrv( const Package & p )
   uint64_t
 DrvDb::setDrvInfo( const Package & p )
 {
-  std::vector<nix::SymbolStr> path = p.getPathStrs();
-
-  nlohmann::json relPath = nlohmann::json::array();
+  std::vector<std::string> path    = p.getPathStrs();
+  nlohmann::json           relPath = nlohmann::json::array();
   for ( size_t i = 2; i < path.size(); ++i )
     {
       relPath.push_back( path[i] );

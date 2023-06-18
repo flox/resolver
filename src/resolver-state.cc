@@ -20,6 +20,7 @@
 #include "flox/predicates.hh"
 #include <queue>
 #include "flox/drv-cache.hh"
+#include "flox/eval-package.hh"
 
 
 /* -------------------------------------------------------------------------- */
@@ -253,7 +254,7 @@ ResolverState::resolveInInput( std::string_view id, const Descriptor & desc )
                           , todos.empty()
                           );
 
-  std::queue<Package, std::list<Package>> goods;
+  std::queue<Package *, std::list<Package *>> goods;
 
   if ( todos.empty() )
     {
@@ -305,12 +306,14 @@ ResolverState::resolveInInput( std::string_view id, const Descriptor & desc )
                   if ( c->isDerivation() )
                     {
                       // TODO: load from cache if available
-                      Package p( c, & this->getEvalState()->symbols, false );
+                      EvalPackage * p = new EvalPackage(
+                        c, & this->getEvalState()->symbols, false
+                      );
                       if ( dbps < DrvDb::progress_status::DBPS_INFO_DONE )
                         {
-                          cache.setDrvInfo( p );
+                          cache.setDrvInfo( (Package &) * p );
                         }
-                      if ( pred( p ) ) { goods.push( std::move( p ) ); }
+                      if ( pred( (Package &) * p ) ) { goods.push( p ); }
                     }
                   else if ( subtree != "packages" )
                     {
@@ -343,11 +346,11 @@ ResolverState::resolveInInput( std::string_view id, const Descriptor & desc )
         {
           if ( todos.front()->isDerivation() )
             {
-              Package p( todos.front()
-                       , & this->getEvalState()->symbols
-                       , false
-                       );
-              if ( pred( p ) ) { goods.push( std::move( p ) ); }
+              EvalPackage * p = new EvalPackage( todos.front()
+                                               , & this->getEvalState()->symbols
+                                               , false
+                                               );
+              if ( pred( (Package &) * p ) ) { goods.push( p ); }
             }
           todos.pop();
         }
@@ -355,17 +358,12 @@ ResolverState::resolveInInput( std::string_view id, const Descriptor & desc )
 
   while ( ! goods.empty() )
     {
-      const std::vector<nix::SymbolStr> path = goods.front().getPathStrs();
-      AttrPathGlob gp;
-      for ( const nix::SymbolStr & sp : path )
-        {
-          gp.path.push_back( (std::string) sp );
-        }
       results.push_back( Resolved(
         flake->getFlakeRef()
-      , std::move( gp )
-      , goods.front().getInfo()
+      , AttrPathGlob::fromStrings( goods.front()->getPathStrs() )
+      , goods.front()->getInfo()
       ) );
+      delete goods.front();
       goods.pop();
     }
 

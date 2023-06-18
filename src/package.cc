@@ -5,7 +5,7 @@
  *
  * -------------------------------------------------------------------------- */
 
-#include "flox/package.hh"
+#include "flox/eval-package.hh"
 #include "semver.hh"
 
 
@@ -17,7 +17,7 @@ namespace flox {
 /* -------------------------------------------------------------------------- */
 
   void
-Package::init( bool checkDrv )
+EvalPackage::init( bool checkDrv )
 {
   if ( this->_path.size() < 3 )
     {
@@ -53,8 +53,8 @@ Package::init( bool checkDrv )
   else
     {
       throw ResolverException(
-        "Package::init(): Invalid subtree name '" + this->_pathS[0] + "' at "
-        "path '" + this->_cursor->getAttrPathStr() + "'."
+        "EvalPackage::init(): Invalid subtree name '" + this->_pathS[0] +
+        "' at path '" + this->_cursor->getAttrPathStr() + "'."
       );
     }
 
@@ -84,22 +84,28 @@ Package::init( bool checkDrv )
 
 /* -------------------------------------------------------------------------- */
 
-Cursor        Package::getCursor()      const { return this->_cursor; }
-subtree_type  Package::getSubtreeType() const { return this->_subtree; }
-std::string   Package::getFullName()    const { return this->_dname.fullName; }
+Cursor       EvalPackage::getCursor()      const { return this->_cursor; }
+subtree_type EvalPackage::getSubtreeType() const { return this->_subtree; }
 
-std::vector<nix::Symbol>   Package::getPath()   const { return this->_path; }
-std::optional<std::string> Package::getSemver() const { return this->_semver; }
+std::string EvalPackage::getFullName() const { return this->_dname.fullName; }
 
-bool Package::hasMetaAttr()    const { return this->_hasMetaAttr; }
-bool Package::hasPnameAttr()   const { return this->_hasPnameAttr; }
-bool Package::hasVersionAttr() const { return this->_hasVersionAttr; }
+std::vector<nix::Symbol> EvalPackage::getPath() const { return this->_path; }
+
+  std::optional<std::string>
+EvalPackage::getSemver() const
+{
+  return this->_semver;
+}
+
+bool EvalPackage::hasMetaAttr()    const { return this->_hasMetaAttr; }
+bool EvalPackage::hasPnameAttr()   const { return this->_hasPnameAttr; }
+bool EvalPackage::hasVersionAttr() const { return this->_hasVersionAttr; }
 
 
 /* -------------------------------------------------------------------------- */
 
-  std::vector<nix::SymbolStr>
-Package::getPathStrs() const
+  std::vector<std::string>
+EvalPackage::getPathStrs() const
 {
   return this->_pathS;
 }
@@ -108,13 +114,13 @@ Package::getPathStrs() const
 /* -------------------------------------------------------------------------- */
 
   nix::DrvName
-Package::getParsedDrvName() const
+EvalPackage::getParsedDrvName() const
 {
   return nix::DrvName( this->_dname.fullName );
 }
 
   std::string
-Package::getPname() const
+EvalPackage::getPname() const
 {
   if ( this->_hasPnameAttr )
     {
@@ -128,7 +134,7 @@ Package::getPname() const
 
 
   std::optional<std::string>
-Package::getVersion() const
+EvalPackage::getVersion() const
 {
   if ( this->_hasVersionAttr )
     {
@@ -148,7 +154,7 @@ Package::getVersion() const
 /* -------------------------------------------------------------------------- */
 
   std::optional<std::string>
-Package::getStability() const
+EvalPackage::getStability() const
 {
   if ( this->_subtree != ST_CATALOG ) { return std::nullopt; }
   return this->_pathS[2];
@@ -158,7 +164,7 @@ Package::getStability() const
 /* -------------------------------------------------------------------------- */
 
   std::vector<std::string>
-Package::getOutputs() const
+EvalPackage::getOutputs() const
 {
   MaybeCursor o = this->_cursor->maybeGetAttr( "outputs" );
   if ( o == nullptr )
@@ -173,7 +179,7 @@ Package::getOutputs() const
 
 
   std::vector<std::string>
-Package::getOutputsToInstall() const
+EvalPackage::getOutputsToInstall() const
 {
   if ( this->_hasMetaAttr )
     {
@@ -197,7 +203,7 @@ Package::getOutputsToInstall() const
 /* -------------------------------------------------------------------------- */
 
   std::optional<std::string>
-Package::getLicense() const
+EvalPackage::getLicense() const
 {
   if ( ! this->_hasMetaAttr ) { return std::nullopt; }
   MaybeCursor l = this->_cursor->getAttr( "meta" )->maybeGetAttr( "license" );
@@ -209,7 +215,7 @@ Package::getLicense() const
 /* -------------------------------------------------------------------------- */
 
   std::optional<bool>
-Package::isBroken() const
+EvalPackage::isBroken() const
 {
   if ( ! this->_hasMetaAttr ) { return std::nullopt; }
   MaybeCursor b = this->_cursor->getAttr( "meta" )->maybeGetAttr( "broken" );
@@ -218,7 +224,7 @@ Package::isBroken() const
 }
 
   std::optional<bool>
-Package::isUnfree() const
+EvalPackage::isUnfree() const
 {
   if ( ! this->_hasMetaAttr ) { return std::nullopt; }
   MaybeCursor u = this->_cursor->getAttr( "meta" )->maybeGetAttr( "unfree" );
@@ -230,7 +236,7 @@ Package::isUnfree() const
 /* -------------------------------------------------------------------------- */
 
   std::string
-Package::toURIString( const FloxFlakeRef & ref ) const
+EvalPackage::toURIString( const FloxFlakeRef & ref ) const
 {
   std::string uri = ref.to_string() + "#";
   for ( size_t i = 0; i < this->_pathS.size(); ++i )
@@ -244,29 +250,8 @@ Package::toURIString( const FloxFlakeRef & ref ) const
 
 /* -------------------------------------------------------------------------- */
 
-  std::string
-Package::getPkgAttrName() const
-{
-  if ( this->getSubtreeType() == ST_CATALOG )
-    {
-      return this->_pathS[this->_pathS.size() - 2];
-    }
-  else
-    {
-      return this->_pathS.back();
-    }
-}
-
-
-/* -------------------------------------------------------------------------- */
-
-// nlohmann::json Package::toJSON() const {}
-
-
-/* -------------------------------------------------------------------------- */
-
   nlohmann::json
-Package::getInfo() const
+EvalPackage::getInfo() const
 {
   return { { this->_pathS[1], {
     { "name",    this->getFullName() }

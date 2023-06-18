@@ -276,20 +276,15 @@ Descriptor::pred( nix::ref<nix::SymbolTable> st
     {
       if ( this->relAttrPath.has_value() )
         {
-          std::vector<nix::Symbol> prefix;
-          for ( const std::string & p : this->relAttrPath.value() )
-            {
-              prefix.push_back( st->create( p ) );
-            }
           preds.push_back(
-            predicates::hasRelPathPrefix( std::move( prefix ) )
+            predicates::hasRelPathPrefix( this->relAttrPath.value() )
           );
         }
 
       if ( this->absAttrPath.has_value() )
         {
           preds.push_back(
-            predicates::hasAbsPathPrefix( st, this->absAttrPath.value() )
+            predicates::hasAbsPathPrefix( this->absAttrPath.value() )
           );
         }
       else if ( ! this->searchCatalogs )
