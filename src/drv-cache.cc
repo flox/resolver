@@ -176,10 +176,15 @@ DrvDb::DrvDb( const nix::flake::Fingerprint & fingerprint )
   , "SELECT * FROM Derivations WHERE ( subtree = ? ) AND ( system = ? )"
   );
 
-  state->queryDrvInfos.create(
+  state->queryDrvInfo.create(
     state->db
   , "SELECT * FROM DerivationInfos "
     "WHERE ( subtree = ? ) AND ( system = ? ) AND ( path = ? )"
+  );
+
+  state->queryDrvInfos.create(
+    state->db
+  , "SELECT * FROM DerivationInfos WHERE ( subtree = ? ) AND ( system = ? )"
   );
 
   state->queryProgress.create(
@@ -293,18 +298,9 @@ DrvDb::setDrvInfo( const Package & p )
 
 /* -------------------------------------------------------------------------- */
 
-  std::optional<nlohmann::json>
-DrvDb::getDrvInfo( std::string_view                 subtree
-                 , std::string_view                 system
-                 , const std::vector<std::string> & path
-                 )
+  static nlohmann::json
+infoFromQuery( nix::SQLiteStmt::Use & query )
 {
-  nlohmann::json relPath = path;
-  auto state( this->_state->lock() );
-  auto query =
-    state->queryDrvInfos.use()( subtree )( system )( relPath.dump() );
-  if ( ! query.next() ) { return std::nullopt; }
-
   // XXX: make sure `nullptr' actually yields `null' here, it might be
   // misinterpreted as the empty string.
   nlohmann::json info = {
@@ -336,6 +332,36 @@ DrvDb::getDrvInfo( std::string_view                 subtree
     }
 
   return info;
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+  std::optional<nlohmann::json>
+DrvDb::getDrvInfo( std::string_view                 subtree
+                 , std::string_view                 system
+                 , const std::vector<std::string> & path
+                 )
+{
+  nlohmann::json relPath = path;
+  auto state( this->_state->lock() );
+  nix::SQLiteStmt::Use query =
+    state->queryDrvInfo.use()( subtree )( system )( relPath.dump() );
+  if ( ! query.next() ) { return std::nullopt; }
+  return infoFromQuery( query );
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+  std::list<nlohmann::json>
+DrvDb::getDrvInfos( std::string_view subtree, std::string_view system )
+{
+  std::list<nlohmann::json> rsl;
+  auto state( this->_state->lock() );
+  auto query = state->queryDrvInfos.use()( subtree )( system );
+  while ( query.next() ) { rsl.push_back( infoFromQuery( query ) ); }
+  return rsl;
 }
 
 
@@ -381,7 +407,7 @@ CachedPackage::CachedPackage(       DrvDb                    & db
                             , const std::vector<std::string> & path
                             )
 {
-  std::optional<nlohmann::json> _info = db.getDrvInfo( subtree, system, path );
+  std::optional _info = db.getDrvInfo( subtree, system, path );
   if ( ! _info.has_value() )
     {
       std::string p = std::string( subtree );
@@ -410,6 +436,39 @@ CachedPackage::CachedPackage(       DrvDb                    & db
   if ( ! info["license"].is_null() ) { this->_license = info["license"]; }
   if ( ! info["broken"].is_null() )  { this->_broken  = info["broken"];  }
   if ( ! info["unfree"].is_null() )  { this->_unfree  = info["unfree"];  }
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+CachedPackage::CachedPackage( const nlohmann::json & info )
+{
+  this->_fullname = info.at( "name" );
+  this->_pname    = info.at( "pname" );
+  this->_outputs  = info.at( "outputs" );
+
+  this->_outputsToInstall = info.at( "outputsToInstall" );
+
+  if ( ! info.at( "version" ).is_null() )
+    {
+      this->_version = info.at( "version" );
+    }
+  if ( ! info.at( "semver" ).is_null() )
+    {
+      this->_semver  = info.at( "semver" );
+    }
+  if ( ! info.at( "license" ).is_null() )
+    {
+      this->_license = info.at( "license" );
+    }
+  if ( ! info.at( "broken" ).is_null() )
+    {
+      this->_broken  = info.at( "broken" );
+    }
+  if ( ! info.at( "unfree" ).is_null() )
+    {
+      this->_unfree  = info.at( "unfree" );
+    }
 }
 
 

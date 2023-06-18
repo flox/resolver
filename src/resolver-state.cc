@@ -296,45 +296,57 @@ ResolverState::resolveInInput( std::string_view id, const Descriptor & desc )
               cache.setProgress(
                 subtree, system, DrvDb::progress_status::DBPS_PARTIAL
               );
-            }
-
-          for ( const nix::Symbol s : todos.front()->getAttrs() )
-            {
-              try
+              for ( const nix::Symbol s : todos.front()->getAttrs() )
                 {
-                  Cursor c = todos.front()->getAttr( s );
-                  if ( c->isDerivation() )
+                  EvalPackage * p = nullptr;
+                  try
                     {
-                      // TODO: load from cache if available
-                      EvalPackage * p = new EvalPackage(
-                        c, & this->getEvalState()->symbols, false
-                      );
-                      if ( dbps < DrvDb::progress_status::DBPS_INFO_DONE )
+                      Cursor c = todos.front()->getAttr( s );
+                      if ( c->isDerivation() )
                         {
-                          cache.setDrvInfo( (Package &) * p );
+                          p = new EvalPackage(
+                            c, & this->getEvalState()->symbols, false
+                          );
+                          if ( dbps < DrvDb::progress_status::DBPS_INFO_DONE )
+                            {
+                              cache.setDrvInfo( (Package &) * p );
+                            }
+                          if ( pred( (Package &) * p ) ) { goods.push( p ); }
+                          else                           { delete p; }
                         }
-                      if ( pred( (Package &) * p ) ) { goods.push( p ); }
+                      else if ( subtree != "packages" )
+                        {
+                          MaybeCursor m =
+                            c->maybeGetAttr( "recurseForDerivations" );
+                          if ( ( m != nullptr ) && m->getBool() )
+                            {
+                              todos.push( (Cursor) c );
+                            }
+                        }
                     }
-                  else if ( subtree != "packages" )
+                  catch( ... )
                     {
-                      MaybeCursor m =
-                        c->maybeGetAttr( "recurseForDerivations" );
-                      if ( ( m != nullptr ) && m->getBool() )
-                        {
-                          todos.push( (Cursor) c );
-                        }
+                      if ( p != nullptr ) { delete p; }
+                      // TODO: Catch errors in `packages'.
                     }
                 }
-              catch( ... )
+              if ( dbps < DrvDb::progress_status::DBPS_INFO_DONE )
                 {
-                  // TODO: Catch errors in `packages'.
+                  cache.setProgress(
+                    subtree, system, DrvDb::progress_status::DBPS_INFO_DONE
+                  );
                 }
             }
-          if ( dbps < DrvDb::progress_status::DBPS_INFO_DONE )
+          else
             {
-              cache.setProgress(
-                subtree, system, DrvDb::progress_status::DBPS_INFO_DONE
-              );
+              std::list<nlohmann::json> infos =
+                cache.getDrvInfos( subtree, system );
+              for ( const nlohmann::json & info : infos )
+                {
+                  CachedPackage * p = new CachedPackage( info );
+                  if ( pred( (Package &) * p ) ) { goods.push( p ); }
+                  else                           { delete p; }
+                }
             }
           todos.pop();
         }
@@ -351,6 +363,7 @@ ResolverState::resolveInInput( std::string_view id, const Descriptor & desc )
                                                , false
                                                );
               if ( pred( (Package &) * p ) ) { goods.push( p ); }
+              else                           { delete p; }
             }
           todos.pop();
         }

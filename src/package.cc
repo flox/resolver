@@ -235,39 +235,6 @@ EvalPackage::isUnfree() const
 
 /* -------------------------------------------------------------------------- */
 
-  std::string
-EvalPackage::toURIString( const FloxFlakeRef & ref ) const
-{
-  std::string uri = ref.to_string() + "#";
-  for ( size_t i = 0; i < this->_pathS.size(); ++i )
-    {
-      uri += "\"" + this->_pathS[i] + "\"";
-      if ( ( i + 1 ) < this->_pathS.size() ) uri += ".";
-    }
-  return uri;
-}
-
-
-/* -------------------------------------------------------------------------- */
-
-  nlohmann::json
-EvalPackage::getInfo() const
-{
-  return { { this->_pathS[1], {
-    { "name",    this->getFullName() }
-  , { "pname",   this->getPname() }
-  , { "version", this->getVersion().value_or( nullptr ) }
-  , { "semver",  this->getSemver().value_or( nullptr ) }
-  , { "outputs", this->getOutputs() }
-  , { "license", this->getLicense().value_or( nullptr ) }
-  , { "broken",  this->isBroken().value_or( false ) }
-  , { "unfree",  this->isUnfree().value_or( false ) }
-  } } };
-}
-
-
-/* -------------------------------------------------------------------------- */
-
   }  /* End Namespace `flox::resolve' */
 }  /* End Namespace `flox' */
 

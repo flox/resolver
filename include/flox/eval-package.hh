@@ -168,10 +168,6 @@ class EvalPackage : public Package {
     bool                        hasMetaAttr()         const;
     bool                        hasPnameAttr()        const;
     bool                        hasVersionAttr()      const;
-
-    std::string toURIString( const FloxFlakeRef & ref ) const;
-
-    nlohmann::json getInfo() const;
 };
 
 

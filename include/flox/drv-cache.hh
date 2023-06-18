@@ -68,6 +68,8 @@ class CachedPackage : public Package {
                  , const std::vector<std::string> & path
                  );
 
+    CachedPackage( const nlohmann::json & info );
+
     CachedPackage( const CachedPackage & p ) noexcept
       : _pathS( p._pathS )
       , _subtree( p._subtree )
@@ -141,7 +143,8 @@ class CachedPackage : public Package {
       _hasVersionAttr   = std::move( p._hasVersionAttr );
       return * this;
     }
-};
+
+};  /* End class `CachedPackage' */
 
 
 /* -------------------------------------------------------------------------- */
@@ -156,6 +159,7 @@ class DrvDb {
       nix::SQLiteStmt                 insertDrv;
       nix::SQLiteStmt                 queryDrvs;
       nix::SQLiteStmt                 insertDrvInfo;
+      nix::SQLiteStmt                 queryDrvInfo;
       nix::SQLiteStmt                 queryDrvInfos;
       nix::SQLiteStmt                 insertProgress;
       nix::SQLiteStmt                 queryProgress;
@@ -186,6 +190,11 @@ class DrvDb {
             std::string_view           subtree
     ,       std::string_view           system
     , const std::vector<std::string> & path
+    );
+
+    std::list<nlohmann::json> getDrvInfos(
+      std::string_view subtree
+    , std::string_view system
     );
 
     /* Get status of a subtree/system collection. */

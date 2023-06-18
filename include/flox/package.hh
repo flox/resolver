@@ -44,8 +44,6 @@ class Package {
     virtual bool                        hasPnameAttr()        const = 0;
     virtual bool                        hasVersionAttr()      const = 0;
 
-    virtual std::string    toURIString( const FloxFlakeRef & ref ) const = 0;
-    virtual nlohmann::json getInfo()                               const = 0;
 
       virtual subtree_type
     getSubtreeType() const
@@ -90,7 +88,39 @@ class Package {
       if ( ! version.has_value() ) { return std::nullopt; }
       return coerceSemver( version.value() );
     }
-};
+
+      virtual std::string
+    toURIString( const FloxFlakeRef & ref ) const
+    {
+      std::string uri                = ref.to_string() + "#";
+      std::vector<std::string> pathS = this->getPathStrs();
+      for ( size_t i = 0; i < pathS.size(); ++i )
+        {
+          uri += "\"" + pathS[i] + "\"";
+          if ( ( i + 1 ) < pathS.size() ) uri += ".";
+        }
+      return uri;
+    }
+
+      virtual nlohmann::json
+    getInfo() const
+    {
+      return { { this->getPathStrs()[1], {
+        { "name",    this->getFullName() }
+      , { "pname",   this->getPname() }
+      , { "version", this->getVersion().value_or( nullptr ) }
+      , { "semver",  this->getSemver().value_or( nullptr ) }
+      , { "outputs", this->getOutputs() }
+      , { "license", this->getLicense().value_or( nullptr ) }
+      , { "broken",  this->isBroken().value_or( false ) }
+      , { "unfree",  this->isUnfree().value_or( false ) }
+      } } };
+    }
+
+
+/* -------------------------------------------------------------------------- */
+
+};  /* End class `Package' */
 
 
 /* -------------------------------------------------------------------------- */
