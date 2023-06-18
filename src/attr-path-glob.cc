@@ -184,13 +184,19 @@ AttrPathGlob::toString() const
                 "Resolved `path' may only contain `null' as its second member."
               );
             }
-          str += ".{{system}}";
+          str += "{{system}}";
         }
       else
         {
-          if ( i != 0 ) { str += "."; }
+          if ( std::get<std::string>( this->path[i] ).find( '.' ) !=
+               std::string::npos
+             )
+            {
+              str += "\"" + std::get<std::string>( this->path[i] ) + "\"";
+            }
           str += std::get<std::string>( this->path[i] );
         }
+      if ( ( i + 1 ) < this->path.size() ) { str += "."; }
     }
   return str;
 }
