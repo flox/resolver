@@ -148,8 +148,7 @@ test_DescriptorToString2()
   , { "catalog", false                                  }
   , { "semver",  "^2.12.1"                              }
   } );
-  return d.toString() ==
-         "foo#legacyPackages.{{system}}.hello@^2.12.1";
+  return d.toString() == "foo#legacyPackages.{{system}}.hello@^2.12.1";
 }
 
 

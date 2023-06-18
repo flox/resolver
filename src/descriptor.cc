@@ -154,7 +154,6 @@ Descriptor::toJSON() const
 
 /* -------------------------------------------------------------------------- */
 
-/* TODO */
   std::string
 Descriptor::toString() const
 {

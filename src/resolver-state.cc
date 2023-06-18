@@ -314,12 +314,9 @@ ResolverState::resolveInInput( std::string_view id, const Descriptor & desc )
           if ( dbps < DrvDb::progress_status::DBPS_INFO_DONE )
             {
               /* Mark this prefix as being "in progress". */
-              if ( dbps < DrvDb::progress_status::DBPS_PARTIAL )
-                {
-                  cache.setProgress(
-                    subtree, system, DrvDb::progress_status::DBPS_PARTIAL
-                  );
-                }
+              cache.promoteProgress(
+                subtree, system, DrvDb::progress_status::DBPS_PARTIAL
+              );
 
               for ( const nix::Symbol s : todos.front()->getAttrs() )
                 {
