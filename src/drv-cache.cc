@@ -407,7 +407,7 @@ infoFromQuery( nix::SQLiteStmt::Use & query )
 
   if ( query.isNull( 5 ) )
     {
-      info.emplace( "version", nullptr );
+      info.emplace( "version", nlohmann::json() );
     }
   else
     {
@@ -416,7 +416,7 @@ infoFromQuery( nix::SQLiteStmt::Use & query )
 
   if ( query.isNull( 6 ) )
     {
-      info.emplace( "semver", nullptr );
+      info.emplace( "semver", nlohmann::json() );
     }
   else
     {
@@ -425,7 +425,7 @@ infoFromQuery( nix::SQLiteStmt::Use & query )
 
   if ( query.isNull( 7 ) )
     {
-      info.emplace( "license", nullptr );
+      info.emplace( "license", nlohmann::json() );
     }
   else
     {
@@ -434,7 +434,7 @@ infoFromQuery( nix::SQLiteStmt::Use & query )
 
   if ( query.isNull( 10 ) )
     {
-      info.emplace( "broken", nullptr );
+      info.emplace( "broken", nlohmann::json() );
     }
   else
     {
@@ -443,7 +443,7 @@ infoFromQuery( nix::SQLiteStmt::Use & query )
 
   if ( query.isNull( 11 ) )
     {
-      info.emplace( "unfree", nullptr );
+      info.emplace( "unfree", nlohmann::json() );
     }
   else
     {

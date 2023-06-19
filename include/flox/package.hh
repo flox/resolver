@@ -104,16 +104,36 @@ class Package {
       virtual nlohmann::json
     getInfo() const
     {
-      return { { this->getPathStrs()[1], {
-        { "name",    this->getFullName() }
-      , { "pname",   this->getPname() }
-      , { "version", this->getVersion().value_or( nullptr ) }
-      , { "semver",  this->getSemver().value_or( nullptr ) }
-      , { "outputs", this->getOutputs() }
-      , { "license", this->getLicense().value_or( nullptr ) }
-      , { "broken",  this->isBroken().value_or( false ) }
-      , { "unfree",  this->isUnfree().value_or( false ) }
+      std::string system = this->getPathStrs()[1];
+      nlohmann::json j = { { system, {
+        { "name",  this->getFullName() }
+      , { "pname", this->getPname() }
       } } };
+      std::optional<std::string> os = this->getVersion();
+
+      if ( os.has_value() ) { j[system].emplace( "version", os.value() ); }
+      else { j[system].emplace( "version", nlohmann::json() ); }
+
+      os = this->getSemver();
+      if ( os.has_value() ) { j[system].emplace( "semver", os.value() ); }
+      else { j[system].emplace( "semver", nlohmann::json() ); }
+
+      j[system].emplace( "outputs",          this->getOutputs() );
+      j[system].emplace( "outputsToInstall", this->getOutputsToInstall() );
+
+      os = this->getLicense();
+      if ( os.has_value() ) { j[system].emplace( "license", os.value() ); }
+      else { j[system].emplace( "license", nlohmann::json() ); }
+
+      std::optional<bool> ob = this->isBroken();
+      if ( ob.has_value() ) { j[system].emplace( "broken", ob.value() ); }
+      else { j[system].emplace( "broken", nlohmann::json() ); }
+
+      ob = this->isUnfree();
+      if ( ob.has_value() ) { j[system].emplace( "unfree", ob.value() ); }
+      else { j[system].emplace( "unfree", nlohmann::json() ); }
+
+      return j;
     }
 
 
