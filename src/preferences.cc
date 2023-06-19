@@ -133,9 +133,11 @@ Preferences::toJSON() const
 
   if ( ! this->prefixes.empty() ) { j.emplace( "prefixes", this->prefixes ); }
 
-  j.emplace( "semver", (nlohmann::json) {
+  nlohmann::json semver = {
     { "preferPreReleases", this->semverPreferPreReleases }
-  } );
+  };
+
+  j.emplace( "semver", std::move( semver ) );
 
   nlohmann::json allow = {
     { "broken", this->allowBroken }
