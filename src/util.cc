@@ -168,25 +168,6 @@ sortByDepth( const AttrPathGlob & a, const AttrPathGlob & b ) noexcept
 
 /* -------------------------------------------------------------------------- */
 
-  nix::Value *
-loadFlakeRoot(
-  nix::ref<nix::EvalState>                 state
-, std::shared_ptr<nix::flake::LockedFlake> lockedFlake
-)
-{
-  nix::Value * vFlake = state->allocValue();
-  nix::flake::callFlake( * state, * lockedFlake, * vFlake );
-  state->forceAttrs( * vFlake, nix::noPos, "while parsing cached flake data" );
-  nix::Attr * aOutputs = vFlake->attrs->get(
-    state->symbols.create( "outputs" )
-  );
-  assert( aOutputs != nullptr );
-  return aOutputs->value;
-}
-
-
-/* -------------------------------------------------------------------------- */
-
   }  /* End namespace `flox::resolve' */
 }    /* End namespace `flox' */
 

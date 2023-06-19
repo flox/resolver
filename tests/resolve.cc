@@ -73,6 +73,66 @@ test_resolveOne1()
 
 /* -------------------------------------------------------------------------- */
 
+  bool
+test_ResolverStateLocking1()
+{
+  Inputs      inputs( (nlohmann::json) { { "nixpkgs", nixpkgsRef } } );
+  Preferences prefs;
+  return ResolverState( inputs, prefs ).getInputs().at( "nixpkgs" )
+           ->getLockedFlake()->flake.lockedRef.input.isLocked();
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+  bool
+test_getActualFlakeAttrPathPrefixes()
+{
+  Inputs        inputs( (nlohmann::json) { { "nixpkgs", nixpkgsRef } } );
+  Preferences   prefs;
+  ResolverState rs( inputs, prefs );
+  auto ps = rs.getInputs().at( "nixpkgs" )->getActualFlakeAttrPathPrefixes();
+  return ps.size() == defaultSystems.size();
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+/* Use relative path. */
+  bool
+test_resolveInInput1()
+{
+  Inputs        inputs( (nlohmann::json) { { "nixpkgs", nixpkgsRef } } );
+  Preferences   prefs;
+  ResolverState rs( inputs, prefs );
+  Descriptor    desc( (nlohmann::json) { { "path", { "hello" } } } );
+  std::list<Resolved> results = rs.resolveInInput( "nixpkgs", desc );
+  return results.size() == defaultSystems.size();
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+/* Ensure name resolution works. */
+  bool
+test_resolveInInput2()
+{
+  Inputs        inputs( (nlohmann::json) { { "nixpkgs", nixpkgsRef } } );
+  Preferences   prefs;
+  ResolverState rs( inputs, prefs );
+  Descriptor    desc( (nlohmann::json) { { "name", "hello" } } );
+  std::list<Resolved> results = rs.resolveInInput( "nixpkgs", desc );
+  if ( results.empty() ) { return false; }
+  for ( const nlohmann::json & i : results.front().info )
+    {
+      return i["pname"] == "hello";
+    }
+  return false;
+}
+
+
+/* -------------------------------------------------------------------------- */
+
 #define RUN_TEST( _NAME )                                              \
   try                                                                  \
     {                                                                  \
@@ -99,6 +159,10 @@ main( int argc, char * argv[], char ** envp )
   RUN_TEST( resolve1 );
   RUN_TEST( resolve2 );
   RUN_TEST( resolveOne1 );
+  RUN_TEST( ResolverStateLocking1 );
+  RUN_TEST( getActualFlakeAttrPathPrefixes );
+  RUN_TEST( resolveInInput1 );
+  RUN_TEST( resolveInInput2 );
 
   return ec;
 }

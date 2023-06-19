@@ -17,6 +17,7 @@
 #include <unordered_set>
 #include "flox/exceptions.hh"
 #include "flox/types.hh"
+#include "flox/predicates.hh"
 #include "descriptor.hh"
 
 
@@ -67,6 +68,14 @@ std::optional<Resolved> resolveOne( const Inputs      & inputs
                                   , const Preferences & preferences
                                   , const Descriptor  & desc
                                   );
+
+
+/* -------------------------------------------------------------------------- */
+
+std::list<Resolved> resolve_V2(       ResolverState & rs
+                              , const Descriptor    & desc
+                              ,       bool            one
+                              );
 
 
 /* -------------------------------------------------------------------------- */

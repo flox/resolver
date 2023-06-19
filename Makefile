@@ -54,19 +54,22 @@ LIBFLOXRESOLVE = libflox-resolve$(libExt)
 
 BINS           =  resolver
 LIBS           =  $(LIBFLOXRESOLVE)
-COMMON_HEADERS =  resolve.hh descriptor.hh flox/exceptions.hh flox/types.hh
-COMMON_HEADERS += flox/util.hh semver.hh flox/package.hh
+COMMON_HEADERS =  $(wildcard include/*.hh) $(wildcard include/flox/*.hh)
 TESTS          =  $(wildcard tests/*.cc)
+SRCS           =  $(wildcard src/*.cc)
+bin_SRCS       =  src/main.cc
+lib_SRCS       =  $(filter-out $(bin_SRCS), $(SRCS))
 
 
 # ---------------------------------------------------------------------------- #
 
-CXXFLAGS     ?=
+CXXFLAGS     ?= $(EXTRA_CFLAGS)
 CXXFLAGS     += '-I$(MAKEFILE_DIR)/include'
-lib_CXXFLAGS =  -shared -fPIC
-lib_LDFLAGS  =  -shared -fPIC -Wl,--no-undefined
-bin_CXXFLAGS =
-bin_LDFLAGS  =
+LDFLAGS      ?= $(EXTRA_LDFLAGS)
+lib_CXXFLAGS ?= -shared -fPIC
+lib_LDFLAGS  ?= -shared -fPIC -Wl,--no-undefined
+bin_CXXFLAGS ?=
+bin_LDFLAGS  ?=
 
 ifneq ($(DEBUG),)
 	CXXFLAGS += -ggdb3 -pg
@@ -89,9 +92,10 @@ nix_CFLAGS  += -include $(nix_INCDIR)/nix/config.h
 nix_LDFLAGS =  $(shell $(PKG_CONFIG) --libs nix-main nix-cmd nix-expr nix-store)
 nix_LDFLAGS += -lnixfetchers
 
-
-floxresolve_LDFLAGS =  '-L$(MAKEFILE_DIR)/lib' -lflox-resolve
-floxresolve_LDFLAGS += -Wl,--enable-new-dtags '-Wl,-rpath,$$ORIGIN/../lib'
+ifndef floxresolve_LDFLAGS
+	floxresolve_LDFLAGS =  '-L$(MAKEFILE_DIR)/lib' -lflox-resolve
+	floxresolve_LDFLAGS += -Wl,--enable-new-dtags '-Wl,-rpath,$$ORIGIN/../lib'
+endif
 
 
 # ---------------------------------------------------------------------------- #
@@ -140,13 +144,10 @@ clean: FORCE
 
 # ---------------------------------------------------------------------------- #
 
-src/%.o: $(addprefix include/,$(COMMON_HEADERS))
+%.o: %.cc $(COMMON_HEADERS)
+	$(CXX) $(CXXFLAGS) -c "$<" -o "$@"
 
-
-# ---------------------------------------------------------------------------- #
-
-%.o: %.cpp
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) -c "$<"
+$(info $(lib_SRCS:.cc=.o))
 
 
 lib/$(LIBFLOXRESOLVE): CXXFLAGS += $(lib_CXXFLAGS) $(nix_CFLAGS)
@@ -155,22 +156,18 @@ lib/$(LIBFLOXRESOLVE): LDFLAGS  += $(lib_LDFLAGS)
 lib/$(LIBFLOXRESOLVE): LDFLAGS  += -Wl,--as-needed
 lib/$(LIBFLOXRESOLVE): LDFLAGS  += $(nix_LDFLAGS) $(sqlite3_LDFLAGS)
 lib/$(LIBFLOXRESOLVE): LDFLAGS  += -Wl,--no-as-needed
-lib/$(LIBFLOXRESOLVE): $(addprefix src/,resolve.o descriptor.o preferences.o)
-lib/$(LIBFLOXRESOLVE): $(addprefix src/,inputs.o walk.o util.o attr-path-glob.o)
-lib/$(LIBFLOXRESOLVE): $(addprefix src/,descriptor-functor.o semver.o)
-lib/$(LIBFLOXRESOLVE): $(addprefix src/,package.o)
+lib/$(LIBFLOXRESOLVE): $(lib_SRCS:.cc=.o)
 	$(CXX) $^ $(LDFLAGS) -o "$@"
-
 
 
 # ---------------------------------------------------------------------------- #
 
-bin/%:        CXXFLAGS += $(bin_CXXFLAGS)
-bin/resolver: CXXFLAGS += $(sqlite3_CFLAGS) $(nljson_CFLAGS) $(nix_CFLAGS)
-bin/%:        LDFLAGS  += $(bin_LDFLAGS)
-bin/resolver: LDFLAGS  += $(sqlite3_LDFLAGS) $(nix_LDFLAGS)
-bin/resolver: LDFLAGS  += $(floxresolve_LDFLAGS)
-bin/resolver: src/main.cc lib/$(LIBFLOXRESOLVE)
+bin/%: CXXFLAGS += $(bin_CXXFLAGS)
+bin/%: CXXFLAGS += $(sqlite3_CFLAGS) $(nljson_CFLAGS) $(nix_CFLAGS)
+bin/%: LDFLAGS  += $(bin_LDFLAGS)
+bin/%: LDFLAGS  += $(sqlite3_LDFLAGS) $(nix_LDFLAGS)
+bin/%: LDFLAGS  += $(floxresolve_LDFLAGS)
+bin/resolver: src/main.o lib/$(LIBFLOXRESOLVE)
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) "$<" -o "$@"
 
 
@@ -202,10 +199,9 @@ install-include: $(addprefix $(INCLUDEDIR)/,$(COMMON_HEADERS))
 
 tests/%: CXXFLAGS += $(sqlite3_CFLAGS) $(nljson_CFLAGS)
 tests/%: CXXFLAGS += $(nix_CFLAGS) $(nljson_CFLAGS) $(bin_CXXFLAGS)
-tests/%: LDFLAGS  += $(sqlite3_LDFLAGS) $(nix_LDFLAGS)
 tests/%: LDFLAGS  += $(floxresolve_LDFLAGS) $(bin_LDFLAGS)
-$(TESTS:.cc=): %: $(addprefix include/,$(COMMON_HEADERS)) lib/$(LIBFLOXRESOLVE)
-$(TESTS:.cc=): %: %.cc
+tests/%: LDFLAGS  += $(sqlite3_LDFLAGS) $(nix_LDFLAGS)
+$(TESTS:.cc=): %: %.o lib/$(LIBFLOXRESOLVE)
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) "$<" -o "$@"
 
 

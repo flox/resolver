@@ -49,9 +49,9 @@ Descriptor::Descriptor( const nlohmann::json & desc )
           else                     { this->relAttrPath = value; }
         }
       else if ( key == "input" )   { this->inputId = value; }
-      else if ( key == "name" )    { this->name = value; }
+      else if ( key == "name" )    { this->name    = value; }
       else if ( key == "version" ) { this->version = value; }
-      else if ( key == "semver" )  { this->semver = value; }
+      else if ( key == "semver" )  { this->semver  = value; }
       else if ( key == "catalog" )
         {
           if ( value.is_boolean() )
@@ -89,10 +89,7 @@ Descriptor::Descriptor( const nlohmann::json & desc )
 
   /* Audit fields. */
   std::string msg;
-  if ( ! this->audit( msg ) )
-    {
-      throw DescriptorException( msg );
-    }
+  if ( ! this->audit( msg ) ) { throw DescriptorException( msg ); }
 }
 
 
@@ -157,11 +154,72 @@ Descriptor::toJSON() const
 
 /* -------------------------------------------------------------------------- */
 
-/* TODO */
   std::string
 Descriptor::toString() const
 {
-  return "";
+  std::string rsl;
+  if ( this->inputId.has_value() )    { rsl += this->inputId.value() + "#"; }
+  if ( this->absAttrPath.has_value() )
+    {
+      rsl += this->absAttrPath.value().toString();
+    }
+  else if ( this->relAttrPath.has_value() )
+    {
+      for ( size_t i = 0; i < this->relAttrPath.value().size(); ++i )
+        {
+          if ( this->relAttrPath.value()[i].find( '.' ) != std::string::npos )
+            {
+              rsl += "\"" + this->relAttrPath.value()[i] + "\"";
+            }
+          else
+            {
+              rsl += this->relAttrPath.value()[i];
+            }
+          if ( ( i + 1 ) < this->relAttrPath.value().size() ) { rsl += "."; }
+        }
+    }
+  if ( this->semver.has_value() && ( ! this->version.has_value() ) )
+    {
+      rsl += "@" + this->semver.value();
+    }
+  bool didQ    = false;
+  auto addParam = [&]( std::string_view id, std::string_view val )
+  {
+    if ( didQ ) { rsl += '&'; }
+    else        { rsl += '?'; didQ = true; }
+    rsl += id;
+    rsl += "=\"";
+    rsl += val;
+    rsl += '"';
+  };
+  if ( this->name.has_value() )
+    {
+      addParam( "name", this->name.value() );
+    }
+  if ( this->version.has_value() )
+    {
+      addParam( "version", this->version.value() );
+    }
+  if ( ! this->absAttrPath.has_value() )
+    {
+      if ( this->catalogStability.has_value() )
+        {
+          addParam( "stability", this->catalogStability.value() );
+        }
+      if ( ! this->searchFlakes )
+        {
+          if ( didQ ) { rsl += "&flake=false"; }
+          else        { rsl += "?flake=false"; didQ = true; }
+        }
+      if ( ! this->searchCatalogs )
+        {
+          if ( didQ ) { rsl += "&catalog=false"; }
+          else        { rsl += "?catalog=false"; didQ = true; }
+        }
+    }
+  if ( rsl[0] == '?' )     { rsl.erase( 0, 1 ); }
+  if ( rsl.back() == '#' ) { rsl += "default";  }
+  return rsl;
 }
 
 
@@ -260,6 +318,71 @@ Descriptor::audit( std::string & msg ) const
   rsl &= auditFlakeCatalog( * this, msg );
 
   return rsl;
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+  predicates::PkgPred
+Descriptor::pred( bool checkPath ) const
+{
+  std::list<predicates::PkgPred> preds;
+
+  if ( checkPath )
+    {
+      if ( this->relAttrPath.has_value() )
+        {
+          preds.push_back(
+            predicates::hasRelPathPrefix( this->relAttrPath.value() )
+          );
+        }
+
+      if ( this->absAttrPath.has_value() )
+        {
+          preds.push_back(
+            predicates::hasAbsPathPrefix( this->absAttrPath.value() )
+          );
+        }
+      else if ( ! this->searchCatalogs )
+        {
+          preds.push_back( ! predicates::hasSubtree( ST_CATALOG ) );
+        }
+      else if ( ! this->searchFlakes )
+        {
+          preds.push_back( predicates::hasSubtree( ST_CATALOG ) );
+        }
+
+      if ( this->catalogStability.has_value() )
+        {
+          preds.push_back(
+            predicates::hasStability( this->catalogStability.value() )
+          );
+        }
+    }
+
+  if ( this->name.has_value() )
+    {
+      preds.push_back( predicates::hasName( this->name.value() ) );
+    }
+
+  if ( this->version.has_value() )
+    {
+      preds.push_back( predicates::hasVersion( this->version.value() ) );
+    }
+
+  if ( this->semver.has_value() )
+    {
+      preds.push_back( predicates::satisfiesSemver( this->semver.value() ) );
+    }
+
+  if ( preds.size() < 1 )
+    {
+      return predicates::predTrue;
+    }
+  predicates::PkgPred pred = preds.front();
+  preds.pop_front();
+  for ( auto & p : preds ) { pred = pred && p; }
+  return pred;
 }
 
 

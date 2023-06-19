@@ -1,7 +1,6 @@
 /* ========================================================================== *
  *
- * NOTE: Currently unused.
- * TODO: Integrate into `packagePredicate' and `DrvDb'.
+ *
  *
  * -------------------------------------------------------------------------- */
 
@@ -20,6 +19,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include "flox/types.hh"
+#include "semver.hh"
 
 
 /* -------------------------------------------------------------------------- */
@@ -30,90 +30,96 @@ namespace flox {
 /* -------------------------------------------------------------------------- */
 
 class Package {
-  private:
-    FloxFlakeRef               _flake;
-    nix::flake::Fingerprint    _fingerprint;
-    Cursor                     _cursor;
-    std::vector<nix::Symbol>   _path;
-    nix::ref<nix::SymbolTable> _symtab;
-
-    bool _hasMetaAttr    = false;
-    bool _hasPnameAttr   = false;
-    bool _hasVersionAttr = false;
-
-    nix::DrvName               _dname;
-    std::optional<std::string> _semver;
-    std::string                _system;
-    subtree_type               _subtree;
-
-    void init( bool checkDrv = true );
-
-
   public:
-    Package( const FloxFlakeRef               & flake
-           , const nix::flake::Fingerprint    & fingerprint
-           ,       Cursor                       cursor
-           ,       nix::ref<nix::SymbolTable>   symtab
-           ,       bool                         checkDrv = true
-           )
-      : _flake( flake ), _cursor( cursor ), _path( cursor->getAttrPath() )
-      , _symtab( symtab ), _dname( cursor->getAttr( "name" )->getString() )
-      , _fingerprint( fingerprint )
+    virtual std::vector<std::string>    getPathStrs()         const = 0;
+    virtual std::string                 getFullName()         const = 0;
+    virtual std::string                 getPname()            const = 0;
+    virtual std::optional<std::string>  getVersion()          const = 0;
+    virtual std::optional<std::string>  getLicense()          const = 0;
+    virtual std::vector<std::string>    getOutputs()          const = 0;
+    virtual std::vector<std::string>    getOutputsToInstall() const = 0;
+    virtual std::optional<bool>         isBroken()            const = 0;
+    virtual std::optional<bool>         isUnfree()            const = 0;
+    virtual bool                        hasMetaAttr()         const = 0;
+    virtual bool                        hasPnameAttr()        const = 0;
+    virtual bool                        hasVersionAttr()      const = 0;
+
+      virtual subtree_type
+    getSubtreeType() const
     {
-      this->init( checkDrv );
+      std::vector<std::string> pathS = this->getPathStrs();
+      if ( pathS[0] == "legacyPackages" ) { return ST_LEGACY;   }
+      if ( pathS[0] == "packages" )       { return ST_PACKAGES; }
+      if ( pathS[0] == "catalog" )        { return ST_PACKAGES; }
+      throw ResolverException(
+        "Package::getSubtreeType(): Unrecognized subtree '" + pathS[0] + "'."
+      );
     }
 
-    Package( const FloxFlakeRef               & flake
-           , const nix::flake::Fingerprint    & fingerprint
-           ,       Cursor                       cursor
-           , const std::vector<nix::Symbol>   & path
-           ,       nix::ref<nix::SymbolTable>   symtab
-           ,       bool                         checkDrv = true
-           )
-      : _flake( flake ), _cursor( cursor ), _path( path ), _symtab( symtab )
-      , _dname( cursor->getAttr( "name" )->getString() )
-      , _fingerprint( fingerprint )
+      virtual std::optional<std::string>
+    getStability() const
     {
-      this->init( checkDrv );
+      if ( this->getSubtreeType() != ST_CATALOG ) { return std::nullopt; }
+      return this->getPathStrs()[2];
     }
 
-    Package( const nix::flake::LockedFlake    & flake
-           ,       Cursor                       cursor
-           ,       nix::ref<nix::SymbolTable>   symtab
-           ,       bool                         checkDrv = true
-           )
-      : _flake( flake.flake.lockedRef ), _cursor( cursor )
-      , _path( cursor->getAttrPath() ), _symtab( symtab )
-      , _dname( cursor->getAttr( "name" )->getString() )
-      , _fingerprint( flake.getFingerprint() )
+      virtual nix::DrvName
+    getParsedDrvName() const
     {
-      this->init( checkDrv );
+      return nix::DrvName( this->getFullName() );
     }
 
-    FloxFlakeRef               getFlakeRef()         const;
-    nix::flake::Fingerprint    getFlakeFingerprint() const;
-    std::vector<nix::Symbol>   getPath()             const;
-    Cursor                     getCursor()           const;
-    subtree_type               getSubtreeType()      const;
-    nix::DrvName               getParsedDrvName()    const;
+      virtual std::string
+    getPkgAttrName() const
+    {
+      std::vector<std::string> pathS = this->getPathStrs();
+      if ( this->getSubtreeType() == ST_CATALOG )
+        {
+          return pathS[pathS.size() - 2];
+        }
+      return pathS[pathS.size() - 1];
+    }
 
-    std::string                getFullName()         const;
-    std::string                getPname()            const;
-    std::optional<std::string> getVersion()          const;
-    std::optional<std::string> getSemver()           const;
-    std::optional<std::string> getLicense()          const;
-    std::optional<bool>        isBroken()            const;
-    std::optional<bool>        isUnfree()            const;
-    std::vector<std::string>   getOutputs()          const;
-    std::vector<std::string>   getOutputsToInstall() const;
+      virtual std::optional<std::string>
+    getSemver() const
+    {
+      std::optional<std::string> version = this->getVersion();
+      if ( ! version.has_value() ) { return std::nullopt; }
+      return coerceSemver( version.value() );
+    }
 
-    bool hasMetaAttr()    const;
-    bool hasPnameAttr()   const;
-    bool hasVersionAttr() const;
+      virtual std::string
+    toURIString( const FloxFlakeRef & ref ) const
+    {
+      std::string uri                = ref.to_string() + "#";
+      std::vector<std::string> pathS = this->getPathStrs();
+      for ( size_t i = 0; i < pathS.size(); ++i )
+        {
+          uri += "\"" + pathS[i] + "\"";
+          if ( ( i + 1 ) < pathS.size() ) uri += ".";
+        }
+      return uri;
+    }
 
-    std::string toURIString() const;
-    //nlohmann::json toJSON()      const;
-};
+      virtual nlohmann::json
+    getInfo() const
+    {
+      return { { this->getPathStrs()[1], {
+        { "name",    this->getFullName() }
+      , { "pname",   this->getPname() }
+      , { "version", this->getVersion().value_or( nullptr ) }
+      , { "semver",  this->getSemver().value_or( nullptr ) }
+      , { "outputs", this->getOutputs() }
+      , { "license", this->getLicense().value_or( nullptr ) }
+      , { "broken",  this->isBroken().value_or( false ) }
+      , { "unfree",  this->isUnfree().value_or( false ) }
+      } } };
+    }
+
+
+/* -------------------------------------------------------------------------- */
+
+};  /* End class `Package' */
 
 
 /* -------------------------------------------------------------------------- */

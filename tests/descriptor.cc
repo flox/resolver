@@ -33,8 +33,7 @@ test_DescriptorFromJSON1()
 
 /* Expect error if `null' appears in path in any position other than 2nd. */
   bool
-test_DescriptorFromJSON2()
-{
+test_DescriptorFromJSON2() {
   try
     {
       Descriptor d(
@@ -126,6 +125,35 @@ test_DescriptorToJSON2()
 
 /* -------------------------------------------------------------------------- */
 
+  bool
+test_DescriptorToString1()
+{
+  Descriptor d( (nlohmann::json) {
+    { "name",  "hello" }
+  , { "input", "foo"   }
+  } );
+  return d.toString() == "foo#?name=\"hello\"";
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+/* Make sure `catalog=false' is omitted when we have an absolute path. */
+  bool
+test_DescriptorToString2()
+{
+  Descriptor d( (nlohmann::json) {
+    { "path",    { "legacyPackages", nullptr, "hello" } }
+  , { "input",   "foo"                                  }
+  , { "catalog", false                                  }
+  , { "semver",  "^2.12.1"                              }
+  } );
+  return d.toString() == "foo#legacyPackages.{{system}}.hello@^2.12.1";
+}
+
+
+/* -------------------------------------------------------------------------- */
+
 #define RUN_TEST( _NAME )                                              \
   try                                                                  \
     {                                                                  \
@@ -154,6 +182,8 @@ main( int argc, char * argv[], char ** envp )
   RUN_TEST( DescriptorFromJSON4 );
   RUN_TEST( DescriptorToJSON1 );
   RUN_TEST( DescriptorToJSON2 );
+  RUN_TEST( DescriptorToString1 );
+  RUN_TEST( DescriptorToString2 );
 
   return ec;
 }

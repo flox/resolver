@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <iterator>
+#include <cstddef>
 #include <string>
 #include <variant>
 #include <vector>
@@ -18,6 +20,8 @@
 #include <unordered_map>
 #include <unordered_set>
 #include "flox/exceptions.hh"
+#include <queue>
+#include <any>
 
 /* In `nix' 2.14.0 they moved some class declarations around, so this
  * selects the correct header so that we can refer to `InstallableFlake'. */
@@ -56,7 +60,37 @@ using MaybeCursor = std::shared_ptr<nix::eval_cache::AttrCursor>;
 
 /* -------------------------------------------------------------------------- */
 
+class Descriptor;
+class Package;
+class DrvDb;
+
+
+/* -------------------------------------------------------------------------- */
+
 typedef enum { ST_PACKAGES, ST_LEGACY, ST_CATALOG } subtree_type;
+
+  static subtree_type
+parseSubtreeType( std::string_view subtree )
+{
+  if ( subtree == "legacyPackages" ) { return ST_LEGACY;   }
+  if ( subtree == "packages" )       { return ST_PACKAGES; }
+  if ( subtree == "catalog" )        { return ST_CATALOG;  }
+  throw ResolverException(
+    "Failed to parse invalid subtree '" + std::string( subtree ) + "'."
+  );
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+typedef enum {
+  DBPS_NONE       = 0 /* Indicates that a DB is completely fresh. */
+, DBPS_PARTIAL    = 1 /* Indicates some partially populated state. */
+, DBPS_PATHS_DONE = 2 /* Indicates that we know all derivation paths. */
+, DBPS_INFO_DONE  = 3 /* Indicates that we have collected info metadata. */
+, DBPS_EMPTY      = 4 /* Indicates that a prefix has no values. */
+, DBPS_FORCE      = 5 /* This should always have highest value. */
+}  progress_status;
 
 
 /* -------------------------------------------------------------------------- */
@@ -139,6 +173,7 @@ static const std::vector<std::string> defaultAttrPathPrefixes = {
   "catalog", "packages", "legacyPackages"
 };
 
+namespace predicates { struct PkgPred; };
 
 struct Preferences {
   std::vector<std::string> inputs;
@@ -157,7 +192,8 @@ struct Preferences {
 
   nlohmann::json toJSON() const;
 
-  PkgPredicate pred() const;
+  PkgPredicate                       pred()    const;
+  flox::resolve::predicates::PkgPred pred_V2() const;
 
   int compareInputs(
         const std::string_view idA, const FloxFlakeRef & a
@@ -191,56 +227,120 @@ void to_json(         nlohmann::json & j, const Preferences & p );
 
 /* -------------------------------------------------------------------------- */
 
-class FloxFlake {
-  private:
-    nix::ref<nix::EvalState> _state;
-    FloxFlakeRef             _flakeRef;
-    std::list<std::string>   _systems;
-    std::list<std::string>   _prefsPrefixes;
-    std::list<std::string>   _prefsStabilities;
+using todo_queue = std::queue<Cursor, std::list<Cursor>>;
 
-    std::shared_ptr<nix::flake::LockedFlake> lockedFlake;
+using cursor_op = std::function<void(
+        subtree_type               subtreeType
+,       std::string_view           system
+,       todo_queue               & todos
+, const std::vector<std::string> & parentRelPath
+,       std::string_view           attrName
+,       Cursor                     cur
+)>;
 
-  public:
-    FloxFlake(       nix::ref<nix::EvalState>    state
-             ,       std::string_view            id
-             ,       FloxFlakeRef             && ref
-             , const std::list<std::string>   &  systems = defaultSystems
-             , const Preferences              &  prefs   = {}
-             );
-    std::list<std::string>            getSystems()                      const;
-    std::list<std::list<std::string>> getDefaultFlakeAttrPaths()        const;
-    std::list<std::list<std::string>> getDefaultFlakeAttrPathPrefixes() const;
-    std::list<std::list<std::string>> getFlakeAttrPathPrefixes()        const;
+using derivation_op = std::function<void(
+        DrvDb                    & db
+,       subtree_type               subtreeType
+,       std::string_view           subtree
+,       std::string_view           system
+, const std::vector<std::string> & parentRelPath
+,       std::string_view           attrName
+,       Cursor                     cur
+)>;
 
-    std::shared_ptr<nix::flake::LockedFlake> getLockedFlake() const;
-    nix::ref<nix::eval_cache::EvalCache>     openEvalCache()  const;
-
-    /* Like `findAttrAlongPath' but without suggestions.
-     * Note that each invocation opens the `EvalCache', so use sparingly. */
-    Cursor      openCursor(      const std::vector<nix::Symbol> & path ) const;
-    MaybeCursor maybeOpenCursor( const std::vector<nix::Symbol> & path ) const;
-
-    /* Opens `EvalCache' once, staying open until all cursors die. */
-    std::list<Cursor> getFlakePrefixCursors() const;
-
-    std::list<std::vector<nix::Symbol>> getActualFlakeAttrPathPrefixes() const;
+  static const cursor_op
+handleRecurseForDerivations = [](
+        subtree_type               subtreeType
+,       std::string_view           system
+,       todo_queue               & todos
+, const std::vector<std::string> & parentRelPath
+,       std::string_view           attrName
+,       Cursor                     cur
+)
+{
+  if ( subtreeType != ST_PACKAGES )
+    {
+      MaybeCursor m = cur->maybeGetAttr( "recurseForDerivations" );
+      if ( ( m != nullptr ) && m->getBool() ) { todos.push( (Cursor) cur ); }
+    }
 };
 
 
 /* -------------------------------------------------------------------------- */
 
-class ResolverState {
+class FloxFlake : public std::enable_shared_from_this<FloxFlake> {
   private:
-    std::shared_ptr<nix::Store>      _store;
-    std::shared_ptr<nix::Store>      evalStore;
-    std::shared_ptr<nix::EvalState>  evalState;
-    std::map<std::string, FloxFlake> inputs;
+    nix::ref<nix::EvalState> _state;
+    FloxFlakeRef             _flakeRef;
+    std::list<std::string>   _systems;
+    std::vector<std::string> _prefsPrefixes;
+    std::vector<std::string> _prefsStabilities;
+
+    std::shared_ptr<nix::flake::LockedFlake> lockedFlake;
 
   public:
-    nix::ref<nix::EvalState> getStore();
-    nix::ref<nix::EvalState> getEvalStore();
-    nix::ref<nix::EvalState> getEvalState();
+    FloxFlake(       nix::ref<nix::EvalState>   state
+             ,       std::string_view           id
+             , const FloxFlakeRef             & ref
+             , const Preferences              & prefs
+             , const std::list<std::string>   & systems = defaultSystems
+             );
+
+    FloxFlakeRef getFlakeRef() const { return this->_flakeRef; }
+
+    std::list<std::string>            getSystems()                      const;
+    std::list<std::list<std::string>> getDefaultFlakeAttrPaths()        const;
+    std::list<std::list<std::string>> getDefaultFlakeAttrPathPrefixes() const;
+    std::list<std::list<std::string>> getFlakeAttrPathPrefixes()        const;
+
+    std::shared_ptr<nix::flake::LockedFlake> getLockedFlake();
+    nix::ref<nix::eval_cache::EvalCache>     openEvalCache();
+
+    /* Like `findAttrAlongPath' but without suggestions.
+     * Note that each invocation opens the `EvalCache', so use sparingly. */
+    Cursor      openCursor(      const std::vector<nix::Symbol> & path );
+    MaybeCursor maybeOpenCursor( const std::vector<nix::Symbol> & path );
+
+    /* Opens `EvalCache' once, staying open until all cursors die. */
+    std::list<Cursor> getFlakePrefixCursors();
+
+    std::list<std::vector<std::string>> getActualFlakeAttrPathPrefixes();
+
+    /* Populate this flake's `DrvDb' with paths for all derivations under the
+     * given prefix.
+     * This does NOT populate "info" fields, it only records paths to
+     * all derivations.
+     * This routine is significantly more lightweight than ones focused on
+     * scraping "info" fields making it suitable for quickly resolving
+     * absolute and relative path descriptors. */
+    progress_status populateDerivations( std::string_view subtree
+                                       , std::string_view system
+                                       );
+
+    /* Apply a function to all derivations with access to an `AttrCursor'.
+     * `nonDrvOp' allows you to control recursive descent into additional
+     * subtrees by appending the `todos' argument passed to `cursor_op'. */
+    progress_status derivationsDo(
+      std::string_view subtree
+    , std::string_view system
+    , progress_status  doneStatus  /* Use `DBPS_FORCE' to avoid skipping. */
+    , derivation_op    drvOp
+    , cursor_op        nonDrvOp   = handleRecurseForDerivations
+    );
+
+    /* Apply a function to all `Packages' under a prefix.
+     * This abstracts lookups in caches vs. eval, and will implicitly populate
+     * missing cache members unless `allowCache' disables this behavior.
+     * Arbitrary auxilary data can be accessed within `op' by the `aux'
+     * argument ( optional ). */
+    void packagesDo(
+      std::string_view                                         subtree
+    , std::string_view                                         system
+    , std::function<void( std::any * aux, const Package & p )> op
+
+    , std::any * aux        = nullptr
+    , bool       allowCache = true
+    );
 };
 
 
@@ -268,6 +368,41 @@ class Resolved {
 
 void from_json( const nlohmann::json & j,       Resolved & p );
 void to_json(         nlohmann::json & j, const Resolved & p );
+
+
+/* -------------------------------------------------------------------------- */
+
+class ResolverState {
+  private:
+    std::shared_ptr<nix::Store>                       _store;
+    std::shared_ptr<nix::Store>                       evalStore;
+    std::shared_ptr<nix::EvalState>                   evalState;
+    std::map<std::string, std::shared_ptr<FloxFlake>> _inputs;
+    const Preferences                                 _prefs;
+
+  public:
+
+    nix::ref<nix::Store>       getStore();
+    nix::ref<nix::Store>       getEvalStore();
+    nix::ref<nix::EvalState>   getEvalState();
+    nix::SymbolTable         * getSymbolTable();
+
+    ResolverState( const Inputs                 & inputs
+                 , const Preferences            & prefs
+                 , const std::list<std::string> & systems = defaultSystems
+                 );
+
+    Preferences getPreferences() const { return this->_prefs; }
+
+    std::map<std::string, nix::ref<FloxFlake>> getInputs() const;
+    std::list<std::string>                     getInputNames() const;
+
+    std::optional<nix::ref<FloxFlake>> getInput( std::string_view id ) const;
+
+    std::list<Resolved> resolveInInput(       std::string_view   id
+                                      , const Descriptor       & desc
+                                      );
+};
 
 
 /* -------------------------------------------------------------------------- */

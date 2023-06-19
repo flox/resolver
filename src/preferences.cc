@@ -107,20 +107,10 @@ Preferences::compareInputs(
   std::optional<uint64_t> lmB = ib.getLastModified();
   if ( lmA.has_value() && lmB.has_value() )
     {
-      if ( lmA.value() < lmB.value() )
-        {
-          return -1;
-        }
-      else if ( lmB.value() < lmA.value() )
-        {
-          return 1;
-        }
-      else
-        {
-          return 0;
-        }
+      if ( lmA.value() < lmB.value() )      { return -1; }
+      else if ( lmB.value() < lmA.value() ) { return 1; }
+      else                                  { return 0; }
     }
-
   /* Sort lexicographically by `id' to break ties. */
   if ( idA < idB ) { return -1; }
   if ( idB < idA ) { return 1; }
@@ -134,25 +124,18 @@ Preferences::compareInputs(
 Preferences::toJSON() const
 {
   nlohmann::json j;
-  if ( ! this->inputs.empty() )
-    {
-      j.emplace( "inputs", this->inputs );
-    }
+  if ( ! this->inputs.empty() ) { j.emplace( "inputs", this->inputs ); }
 
   if ( ! this->stabilities.empty() )
     {
       j.emplace( "stabilities", this->stabilities );
     }
 
-  if ( ! this->prefixes.empty() )
-    {
-      j.emplace( "prefixes", this->prefixes );
-    }
+  if ( ! this->prefixes.empty() ) { j.emplace( "prefixes", this->prefixes ); }
 
-  nlohmann::json semver = {
+  j.emplace( "semver", (nlohmann::json) {
     { "preferPreReleases", this->semverPreferPreReleases }
-  };
-  j.emplace( "semver", semver );
+  } );
 
   nlohmann::json allow = {
     { "broken", this->allowBroken }
@@ -164,7 +147,7 @@ Preferences::toJSON() const
       allow.emplace( "licenses", this->allowedLicenses.value() );
     }
 
-  j.emplace( "allow", allow );
+  j.emplace( "allow", std::move( allow ) );
 
   return j;
 
@@ -229,6 +212,34 @@ Preferences::pred() const
 
     return true;
   };
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+  predicates::PkgPred
+Preferences::pred_V2() const
+{
+  if ( this->allowUnfree &&
+       this->allowBroken &&
+       ( ! this->allowedLicenses.has_value() )
+     )
+    {
+      return predicates::predTrue;
+    }
+  predicates::PkgPred pred = predicates::hasMeta;
+  if ( ! this->allowUnfree ) { pred = pred && predicates::isFree;    }
+  if ( ! this->allowBroken ) { pred = pred && predicates::notBroken; }
+  if ( this->allowedLicenses.has_value() )
+    {
+      std::vector<std::string> ls;
+      for ( const auto & l : this->allowedLicenses.value() )
+        {
+          ls.push_back( l );
+        }
+      pred = pred && predicates::hasLicense( ls );
+    }
+  return pred;
 }
 
 

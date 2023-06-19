@@ -5,7 +5,7 @@
  *
  * -------------------------------------------------------------------------- */
 
-#include "flox/package.hh"
+#include "flox/eval-package.hh"
 #include "semver.hh"
 
 
@@ -17,28 +17,48 @@ namespace flox {
 /* -------------------------------------------------------------------------- */
 
   void
-Package::init( bool checkDrv )
+EvalPackage::init( bool checkDrv )
 {
   if ( this->_path.size() < 3 )
     {
       throw ResolverException(
-        "Package attrPaths must have at least 3 elements"
+        "Package::init(): Package attribute paths must have at least 3 "
+        "elements - the path '" + this->_cursor->getAttrPathStr() +
+        "' is too short."
       );
     }
 
   if ( checkDrv && ( ! this->_cursor->isDerivation() ) )
     {
-      throw ResolverException( "Packages must be derivations" );
+      throw ResolverException(
+        "Package::init(): Packages must be derivations but the attrset at '"
+        + this->_cursor->getAttrPathStr() +
+        "' does not set `.type = \"derivation\"'."
+      );
     }
 
-  std::vector<nix::SymbolStr> pathS = this->_symtab->resolve( this->_path );
-
   /* Subtree type */
-  if ( pathS[0] == "packages" )            { this->_subtree = ST_PACKAGES; }
-  else if ( pathS[0] == "catalog" )        { this->_subtree = ST_CATALOG; }
-  else if ( pathS[0] == "legacyPackages" ) { this->_subtree = ST_LEGACY; }
+  if ( this->_pathS[0] == "packages" )
+    {
+      this->_subtree = ST_PACKAGES;
+    }
+  else if ( this->_pathS[0] == "catalog" )
+    {
+      this->_subtree = ST_CATALOG;
+    }
+  else if ( this->_pathS[0] == "legacyPackages" )
+    {
+      this->_subtree = ST_LEGACY;
+    }
+  else
+    {
+      throw ResolverException(
+        "EvalPackage::init(): Invalid subtree name '" + this->_pathS[0] +
+        "' at path '" + this->_cursor->getAttrPathStr() + "'."
+      );
+    }
 
-  this->_system = pathS[1];
+  this->_system = this->_pathS[1];
 
   MaybeCursor c = this->_cursor->maybeGetAttr( "meta" );
   this->_hasMetaAttr = c != nullptr;
@@ -64,39 +84,43 @@ Package::init( bool checkDrv )
 
 /* -------------------------------------------------------------------------- */
 
-FloxFlakeRef  Package::getFlakeRef()    const { return this->_flake; }
-Cursor        Package::getCursor()      const { return this->_cursor; }
-subtree_type  Package::getSubtreeType() const { return this->_subtree; }
-std::string   Package::getFullName()    const { return this->_dname.fullName; }
+Cursor       EvalPackage::getCursor()      const { return this->_cursor; }
+subtree_type EvalPackage::getSubtreeType() const { return this->_subtree; }
 
-std::vector<nix::Symbol>   Package::getPath()   const { return this->_path; }
-std::optional<std::string> Package::getSemver() const { return this->_semver; }
+std::string EvalPackage::getFullName() const { return this->_dname.fullName; }
 
-bool Package::hasMetaAttr()    const { return this->_hasMetaAttr; }
-bool Package::hasPnameAttr()   const { return this->_hasPnameAttr; }
-bool Package::hasVersionAttr() const { return this->_hasVersionAttr; }
+std::vector<nix::Symbol> EvalPackage::getPath() const { return this->_path; }
+
+  std::optional<std::string>
+EvalPackage::getSemver() const
+{
+  return this->_semver;
+}
+
+bool EvalPackage::hasMetaAttr()    const { return this->_hasMetaAttr; }
+bool EvalPackage::hasPnameAttr()   const { return this->_hasPnameAttr; }
+bool EvalPackage::hasVersionAttr() const { return this->_hasVersionAttr; }
 
 
 /* -------------------------------------------------------------------------- */
 
-  nix::flake::Fingerprint
-Package::getFlakeFingerprint() const
+  std::vector<std::string>
+EvalPackage::getPathStrs() const
 {
-  return this->_fingerprint;
+  return this->_pathS;
 }
 
 
 /* -------------------------------------------------------------------------- */
 
-
   nix::DrvName
-Package::getParsedDrvName() const
+EvalPackage::getParsedDrvName() const
 {
   return nix::DrvName( this->_dname.fullName );
 }
 
   std::string
-Package::getPname() const
+EvalPackage::getPname() const
 {
   if ( this->_hasPnameAttr )
     {
@@ -110,7 +134,7 @@ Package::getPname() const
 
 
   std::optional<std::string>
-Package::getVersion() const
+EvalPackage::getVersion() const
 {
   if ( this->_hasVersionAttr )
     {
@@ -129,8 +153,18 @@ Package::getVersion() const
 
 /* -------------------------------------------------------------------------- */
 
+  std::optional<std::string>
+EvalPackage::getStability() const
+{
+  if ( this->_subtree != ST_CATALOG ) { return std::nullopt; }
+  return this->_pathS[2];
+}
+
+
+/* -------------------------------------------------------------------------- */
+
   std::vector<std::string>
-Package::getOutputs() const
+EvalPackage::getOutputs() const
 {
   MaybeCursor o = this->_cursor->maybeGetAttr( "outputs" );
   if ( o == nullptr )
@@ -145,7 +179,7 @@ Package::getOutputs() const
 
 
   std::vector<std::string>
-Package::getOutputsToInstall() const
+EvalPackage::getOutputsToInstall() const
 {
   if ( this->_hasMetaAttr )
     {
@@ -169,7 +203,7 @@ Package::getOutputsToInstall() const
 /* -------------------------------------------------------------------------- */
 
   std::optional<std::string>
-Package::getLicense() const
+EvalPackage::getLicense() const
 {
   if ( ! this->_hasMetaAttr ) { return std::nullopt; }
   MaybeCursor l = this->_cursor->getAttr( "meta" )->maybeGetAttr( "license" );
@@ -181,7 +215,7 @@ Package::getLicense() const
 /* -------------------------------------------------------------------------- */
 
   std::optional<bool>
-Package::isBroken() const
+EvalPackage::isBroken() const
 {
   if ( ! this->_hasMetaAttr ) { return std::nullopt; }
   MaybeCursor b = this->_cursor->getAttr( "meta" )->maybeGetAttr( "broken" );
@@ -190,33 +224,13 @@ Package::isBroken() const
 }
 
   std::optional<bool>
-Package::isUnfree() const
+EvalPackage::isUnfree() const
 {
   if ( ! this->_hasMetaAttr ) { return std::nullopt; }
   MaybeCursor u = this->_cursor->getAttr( "meta" )->maybeGetAttr( "unfree" );
   if ( u == nullptr ) { return std::nullopt; }
   return u->getBool();
 }
-
-
-/* -------------------------------------------------------------------------- */
-
-  std::string
-Package::toURIString() const
-{
-  std::string uri = this->_flake.to_string() + "#";
-  for ( size_t i = 0; i < this->_path.size(); ++i )
-    {
-      uri += "\"" + ( * this->_symtab )[this->_path[i]] + "\"";
-      if ( ( i + 1 ) < this->_path.size() ) uri += ".";
-    }
-  return uri;
-}
-
-
-/* -------------------------------------------------------------------------- */
-
-// nlohmann::json Package::toJSON() const {}
 
 
 /* -------------------------------------------------------------------------- */

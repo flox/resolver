@@ -211,6 +211,30 @@ resolveOne( const Inputs      & inputs
 
 /* -------------------------------------------------------------------------- */
 
+  std::list<Resolved>
+resolve_V2(       ResolverState & rs
+          , const Descriptor    & desc
+          ,       bool            one  = false
+          )
+{
+  /* See if we can take shortcuts with this descriptor. */
+  if ( desc.inputId.has_value() )
+    {
+      return rs.resolveInInput( desc.inputId.value(), desc );
+    }
+  std::list<Resolved> results;
+  for ( std::string & id : rs.getInputNames() )
+    {
+      results.splice( results.end(), rs.resolveInInput( id, desc ) );
+      if ( one && ( ! results.empty() ) ) { break; }
+    }
+  return std::move( results );
+}
+
+
+
+/* -------------------------------------------------------------------------- */
+
   }  /* End Namespace `flox::resolve' */
 }  /* End Namespace `flox' */
 

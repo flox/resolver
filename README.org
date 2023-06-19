@@ -151,3 +151,4 @@ or short-name.
 - [ ] Drop unused routines.
 - [ ] Multi-threading.
 - [ ] Disable =builtins.trace= warnings.
+- [ ] Consider how =packages.*.default= is handled.
