@@ -40,18 +40,18 @@ CREATE TABLE IF NOT EXISTS DerivationInfos (
 , system   TEXT  NOT NULL
 , path     JSON  NOT NULL
 
-, fullName         TEXT  NOT NULL
-, pname            TEXT  NOT NULL
-, version          TEXT
-, semver           TEXT
-, license          TEXT
-, outputs          JSON  NOT NULL DEFAULT '[]'
-, outputsToInstall JSON  NOT NULL DEFAULT '["out"]'
-, broken           BOOL
-, unfree           BOOL
-, hasMetaAttr      BOOL  NOT NULL
-, hasPnameAttr     BOOL  NOT NULL
-, hasVersionAttr   BOOL  NOT NULL
+, fullName          TEXT  NOT NULL
+, pname             TEXT  NOT NULL
+, version           TEXT
+, semver            TEXT
+, license           TEXT
+, outputs           JSON  NOT NULL DEFAULT '[]'
+, outputsToInstall  JSON  NOT NULL DEFAULT '["out"]'
+, broken            BOOL
+, unfree            BOOL
+, hasMetaAttr       BOOL  NOT NULL
+, hasPnameAttr      BOOL  NOT NULL
+, hasVersionAttr    BOOL  NOT NULL
 
 , PRIMARY  KEY ( subtree, system, path )
 );
@@ -91,10 +91,13 @@ DrvDb::DrvDb( const nix::flake::Fingerprint & fingerprint )
 
   nix::Path dbPath = cacheDir + "/" + fpStr + ".sqlite";
 
+  /* Boilerplate DB init. */
   state->db = nix::SQLite( dbPath );
   state->db.isCache();
   state->db.exec( schema );
 
+  /* Populate a few statement templates, and audit existing version and schema
+   * info on the off chance that there's already a DB with this fingerprint. */
   state->insertFingerprint.create(
     state->db
   , "INSERT OR IGNORE INTO Fingerprint VALUES ( ? )"
@@ -153,6 +156,8 @@ DrvDb::DrvDb( const nix::flake::Fingerprint & fingerprint )
       );
     }
 
+  /* Populate statement templates. */
+
   state->insertDrv.create(
     state->db
   , "INSERT OR REPLACE INTO Derivations ( subtree, system, path ) VALUES "
@@ -201,6 +206,12 @@ DrvDb::DrvDb( const nix::flake::Fingerprint & fingerprint )
   , "SELECT status FROM Progress WHERE ( subtree = ? ) AND ( system = ? )"
   );
 
+  /* Create a transaction handle.
+   * To be totally honest I copied this from Nix and I'm not 100% sure
+   * if this is creating a transaction for the life of this DB object; but
+   * if so that needs some attention in a few spots where we try to query
+   * `progress' in this instance.
+   * In either case not a hard thing to fix. */
   state->txn = std::make_unique<nix::SQLiteTxn>( state->db );
 }
 
@@ -224,6 +235,7 @@ DrvDb::~DrvDb()
 
 /* -------------------------------------------------------------------------- */
 
+/* Error catching wrapper for insert statements. */
 template<typename F>
   uint64_t
 DrvDb::doSQLite( F && fun )
@@ -244,9 +256,11 @@ DrvDb::doSQLite( F && fun )
 
 /* -------------------------------------------------------------------------- */
 
+/* Records that a derivation exists at an attrpath.
+ * Nothing fancy, this is the simplest type of record. */
   uint64_t
-DrvDb::setDrv( std::string_view                 subtree
-             , std::string_view                 system
+DrvDb::setDrv(       std::string_view           subtree
+             ,       std::string_view           system
              , const std::vector<std::string> & path
              )
 {
@@ -263,6 +277,9 @@ DrvDb::setDrv( std::string_view                 subtree
 
 /* -------------------------------------------------------------------------- */
 
+/* Convenience wrapper for reporting that a derivation exists at an attrpath.
+ * This extracts that info from a `Package' record since in most routines that's
+ * what we have on hand. */
   uint64_t
 DrvDb::setDrv( const Package & p )
 {
@@ -284,6 +301,9 @@ DrvDb::setDrv( const Package & p )
 
 /* -------------------------------------------------------------------------- */
 
+/* Check if an attrpath is avilable in a flake.
+ * Returns `nullopt' if we haven't indicated that a flake has been completely
+ * processed; but can still return `true' when partially populated. */
   std::optional<bool>
 DrvDb::hasDrv(       std::string_view           subtree
              ,       std::string_view           system
@@ -305,6 +325,8 @@ DrvDb::hasDrv(       std::string_view           subtree
 
 /* -------------------------------------------------------------------------- */
 
+/* Dump all paths to derivations.
+ * Returns `nullopt' if the flake isn't completely processed. */
   std::optional<std::list<std::vector<std::string>>>
 DrvDb::getDrvPaths( std::string_view subtree, std::string_view system )
 {
