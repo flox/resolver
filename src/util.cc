@@ -16,15 +16,6 @@ namespace flox {
 
 /* -------------------------------------------------------------------------- */
 
-  FloxFlakeRef
-coerceFlakeRef( std::string_view uri )
-{
-  return nix::parseFlakeRef( std::string( uri ) );
-}
-
-
-/* -------------------------------------------------------------------------- */
-
   std::list<Resolved>
 mergeResolvedByAttrPathGlob( const std::list<Resolved> & all )
 {

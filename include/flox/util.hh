@@ -45,11 +45,6 @@ static nix::flake::LockFlags floxFlakeLockFlags = {
 
 /* -------------------------------------------------------------------------- */
 
-FloxFlakeRef coerceFlakeRef( std::string_view uri );
-
-
-/* -------------------------------------------------------------------------- */
-
 template <typename T, template <typename, typename> class C>
   static inline bool
 hasElement( const C<T, std::allocator<T>> & container, const T & e )
