@@ -209,15 +209,20 @@ EvalPackage::getOutputsToInstall() const
 
 /* -------------------------------------------------------------------------- */
 
-// FIXME: some oddball packages have lists of licenses, for example
-// `texlive.combined.scheme-full'
   std::optional<std::string>
 EvalPackage::getLicense() const
 {
   if ( ! this->_hasMetaAttr ) { return std::nullopt; }
   MaybeCursor l = this->_cursor->getAttr( "meta" )->maybeGetAttr( "license" );
   if ( l == nullptr ) { return std::nullopt; }
-  return l->getAttr( "spdxId" )->getString();
+  try
+    {
+      return l->getAttr( "spdxId" )->getString();
+    }
+  catch( ... )
+    {
+      return std::nullopt;
+    }
 }
 
 
