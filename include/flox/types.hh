@@ -348,21 +348,43 @@ class FloxFlake : public std::enable_shared_from_this<FloxFlake> {
 
 class Resolved {
   private:
-    std::string  uri;
     FloxFlakeRef input;
 
   public:
     AttrPathGlob   path;
     nlohmann::json info;
 
-    Resolved( const nlohmann::json & attrs );
+    Resolved( const nlohmann::json & attrs )
+      : input( nix::FlakeRef::fromAttrs(
+                 nix::fetchers::jsonToAttrs( attrs.at( "input" ) )
+               ) )
+      , info( attrs.at( "info" ) )
+      , path( AttrPathGlob::fromJSON( attrs.at( "path" ) ) )
+    {}
+
     Resolved( const FloxFlakeRef   & input
             , const AttrPathGlob   & path
             , const nlohmann::json & info
-            );
+            )
+      : input( input ), path( path ), info( info )
+    {}
 
-    nlohmann::json toJSON()   const;
-    std::string    toString() const { return this->uri; }
+      std::string
+    toString() const
+    {
+      return this->input.to_string() + "#" + this->path.toString();
+    }
+
+      nlohmann::json
+    toJSON() const
+    {
+      return {
+        { "input", nix::fetchers::attrsToJSON( this->input.toAttrs() ) }
+      , { "uri",   this->toString() }
+      , { "info",  this->info }
+      , { "path",  this->path.toJSON() }
+      };
+    }
 };
 
 

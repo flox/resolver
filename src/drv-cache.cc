@@ -258,14 +258,14 @@ DrvDb::doSQLite( F && fun )
 
 /* Records that a derivation exists at an attrpath.
  * Nothing fancy, this is the simplest type of record. */
-  uint64_t
+  void
 DrvDb::setDrv(       std::string_view           subtree
              ,       std::string_view           system
              , const std::vector<std::string> & path
              )
 {
   nlohmann::json relPath = path;
-  return doSQLite( [&]() {
+  doSQLite( [&]() {
     auto state( this->_state->lock() );
     state->insertDrv.use()( subtree )( system )( relPath.dump() ).exec();
     uint64_t rowId = state->db.getLastInsertedRowId();
@@ -280,7 +280,7 @@ DrvDb::setDrv(       std::string_view           subtree
 /* Convenience wrapper for reporting that a derivation exists at an attrpath.
  * This extracts that info from a `Package' record since in most routines that's
  * what we have on hand. */
-  uint64_t
+  void
 DrvDb::setDrv( const Package & p )
 {
   std::vector<std::string> path    = p.getPathStrs();
@@ -289,7 +289,7 @@ DrvDb::setDrv( const Package & p )
     {
       relPath.push_back( path[i] );
     }
-  return doSQLite( [&]() {
+  doSQLite( [&]() {
     auto state( this->_state->lock() );
     state->insertDrv.use()( path[0] )( path[1] )( relPath.dump() ).exec();
     uint64_t rowId = state->db.getLastInsertedRowId();
@@ -347,7 +347,7 @@ DrvDb::getDrvPaths( std::string_view subtree, std::string_view system )
 
 /* -------------------------------------------------------------------------- */
 
-  uint64_t
+  void
 DrvDb::setDrvInfo( const Package & p )
 {
   std::vector<std::string> path    = p.getPathStrs();
@@ -360,7 +360,7 @@ DrvDb::setDrvInfo( const Package & p )
   nlohmann::json outputs          = p.getOutputs();
   nlohmann::json outputsToInstall = p.getOutputsToInstall();
 
-  return doSQLite( [&]() {
+  doSQLite( [&]() {
     auto state( this->_state->lock() );
     state->insertDrv.use()( path[0] )( path[1] )( relPath.dump() ).exec();
     uint64_t rowId = state->db.getLastInsertedRowId();

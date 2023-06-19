@@ -8,6 +8,7 @@
 #include <iostream>
 #include "resolve.hh"
 #include "flox/drv-cache.hh"
+#include "flox/util.hh"
 
 
 /* -------------------------------------------------------------------------- */

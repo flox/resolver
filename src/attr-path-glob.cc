@@ -40,6 +40,9 @@ AttrPathGlob::AttrPathGlob( const attr_parts & path )
     }
 }
 
+
+/* -------------------------------------------------------------------------- */
+
   AttrPathGlob
 AttrPathGlob::fromStrings( const std::vector<std::string> & path )
 {
@@ -63,6 +66,9 @@ AttrPathGlob::fromStrings( const std::vector<std::string_view> & path )
     }
   return ap;
 }
+
+
+/* -------------------------------------------------------------------------- */
 
   AttrPathGlob
 AttrPathGlob::fromJSON( const nlohmann::json & path )
@@ -120,14 +126,7 @@ AttrPathGlob::coerceGlob()
        isPkgsSubtree( std::get<std::string>( this->path[0] ) )
      )
     {
-      const std::string s = std::get<std::string>( this->path[1] );
-      bool found = false;
-      for ( const std::string & system : defaultSystems )
-        {
-          found = true;
-          break;
-        }
-      if ( ! found ) { this->path[1] = nullptr; }
+      this->path[1] = nullptr;
     }
 }
 

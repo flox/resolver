@@ -39,23 +39,10 @@ namespace flox {
 /* -------------------------------------------------------------------------- */
 
   static inline bool
-shouldSearchSystem( std::string_view system )
-{
-  for ( const std::string & s : defaultSystems )
-    {
-      if ( s == system ) { return true; }
-    }
-  return false;
-}
-
-
-/* -------------------------------------------------------------------------- */
-
-  static inline bool
 isPkgsSubtree( std::string_view attrName )
 {
-  return ( attrName == "packages" ) ||
-         ( attrName == "legacyPackages" ) ||
+  return ( attrName == "legacyPackages" ) ||
+         ( attrName == "packages" )       ||
          ( attrName == "catalog"  );
 }
 
@@ -146,11 +133,6 @@ std::vector<CursorPos> globSystems(
 
 /* -------------------------------------------------------------------------- */
 
-bool sortByDepth( const AttrPathGlob & a, const AttrPathGlob & b ) noexcept;
-
-
-/* -------------------------------------------------------------------------- */
-
 template <typename T, template <typename, typename> class C>
   static inline bool
 hasElement( const C<T, std::allocator<T>> & container, const T & e )
@@ -158,6 +140,23 @@ hasElement( const C<T, std::allocator<T>> & container, const T & e )
   return std::find( container.cbegin(), container.cend(), e ) !=
          container.cend();
 }
+
+
+/* -------------------------------------------------------------------------- */
+
+  static inline bool
+shouldSearchSystem( std::string_view system )
+{
+  return std::find( defaultSystems.cbegin(), defaultSystems.cend(), system ) !=
+         defaultSystems.cend();
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+std::list<Resolved> mergeResolvedByAttrPathGlob(
+  const std::list<Resolved> & all
+);
 
 
 /* -------------------------------------------------------------------------- */

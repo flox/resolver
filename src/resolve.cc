@@ -25,44 +25,6 @@ namespace flox {
 
 /* -------------------------------------------------------------------------- */
 
-Resolved::Resolved( const nlohmann::json & attrs )
-  : uri( attrs.at( "uri" ) )
-  , input( nix::FlakeRef::fromAttrs(
-             nix::fetchers::jsonToAttrs( attrs.at( "input" ) )
-           ) )
-  , info( attrs.at( "info" ) )
-  , path( AttrPathGlob::fromJSON( attrs.at( "path" ) ) )
-{}
-
-
-/* -------------------------------------------------------------------------- */
-
-Resolved::Resolved( const FloxFlakeRef   & input
-                  , const AttrPathGlob   & path
-                  , const nlohmann::json & info
-                  )
-  : input( input ), path( path ), info( info )
-{
-  this->uri = this->input.to_string() + "#" + this->path.toString();
-}
-
-
-/* -------------------------------------------------------------------------- */
-
-  nlohmann::json
-Resolved::toJSON() const
-{
-  return {
-    { "input", nix::fetchers::attrsToJSON( this->input.toAttrs() ) }
-  , { "uri",   this->uri }
-  , { "info",  this->info }
-  , { "path",  this->path.toJSON() }
-  };
-}
-
-
-/* -------------------------------------------------------------------------- */
-
   void
 to_json( nlohmann::json & j, const Resolved & r )
 {
@@ -159,6 +121,11 @@ resolve( const Inputs      & inputs
     }
 
   // TODO: handle `(abs|rel)AttrPath'
+
+  auto sortByDepth = []( const AttrPathGlob & a, const AttrPathGlob & b )
+  {
+    return a.path.size() <= b.path.size();
+  };
 
   auto collect = [&]()
   {

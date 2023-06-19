@@ -10,6 +10,7 @@
 #include <nix/flake/flake.hh>
 #include <nix/fetchers.hh>
 #include "resolve.hh"
+#include "flox/util.hh"
 
 
 /* -------------------------------------------------------------------------- */
@@ -94,6 +95,37 @@ test_ResolvedToString()
 
 /* -------------------------------------------------------------------------- */
 
+  bool
+test_mergeResolvedByAttrPathGlob1()
+{
+  FloxFlakeRef ref = nix::parseFlakeRef( "github:NixOS/nixpkgs" );
+
+  std::list<Resolved> lst;
+
+  auto mkEnt = [&]( std::string && system, std::string && name, int v )
+  {
+    lst.emplace_back( Resolved(
+      ref
+    , AttrPathGlob::fromStrings( (std::vector<std::string>) {
+        "packages", system, name
+      } )
+      , { { system, { { "foo", v } } } }
+    ) );
+  };
+  mkEnt( "x86_64-linux",  "hello",  1 );
+  mkEnt( "aarch64-linux", "hello",  2 );
+  mkEnt( "x86_64-linux",  "cowsay", 3 );
+  mkEnt( "aarch64-linux", "cowsay", 4 );
+
+  std::list<Resolved> merged = mergeResolvedByAttrPathGlob( lst );
+  return ( merged.size() == 2 )         &&
+         ( merged.front().info.size() == 2 ) &&
+         ( merged.back().info.size() == 2 );
+}
+
+
+/* -------------------------------------------------------------------------- */
+
 #define RUN_TEST( _NAME )                                              \
   try                                                                  \
     {                                                                  \
@@ -119,6 +151,7 @@ main( int argc, char * argv[], char ** envp )
   RUN_TEST( ResolvedFromJSON1 );
   RUN_TEST( ResolvedToJSON1 );
   RUN_TEST( ResolvedToString );
+  RUN_TEST( mergeResolvedByAttrPathGlob1 );
 
   return ec;
 }

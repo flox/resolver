@@ -148,13 +148,13 @@ class DrvDb {
     DrvDb( const nix::flake::Fingerprint & fingerprint );
     ~DrvDb();
     template<typename F> uint64_t doSQLite( F && fun );
-    uint64_t setDrv( const Package & p );
-    uint64_t setDrvInfo( const Package & p );
+    void setDrv( const Package & p );
+    void setDrvInfo( const Package & p );
 
-    uint64_t setDrv( std::string_view                 subtree
-                   , std::string_view                 system
-                   , const std::vector<std::string> & path
-                   );
+    void setDrv( std::string_view                 subtree
+               , std::string_view                 system
+               , const std::vector<std::string> & path
+               );
 
     std::optional<bool> hasDrv(       std::string_view           subtree
                               ,       std::string_view           system
