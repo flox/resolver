@@ -154,7 +154,8 @@ shouldSearchSystem( std::string_view system )
 
 /* -------------------------------------------------------------------------- */
 
-std::list<Resolved> mergeResolvedByAttrPathGlob(
+std::list<Resolved> & mergeResolvedByAttrPathGlob( std::list<Resolved> & lst );
+std::list<Resolved>   mergeResolvedByAttrPathGlob(
   const std::list<Resolved> & all
 );
 
