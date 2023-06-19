@@ -23,14 +23,6 @@
 #include <queue>
 #include <any>
 
-/* In `nix' 2.14.0 they moved some class declarations around, so this
- * selects the correct header so that we can refer to `InstallableFlake'. */
-#ifdef HAVE_INSTALLABLE_FLAKE
-#  include <nix/installable-flake.hh>
-#else
-#  include <nix/installables.hh>
-#endif
-
 
 /* -------------------------------------------------------------------------- */
 
@@ -151,22 +143,6 @@ void to_json(         nlohmann::json & j, const Inputs & i );
 
 /* -------------------------------------------------------------------------- */
 
-using PkgPredicate = std::function<bool(
-                             Cursor
-                     , const std::vector<nix::Symbol> &
-                     )>;
-
-  static bool
-defaultPkgPredicate(       Cursor                     pos
-                   , const std::vector<nix::Symbol> & path
-                   )
-{
-  return true;
-}
-
-
-/* -------------------------------------------------------------------------- */
-
 static const std::vector<std::string> defaultCatalogStabilities = {
   "stable", "staging", "unstable"
 };
@@ -194,7 +170,6 @@ struct Preferences {
 
   nlohmann::json toJSON() const;
 
-  PkgPredicate                       pred()    const;
   flox::resolve::predicates::PkgPred pred_V2() const;
 
   int compareInputs(

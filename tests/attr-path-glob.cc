@@ -139,47 +139,10 @@ test_coerceRelative1()
 
 /* -------------------------------------------------------------------------- */
 
-/* Check that `globSystems' helper returns one cursor for each system. */
-  bool
-test_globSystems1( nix::ref<nix::EvalState> state )
-{
-  FloxFlakeRef                         ref   = coerceFlakeRef( nixpkgsRef );
-  nix::ref<nix::eval_cache::EvalCache> cache = coerceEvalCache( state, ref );
-
-  std::vector<nix::Symbol> path = { state->symbols.create( "legacyPackages" ) };
-  Cursor                   cur  = cache->getRoot()->getAttr( path[0] );
-  CursorPos                c    = std::make_pair( cur, path );
-
-  std::vector<CursorPos> sysPkgs = globSystems( state, c );
-
-  return
-    ( sysPkgs.size() == defaultSystems.size() ) &&
-    ( state->symbols[sysPkgs[0].second[1]] == ( * defaultSystems.cbegin() ) );
-}
-
-
-/* -------------------------------------------------------------------------- */
-
 #define RUN_TEST( _NAME )                                              \
   try                                                                  \
     {                                                                  \
       if ( ! test_ ## _NAME () )                                       \
-        {                                                              \
-          ec = EXIT_FAILURE;                                           \
-          std::cerr << "  fail: " # _NAME << std::endl;                \
-        }                                                              \
-    }                                                                  \
-  catch( std::exception & e )                                          \
-    {                                                                  \
-      ec = EXIT_FAILURE;                                               \
-      std::cerr << "  ERROR: " # _NAME ": " << e.what() << std::endl;  \
-    }
-
-
-#define RUN_TEST_WITH_STATE( _STATE, _NAME )                           \
-  try                                                                  \
-    {                                                                  \
-      if ( ! test_ ## _NAME ( _STATE ) )                               \
         {                                                              \
           ec = EXIT_FAILURE;                                           \
           std::cerr << "  fail: " # _NAME << std::endl;                \
@@ -207,14 +170,6 @@ main( int argc, char * argv[], char ** envp )
   RUN_TEST( isAbsAttrPath5 );
   RUN_TEST( isAbsAttrPathJSON1 );
   RUN_TEST( coerceRelative1 );
-
-  nix::setStackSize( 64 * 1024 * 1024 );
-  nix::initNix();
-  nix::initGC();
-  nix::evalSettings.pureEval = true;  /* Our reference is locked so we can. */
-  nix::ref<nix::EvalState> state( new nix::EvalState( {}, nix::openStore() ) );
-
-  RUN_TEST_WITH_STATE( state, globSystems1 );
 
   return ec;
 }

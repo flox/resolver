@@ -26,54 +26,6 @@ static const std::string nixpkgsRef =
 /* -------------------------------------------------------------------------- */
 
   bool
-test_resolve1()
-{
-  Inputs      inputs( (nlohmann::json) { { "nixpkgs", nixpkgsRef } } );
-  Preferences prefs;
-  Descriptor  desc( (nlohmann::json) { { "name", "hello" } } );
-
-  std::vector<Resolved> rsl = resolve( inputs, prefs, desc );
-
-  return rsl.size() == 1;
-}
-
-
-/* -------------------------------------------------------------------------- */
-
-  bool
-test_resolve2()
-{
-  Inputs      inputs( (nlohmann::json) { { "nixpkgs", nixpkgsRef } } );
-  Preferences prefs;
-  Descriptor  desc( (nlohmann::json) {
-    { "name", "nodejs" }, { "semver", ">=14" }
-  } );
-  std::vector<Resolved> rsl = resolve( inputs, prefs, desc );
-  return rsl.size() == 10;
-}
-
-
-/* -------------------------------------------------------------------------- */
-
-  bool
-test_resolveOne1()
-{
-  Inputs      inputs( (nlohmann::json) { { "nixpkgs", nixpkgsRef } } );
-  Preferences prefs;
-  Descriptor  desc( (nlohmann::json) { { "name", "hello" } } );
-
-  std::vector<Resolved>   rsl = resolve( inputs, prefs, desc );
-  std::optional<Resolved> one = resolveOne( inputs, prefs, desc );
-
-  return ( rsl.size() == 1 ) &&
-         one.has_value() &&
-         ( one.value().toJSON() == rsl[0].toJSON() );
-}
-
-
-/* -------------------------------------------------------------------------- */
-
-  bool
 test_ResolverStateLocking1()
 {
   Inputs      inputs( (nlohmann::json) { { "nixpkgs", nixpkgsRef } } );
@@ -176,9 +128,6 @@ main( int argc, char * argv[], char ** envp )
 {
   int ec = EXIT_SUCCESS;
 
-  RUN_TEST( resolve1 );
-  RUN_TEST( resolve2 );
-  RUN_TEST( resolveOne1 );
   RUN_TEST( ResolverStateLocking1 );
   RUN_TEST( getActualFlakeAttrPathPrefixes );
   RUN_TEST( resolveInInput1 );

@@ -39,39 +39,6 @@ bool isMatchingAttrPath( const AttrPathGlob                & prefix
 
 /* -------------------------------------------------------------------------- */
 
-struct PkgNameVersion {
-  std::string                name;
-  std::optional<std::string> parsedName;
-  std::optional<std::string> parsedVersion;
-  std::optional<std::string> pname;
-  std::optional<std::string> version;
-  // TODO
-  // std::optional<std::string> semver;
-  // bool isSemver() const { return this->semver.has_value(); }
-  std::string getPname();
-  std::string getVersion();
-};
-
-PkgNameVersion nameVersionAt( Cursor pos );
-
-
-/* -------------------------------------------------------------------------- */
-
-/* Return a ranked vector of satisfactory resolutions. */
-std::vector<Resolved> resolve( const Inputs      & inputs
-                             , const Preferences & preferences
-                             , const Descriptor  & desc
-                             );
-
-/* Return the highest ranking resolution, or `std::nullopt'. */
-std::optional<Resolved> resolveOne( const Inputs      & inputs
-                                  , const Preferences & preferences
-                                  , const Descriptor  & desc
-                                  );
-
-
-/* -------------------------------------------------------------------------- */
-
 std::list<Resolved> resolve_V2(       ResolverState & rs
                               , const Descriptor    & desc
                               ,       bool            one  = false

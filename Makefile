@@ -105,17 +105,6 @@ bin_CXXFLAGS += $(argparse_CFLAGS)
 
 # ---------------------------------------------------------------------------- #
 
-HAVE_INSTALLABLE_FLAKE =                                                   \
-	$(shell $(TEST) -r $(nix_INCDIR)/nix/installable-flake.hh && echo 1||:)
-ifeq (,$(HAVE_INSTALLABLE_FLAKE))
-  CXXFLAGS += -UHAVE_INSTALLABLE_FLAKE
-else
-	CXXFLAGS += -DHAVE_INSTALLABLE_FLAKE='$(HAVE_INSTALLABLE_FLAKE)'
-endif
-
-
-# ---------------------------------------------------------------------------- #
-
 SEMVER_PATH ?=                                                        \
   $(shell $(NIX) build --no-link --print-out-paths                    \
 	                     'github:aakropotkin/floco#semver')/bin/semver
