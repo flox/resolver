@@ -102,7 +102,7 @@ main( int argc, char * argv[], char ** envp )
 
   bool one   = prog.get<bool>( "-o" );
   bool quiet = prog.get<bool>( "-q" );
-  bool next  = prog.get<bool>( "-q" );
+  bool next  = prog.get<bool>( "-n" );
 
   Inputs      inputs( readOrParseJSON( prog.get<std::string>( "-i" ) ) );
   Preferences prefs(  readOrParseJSON( prog.get<std::string>( "-p" ) ) );

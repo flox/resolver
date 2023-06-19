@@ -37,6 +37,8 @@ ResolverState::ResolverState(
 )
 : _prefs( prefs )
 {
+  /* Increase the default stack size. This aligns with `nix' new CLI usage. */
+  nix::setStackSize( 64 * 1024 * 1024 );
   nix::initNix();
   nix::initGC();
   // TODO: make this an option. It risks making cross-system eval impossible.
