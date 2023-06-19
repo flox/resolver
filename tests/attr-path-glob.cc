@@ -208,6 +208,7 @@ main( int argc, char * argv[], char ** envp )
   RUN_TEST( isAbsAttrPathJSON1 );
   RUN_TEST( coerceRelative1 );
 
+  nix::setStackSize( 64 * 1024 * 1024 );
   nix::initNix();
   nix::initGC();
   nix::evalSettings.pureEval = true;  /* Our reference is locked so we can. */

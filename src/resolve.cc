@@ -47,6 +47,7 @@ resolve( const Inputs      & inputs
        )
 {
   std::vector<Resolved> rsl;
+  nix::setStackSize( 64 * 1024 * 1024 );
   nix::initNix();
   nix::initGC();
 

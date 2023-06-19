@@ -495,6 +495,7 @@ main( int argc, char * argv[], char ** envp )
 {
   int ec = EXIT_SUCCESS;
 
+  nix::setStackSize( 64 * 1024 * 1024 );
   nix::initNix();
   nix::initGC();
   nix::evalSettings.pureEval = true;  /* Our reference is locked so we can. */
