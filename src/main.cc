@@ -85,6 +85,11 @@ main( int argc, char * argv[], char ** envp )
     .help( "inline JSON or path to JSON file containing a package descriptor" )
     .metavar( "DESCRIPTOR" );
 
+  prog.add_argument( "-n", "--next" )
+    .default_value( false )
+    .implicit_value( true )
+    .help( "run pre-release/experimental routines" );
+
   try
     {
       prog.parse_args( argc, argv );
@@ -97,6 +102,7 @@ main( int argc, char * argv[], char ** envp )
 
   bool one   = prog.get<bool>( "-o" );
   bool quiet = prog.get<bool>( "-q" );
+  bool next  = prog.get<bool>( "-q" );
 
   Inputs      inputs( readOrParseJSON( prog.get<std::string>( "-i" ) ) );
   Preferences prefs(  readOrParseJSON( prog.get<std::string>( "-p" ) ) );
@@ -106,28 +112,45 @@ main( int argc, char * argv[], char ** envp )
   /* TODO: make an option */
   nix::verbosity = nix::lvlError;
 
+  ResolverState * rs = nullptr;
+
+  if ( next ) { rs = new ResolverState( inputs, prefs ); }
+
   if ( one )
     {
-      std::optional<Resolved> rsl = resolveOne( inputs, prefs, desc );
+      std::optional<Resolved> rsl =
+        next ? resolveOne_V2( * rs, desc ) : resolveOne( inputs, prefs, desc );
       if ( ! rsl.has_value() )
         {
           std::cout << "null" << std::endl;
+          if ( rs != nullptr ) { delete rs; }
           return quiet ? EXIT_SUCCESS : EXIT_FAILURE;
         }
       else
         {
           std::cout << rsl.value().toJSON().dump() << std::endl;
+          if ( rs != nullptr ) { delete rs; }
           return EXIT_SUCCESS;
         }
+    }
+  else if ( next )
+    {
+      std::list<Resolved> rsl = resolve_V2( * rs, desc );
+      std::cout << nlohmann::json( rsl ).dump() << std::endl;
+      delete rs;
+      return ( quiet || ( ! rsl.empty() ) ) ? EXIT_SUCCESS : EXIT_FAILURE;
     }
   else
     {
       std::vector<Resolved> rsl = resolve( inputs, prefs, desc );
       std::cout << nlohmann::json( rsl ).dump() << std::endl;
-      return quiet ? EXIT_SUCCESS : EXIT_FAILURE;
+      if ( rs != nullptr ) { delete rs; }
+      return ( quiet || ( ! rsl.empty() ) ) ? EXIT_SUCCESS : EXIT_FAILURE;
     }
 
-  return EXIT_SUCCESS;
+  /* Unreachable */
+  if ( rs != nullptr ) { delete rs; }
+  return EXIT_FAILURE;
 }
 
 

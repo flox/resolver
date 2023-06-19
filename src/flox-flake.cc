@@ -181,6 +181,22 @@ FloxFlake::openCursor( const std::vector<nix::Symbol> & path )
   return cur;
 }
 
+  Cursor
+FloxFlake::openCursor( const std::vector<nix::SymbolStr> & path )
+{
+  Cursor cur = this->openEvalCache()->getRoot();
+  for ( const nix::SymbolStr & p : path ) { cur = cur->getAttr( p ); }
+  return cur;
+}
+
+  Cursor
+FloxFlake::openCursor( const std::vector<std::string> & path )
+{
+  Cursor cur = this->openEvalCache()->getRoot();
+  for ( const std::string & p : path ) { cur = cur->getAttr( p ); }
+  return cur;
+}
+
 
 /* -------------------------------------------------------------------------- */
 
@@ -189,6 +205,30 @@ FloxFlake::maybeOpenCursor( const std::vector<nix::Symbol> & path )
 {
   MaybeCursor cur = this->openEvalCache()->getRoot();
   for ( const nix::Symbol & p : path )
+    {
+      cur = cur->maybeGetAttr( p );
+      if ( cur == nullptr ) { break; }
+    }
+  return cur;
+}
+
+  MaybeCursor
+FloxFlake::maybeOpenCursor( const std::vector<nix::SymbolStr> & path )
+{
+  MaybeCursor cur = this->openEvalCache()->getRoot();
+  for ( const nix::SymbolStr & p : path )
+    {
+      cur = cur->maybeGetAttr( p );
+      if ( cur == nullptr ) { break; }
+    }
+  return cur;
+}
+
+  MaybeCursor
+FloxFlake::maybeOpenCursor( const std::vector<std::string> & path )
+{
+  MaybeCursor cur = this->openEvalCache()->getRoot();
+  for ( const std::string & p : path )
     {
       cur = cur->maybeGetAttr( p );
       if ( cur == nullptr ) { break; }
@@ -444,6 +484,64 @@ FloxFlake::packagesDo(
   } );
   if ( allowCache ) { db.promoteProgress( subtree, system, DBPS_INFO_DONE ); }
 }
+
+
+/* -------------------------------------------------------------------------- */
+
+// TODO: Use DrvDb
+  std::list<Cursor>
+FloxFlake::openCursorsByAttrPathGlob( const AttrPathGlob & path )
+{
+
+  std::list<Cursor> rsl;
+
+  if ( path.isAbsolute() )
+    {
+      MaybeCursor prefix = this->openEvalCache()->getRoot()->maybeGetAttr(
+        std::get<std::string>( path.path[0] )
+      );
+      if ( prefix == nullptr ) { return {}; }
+      if ( ! path.hasGlob() )
+        {
+          MaybeCursor c = prefix;
+          for ( size_t i = 1; ( i < path.size() ) && ( c != nullptr ); ++i )
+            {
+              c = c->maybeGetAttr( std::get<std::string>( path.path[i] ) );
+            }
+          if ( c != nullptr ) { rsl.push_back( std::move( (Cursor) c ) ); }
+        }
+      else
+        {
+          for ( const auto & system : this->_systems )
+            {
+              MaybeCursor c = prefix->maybeGetAttr( system );
+              for ( size_t i = 2; ( i < path.size() ) && ( c != nullptr ); ++i )
+                {
+                  c = c->maybeGetAttr( std::get<std::string>( path.path[i] ) );
+                }
+              if ( c != nullptr ) { rsl.push_back( std::move( (Cursor) c ) ); }
+            }
+        }
+    }
+  else  /* Relative */
+    {
+      for ( const auto & prefix : this->getFlakePrefixCursors() )
+        {
+          MaybeCursor c = prefix;
+          for ( size_t i = 0; ( i < path.size() ) && ( c != nullptr ); ++i )
+            {
+              c = c->maybeGetAttr( std::get<std::string>( path.path[i] ) );
+            }
+          if ( c != nullptr ) { rsl.push_back( std::move( (Cursor) c ) ); }
+        }
+    }
+  return rsl;
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+
 
 
 /* -------------------------------------------------------------------------- */

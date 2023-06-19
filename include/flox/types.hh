@@ -300,13 +300,21 @@ class FloxFlake : public std::enable_shared_from_this<FloxFlake> {
 
     /* Like `findAttrAlongPath' but without suggestions.
      * Note that each invocation opens the `EvalCache', so use sparingly. */
-    Cursor      openCursor(      const std::vector<nix::Symbol> & path );
-    MaybeCursor maybeOpenCursor( const std::vector<nix::Symbol> & path );
+    Cursor      openCursor(      const std::vector<nix::Symbol>    & path );
+    Cursor      openCursor(      const std::vector<nix::SymbolStr> & path );
+    Cursor      openCursor(      const std::vector<std::string>    & path );
+    MaybeCursor maybeOpenCursor( const std::vector<nix::Symbol>    & path );
+    MaybeCursor maybeOpenCursor( const std::vector<nix::SymbolStr> & path );
+    MaybeCursor maybeOpenCursor( const std::vector<std::string>    & path );
 
     /* Opens `EvalCache' once, staying open until all cursors die. */
     std::list<Cursor> getFlakePrefixCursors();
 
     std::list<std::vector<std::string>> getActualFlakeAttrPathPrefixes();
+
+    /* Try opening cursors from an absolute or relative path with globs.
+     * Glob is only accepted for `system'. */
+    std::list<Cursor> openCursorsByAttrPathGlob( const AttrPathGlob & path );
 
     /* Populate this flake's `DrvDb' with paths for all derivations under the
      * given prefix.

@@ -74,8 +74,12 @@ std::optional<Resolved> resolveOne( const Inputs      & inputs
 
 std::list<Resolved> resolve_V2(       ResolverState & rs
                               , const Descriptor    & desc
-                              ,       bool            one
+                              ,       bool            one  = false
                               );
+
+std::optional<Resolved> resolveOne_V2(       ResolverState & rs
+                                     , const Descriptor    & desc
+                                     );
 
 
 /* -------------------------------------------------------------------------- */

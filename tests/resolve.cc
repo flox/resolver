@@ -133,6 +133,26 @@ test_resolveInInput2()
 
 /* -------------------------------------------------------------------------- */
 
+/* Ensure name resolution works. */
+  bool
+test_resolve_V2_1()
+{
+  Inputs        inputs( (nlohmann::json) { { "nixpkgs", nixpkgsRef } } );
+  Preferences   prefs;
+  ResolverState rs( inputs, prefs );
+  Descriptor    desc( (nlohmann::json) { { "name", "hello" } } );
+  std::list<Resolved> results = resolve_V2( rs, desc );
+  if ( results.empty() ) { return false; }
+  for ( const nlohmann::json & i : results.front().info )
+    {
+      return i["pname"] == "hello";
+    }
+  return false;
+}
+
+
+/* -------------------------------------------------------------------------- */
+
 #define RUN_TEST( _NAME )                                              \
   try                                                                  \
     {                                                                  \
@@ -163,6 +183,7 @@ main( int argc, char * argv[], char ** envp )
   RUN_TEST( getActualFlakeAttrPathPrefixes );
   RUN_TEST( resolveInInput1 );
   RUN_TEST( resolveInInput2 );
+  RUN_TEST( resolve_V2_1 );
 
   return ec;
 }

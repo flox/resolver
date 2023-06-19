@@ -167,10 +167,7 @@ resolveOne( const Inputs      & inputs
           )
 {
   std::vector<Resolved> resolved = resolve( inputs, preferences, desc );
-  if ( resolved.empty() )
-    {
-      return std::nullopt;
-    }
+  if ( resolved.empty() ) { return std::nullopt; }
   return resolved[0];
 }
 
@@ -179,10 +176,7 @@ resolveOne( const Inputs      & inputs
 /* -------------------------------------------------------------------------- */
 
   std::list<Resolved>
-resolve_V2(       ResolverState & rs
-          , const Descriptor    & desc
-          ,       bool            one  = false
-          )
+resolve_V2( ResolverState & rs, const Descriptor    & desc, bool one )
 {
   /* See if we can take shortcuts with this descriptor. */
   if ( desc.inputId.has_value() )
@@ -193,11 +187,25 @@ resolve_V2(       ResolverState & rs
   for ( std::string & id : rs.getInputNames() )
     {
       results.splice( results.end(), rs.resolveInInput( id, desc ) );
-      if ( one && ( ! results.empty() ) ) { break; }
+      if ( one && ( ! results.empty() ) )
+        {
+          results.erase( ++results.begin(), results.end() );
+          return results;
+        }
     }
-  return std::move( results );
+  return results;
 }
 
+
+/* -------------------------------------------------------------------------- */
+
+  std::optional<Resolved>
+resolveOne_V2( ResolverState & rs, const Descriptor & desc )
+{
+  std::list<Resolved> resolved = resolve_V2( rs, desc, true );
+  if ( resolved.empty() ) { return std::nullopt; }
+  return resolved.front();
+}
 
 
 /* -------------------------------------------------------------------------- */
