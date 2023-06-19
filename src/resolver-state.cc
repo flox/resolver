@@ -401,8 +401,29 @@ ResolverState::resolveInInput( std::string_view id, const Descriptor & desc )
       goods.pop();
     }
 
-  // TODO: Merge results by glob path
-  // TODO: Sort results by version and depth.
+  mergeResolvedByAttrPathGlob( results );
+
+  /* TODO: Sort by version. This is tricky because of systems. */
+  auto sortResults = []( const Resolved & a, const Resolved & b )
+  {
+    if ( a.path.size() != b.path.size() )
+      {
+        return a.path.size() <= b.path.size();
+      }
+    /* Break ties lexicographically. */
+    for ( size_t i = 0; i < a.path.size(); ++i )
+      {
+        if ( i == 1 ) { continue; }  /* Skip system. */
+        if ( a.path.path[i] != b.path.path[i] )
+          {
+            return std::get<std::string>( a.path.path[a.path.size() - 1] ) <=
+                   std::get<std::string>( b.path.path[b.path.size() - 1] );
+          }
+      }
+    return true;
+  };
+
+  results.sort( sortResults );
 
   return results;
 }

@@ -95,6 +95,7 @@ test_ResolvedToString()
 
 /* -------------------------------------------------------------------------- */
 
+/* Immutable form. */
   bool
 test_mergeResolvedByAttrPathGlob1()
 {
@@ -128,6 +129,7 @@ test_mergeResolvedByAttrPathGlob1()
 
 /* -------------------------------------------------------------------------- */
 
+/* Mutable form. */
   bool
 test_mergeResolvedByAttrPathGlob2()
 {

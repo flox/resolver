@@ -119,6 +119,8 @@ struct AttrPathGlob {
   bool globEq(     const AttrPathGlob & other ) const;
   bool operator==( const AttrPathGlob & other ) const;
 
+  size_t size() const { return this->path.size(); }
+
 };
 
 void from_json( const nlohmann::json & j,       AttrPathGlob & path );

@@ -107,7 +107,7 @@ test_resolveInInput1()
   ResolverState rs( inputs, prefs );
   Descriptor    desc( (nlohmann::json) { { "path", { "hello" } } } );
   std::list<Resolved> results = rs.resolveInInput( "nixpkgs", desc );
-  return results.size() == defaultSystems.size();
+  return results.size() == 1;
 }
 
 
