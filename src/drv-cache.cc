@@ -11,8 +11,10 @@
 #include <nix/eval-cache.hh>
 #include <nix/sqlite.hh>
 #include <nix/store-api.hh>
+#include <nix/sync.hh>
 #include "flox/package.hh"
 #include "flox/drv-cache.hh"
+#include "resolve.hh"
 
 
 /* -------------------------------------------------------------------------- */
@@ -68,95 +70,35 @@ CREATE TABLE IF NOT EXISTS VersionInfo (
 , version  TEXT  NOT NULL
 );
 
-INSERT OR IGNORE INTO VersionInfo ( id, version ) VALUES
-  ( 'resolver',       '0.1.0' )
-, ( 'drvCacheSchema', '0.1.0' )
-;
-
 CREATE TABLE IF NOT EXISTS Fingerprint ( fingerprint TEXT PRIMARY KEY );
 )sql";
 
 
 /* -------------------------------------------------------------------------- */
 
-DrvDb::DrvDb( const nix::flake::Fingerprint & fingerprint )
-  : _state( std::make_unique<nix::Sync<State>>() )
+
+static const char * setVersionInfo =
+  "INSERT OR IGNORE INTO VersionInfo ( id, version ) VALUES"
+  "  ( 'resolver', '" LIBFLOX_RESOLVE_VERSION "' )"
+  ", ( 'drvCacheSchema', '" FLOX_DRVDB_SCHEMA_VERSION "' )"
+;
+
+
+/* -------------------------------------------------------------------------- */
+
+/* Populate statement templates. */
+  static inline void
+initStatements( nix::Sync<DrvDb::State>::Lock & state )
 {
-  auto state( _state->lock() );
-
-  nix::Path cacheDir = nix::getCacheDir() + "/flox/drv-cache-v0";
-  nix::createDirs( cacheDir );
-
-  std::string fpStr = fingerprint.to_string( nix::Base16, false );
-
-  nix::Path dbPath = cacheDir + "/" + fpStr + ".sqlite";
-
-  /* Boilerplate DB init. */
-  state->db = nix::SQLite( dbPath );
-  state->db.isCache();
-  state->db.exec( schema );
-
-  /* Populate a few statement templates, and audit existing version and schema
-   * info on the off chance that there's already a DB with this fingerprint. */
   state->insertFingerprint.create(
     state->db
   , "INSERT OR IGNORE INTO Fingerprint VALUES ( ? )"
   );
-  state->insertFingerprint.use()( fpStr ).exec();
+
   state->queryFingerprint.create(
     state->db
   , "SELECT fingerprint FROM Fingerprint LIMIT 1"
   );
-  auto query0 = state->queryFingerprint.use();
-  if ( ! query0.next() )
-    {
-      throw ResolverException(
-        "DrvDb(): Failed to read fingerprint from database"
-      );
-    }
-  if ( query0.getStr( 0 ) != fpStr )
-    {
-      throw ResolverException(
-        "DrvDb(): Fingerprint mismatch in '" + fpStr + ".sqlite' reporting: "
-        + query0.getStr( 0 )
-      );
-    }
-
-  state->queryVersionInfo.create(
-    state->db
-  , "SELECT version FROM VersionInfo WHERE ( id = ? )"
-  );
-  auto query1 = state->queryVersionInfo.use()( "resolver" );
-  if ( ! query1.next() )
-    {
-      throw ResolverException(
-        "DrvDb(): Failed to read resolver version from from database"
-      );
-    }
-  if ( query1.getStr( 0 ) != "0.1.0" )  // TODO: make a var
-    {
-      throw ResolverException(
-        "DrvDb(): Resolver version mismatch in '" + fpStr + ".sqlite' "
-        "reporting: " + query1.getStr( 0 )
-      );
-    }
-
-  auto query2 = state->queryVersionInfo.use()( "drvCacheSchema" );
-  if ( ! query2.next() )
-    {
-      throw ResolverException(
-        "DrvDb(): Failed to read 'drvCacheSchema' from database"
-      );
-    }
-  if ( query2.getStr( 0 ) != "0.1.0" )  // TODO: make a var
-    {
-      throw ResolverException(
-        "DrvDb(): Schema version mismatch in '" + fpStr + ".sqlite' reporting: "
-        + query2.getStr( 0 )
-      );
-    }
-
-  /* Populate statement templates. */
 
   state->insertDrv.create(
     state->db
@@ -206,13 +148,129 @@ DrvDb::DrvDb( const nix::flake::Fingerprint & fingerprint )
   , "SELECT status FROM Progress WHERE ( subtree = ? ) AND ( system = ? )"
   );
 
-  /* Create a transaction handle.
-   * To be totally honest I copied this from Nix and I'm not 100% sure
-   * if this is creating a transaction for the life of this DB object; but
-   * if so that needs some attention in a few spots where we try to query
-   * `progress' in this instance.
-   * In either case not a hard thing to fix. */
+  state->queryVersionInfo.create(
+    state->db
+  , "SELECT version FROM VersionInfo WHERE ( id = ? )"
+  );
+
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+  static inline void
+auditVersions( nix::Sync<DrvDb::State>::Lock & state )
+{
+  auto query1 = state->queryVersionInfo.use()( "resolver" );
+  if ( ! query1.next() )
+    {
+      throw ResolverException(
+        "DrvDb(): Failed to read resolver version from from database"
+      );
+    }
+  if ( query1.getStr( 0 ) != LIBFLOX_RESOLVE_VERSION )
+    {
+      throw ResolverException(
+        "DrvDb(): Resolver version mismatch. have: " + query1.getStr( 0 ) +
+        ", want: " LIBFLOX_RESOLVE_VERSION
+      );
+    }
+
+  auto query2 = state->queryVersionInfo.use()( "drvCacheSchema" );
+  if ( ! query2.next() )
+    {
+      throw ResolverException(
+        "DrvDb(): Failed to read 'drvCacheSchema' from database"
+      );
+    }
+  if ( query2.getStr( 0 ) != FLOX_DRVDB_SCHEMA_VERSION )
+    {
+      throw ResolverException(
+        "DrvDb(): Schema version mismatch. have: " + query2.getStr( 0 ) +
+        ", want: " FLOX_DRVDB_SCHEMA_VERSION
+      );
+    }
+}
+
+
+  static inline void
+auditFingerprint( nix::Sync<DrvDb::State>::Lock & state
+                , std::string_view                fpStr
+                )
+{
+  auto query = state->queryFingerprint.use();
+  if ( ! query.next() )
+    {
+      throw ResolverException(
+        "DrvDb(): Failed to read fingerprint from database"
+      );
+    }
+  if ( query.getStr( 0 ) != fpStr )
+    {
+      throw ResolverException(
+        "DrvDb(): Fingerprint mismatch in '" + std::string( fpStr ) +
+        ".sqlite' reporting: " + query.getStr( 0 )
+      );
+    }
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+DrvDb::DrvDb( const nix::flake::Fingerprint & fingerprint )
+  : _state( std::make_unique<nix::Sync<State>>() )
+{
+  auto state( _state->lock() );
+
+  nix::Path cacheDir = nix::getCacheDir() + "/flox/drv-cache-v0";
+  nix::createDirs( cacheDir );
+
+  std::string fpStr = fingerprint.to_string( nix::Base16, false );
+
+  nix::Path dbPath = cacheDir + "/" + fpStr + ".sqlite";
+
+  /* Boilerplate DB init. */
+  state->db = nix::SQLite( dbPath );
+  state->db.exec( schema );
+  state->db.exec( setVersionInfo );
+
+  /* Populate statement templates, and audit existing version and schema info on
+   * the off chance that there's already a DB with this fingerprint. */
+  initStatements( state );
+  auditVersions( state );
+  state->insertFingerprint.use()( fpStr ).exec();
+  auditFingerprint( state, fpStr );
+
+  /* Disable sync and enable journals. */
+  state->db.isCache();
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+  void
+DrvDb::startCommit()
+{
+  auto state( this->_state->lock() );
+  /* Close existing commit if one is open. */
+  if ( state->txn != nullptr )
+    {
+      if ( ! failed ) { state->txn->commit(); }
+      state->txn.reset();
+    }
   state->txn = std::make_unique<nix::SQLiteTxn>( state->db );
+}
+
+  void
+DrvDb::endCommit()
+{
+  auto state( this->_state->lock() );
+  if ( state->txn != nullptr )
+    {
+      if ( ! failed ) { state->txn->commit(); }
+      state->txn.reset();
+      assert( state->txn == nullptr );
+    }
 }
 
 
@@ -220,16 +278,7 @@ DrvDb::DrvDb( const nix::flake::Fingerprint & fingerprint )
 
 DrvDb::~DrvDb()
 {
-  try
-    {
-      auto state( _state->lock() );
-      if ( ! failed ) { state->txn->commit(); }
-      state->txn.reset();
-    }
-  catch ( ... )
-    {
-      nix::ignoreException();
-    }
+  try { endCommit(); } catch ( ... ) { nix::ignoreException(); }
 }
 
 

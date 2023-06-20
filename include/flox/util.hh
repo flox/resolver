@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <cstdio>
 #include <nix/eval-inline.hh>
 #include <nix/eval.hh>
 #include <nix/eval-cache.hh>

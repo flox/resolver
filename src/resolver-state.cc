@@ -316,6 +316,7 @@ ResolverState::resolveInInput( std::string_view id, const Descriptor & desc )
           if ( dbps < DBPS_INFO_DONE )
             {
               /* Mark this prefix as being "in progress". */
+              cache.startCommit();
               cache.promoteProgress( subtree, system, DBPS_PARTIAL );
 
               for ( const nix::Symbol s : todos.front()->getAttrs() )
@@ -352,6 +353,7 @@ ResolverState::resolveInInput( std::string_view id, const Descriptor & desc )
                       // TODO: Catch errors in `packages'.
                     }
                 }
+              cache.endCommit();
             }
           else  /* If progress is past `DBPS_INFO_DONE' use cached info. */
             {

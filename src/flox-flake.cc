@@ -322,6 +322,7 @@ FloxFlake::derivationsDo( std::string_view subtree
   db.promoteProgress( subtree, system, DBPS_PARTIAL );
 
   /* For `packages' prefix we can just fill attrnames. */
+  db.startCommit();
   if ( stt == ST_PACKAGES )
     {
       const std::vector<std::string> parentRelPath;
@@ -371,12 +372,15 @@ FloxFlake::derivationsDo( std::string_view subtree
                   // TODO: Catch errors in `packages'.
                 }
             }
+          todos.pop();
         }
     }
   if ( doneStatus != DBPS_FORCE )
     {
       db.promoteProgress( subtree, system, doneStatus );
     }
+  db.endCommit();
+
   return doneStatus;
 }
 
@@ -537,11 +541,6 @@ FloxFlake::openCursorsByAttrPathGlob( const AttrPathGlob & path )
     }
   return rsl;
 }
-
-
-/* -------------------------------------------------------------------------- */
-
-
 
 
 /* -------------------------------------------------------------------------- */

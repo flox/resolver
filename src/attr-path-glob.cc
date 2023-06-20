@@ -17,12 +17,12 @@ namespace flox {
 
 /* -------------------------------------------------------------------------- */
 
-AttrPathGlob::AttrPathGlob( const attr_parts & path )
+AttrPathGlob::AttrPathGlob( const attr_parts & pp )
 {
-  for ( size_t i = 0; i < path.size(); ++i )
+  for ( size_t i = 0; i < pp.size(); ++i )
     {
-      if ( ( std::holds_alternative<std::nullptr_t>( path[i] ) ) ||
-           ( std::get<std::string>( path[i] ) == "{{system}}" )
+      if ( ( std::holds_alternative<std::nullptr_t>( pp[i] ) ) ||
+           ( std::get<std::string>( pp[i] ) == "{{system}}" )
          )
         {
           if ( i != 1 )
@@ -35,7 +35,7 @@ AttrPathGlob::AttrPathGlob( const attr_parts & path )
         }
       else
         {
-          this->path.push_back( path[i] );
+          this->path.push_back( pp[i] );
         }
     }
 }
@@ -44,10 +44,10 @@ AttrPathGlob::AttrPathGlob( const attr_parts & path )
 /* -------------------------------------------------------------------------- */
 
   AttrPathGlob
-AttrPathGlob::fromStrings( const std::vector<std::string> & path )
+AttrPathGlob::fromStrings( const std::vector<std::string> & pp )
 {
   AttrPathGlob ap;
-  for ( auto & p : path )
+  for ( auto & p : pp )
     {
       if ( p == "{{system}}" ) { ap.path.push_back( nullptr ); }
       else                     { ap.path.push_back( p ); }
@@ -56,10 +56,10 @@ AttrPathGlob::fromStrings( const std::vector<std::string> & path )
 }
 
   AttrPathGlob
-AttrPathGlob::fromStrings( const std::vector<std::string_view> & path )
+AttrPathGlob::fromStrings( const std::vector<std::string_view> & pp )
 {
   AttrPathGlob ap;
-  for ( auto & p : path )
+  for ( auto & p : pp )
     {
       if ( p == "{{system}}" ) { ap.path.push_back( nullptr ); }
       else                     { ap.path.push_back( std::string( p ) ); }
@@ -71,17 +71,17 @@ AttrPathGlob::fromStrings( const std::vector<std::string_view> & path )
 /* -------------------------------------------------------------------------- */
 
   AttrPathGlob
-AttrPathGlob::fromJSON( const nlohmann::json & path )
+AttrPathGlob::fromJSON( const nlohmann::json & pp )
 {
-  if ( ! path.is_array() )
+  if ( ! pp.is_array() )
     {
       throw ResolverException(
         "AttrPathGlobs must be constructed using an array, but argument "
-        "is of type '" + std::string( path.type_name() ) + "'"
+        "is of type '" + std::string( pp.type_name() ) + "'"
       );
     }
   AttrPathGlob ap;
-  for ( auto & p : path )
+  for ( auto & p : pp )
     {
       if ( p.is_null() )
         {

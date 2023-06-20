@@ -61,7 +61,7 @@ class DrvDb;
 
 typedef enum { ST_PACKAGES, ST_LEGACY, ST_CATALOG } subtree_type;
 
-  static subtree_type
+  static inline subtree_type
 parseSubtreeType( std::string_view subtree )
 {
   if ( subtree == "legacyPackages" ) { return ST_LEGACY;   }
@@ -89,14 +89,14 @@ typedef enum {
 
 struct AttrPathGlob {
 
-  attr_parts path;
+  attr_parts path = {};
 
-  static AttrPathGlob fromStrings( const std::vector<std::string>      & path );
-  static AttrPathGlob fromStrings( const std::vector<std::string_view> & path );
-  static AttrPathGlob fromJSON(    const nlohmann::json                & path );
+  static AttrPathGlob fromStrings( const std::vector<std::string>      & pp );
+  static AttrPathGlob fromStrings( const std::vector<std::string_view> & pp );
+  static AttrPathGlob fromJSON(    const nlohmann::json                & pp );
 
   AttrPathGlob() = default;
-  AttrPathGlob( const attr_parts & path );
+  AttrPathGlob( const attr_parts & pp );
 
   std::string    toString() const;
   nlohmann::json toJSON()   const;
@@ -266,7 +266,6 @@ class FloxFlake : public std::enable_shared_from_this<FloxFlake> {
     FloxFlakeRef getFlakeRef() const { return this->_flakeRef; }
 
     std::list<std::string>            getSystems()                      const;
-    std::list<std::list<std::string>> getDefaultFlakeAttrPaths()        const;
     std::list<std::list<std::string>> getDefaultFlakeAttrPathPrefixes() const;
     std::list<std::list<std::string>> getFlakeAttrPathPrefixes()        const;
 
@@ -343,8 +342,8 @@ class Resolved {
       : input( nix::FlakeRef::fromAttrs(
                  nix::fetchers::jsonToAttrs( attrs.at( "input" ) )
                ) )
-      , info( attrs.at( "info" ) )
       , path( AttrPathGlob::fromJSON( attrs.at( "path" ) ) )
+      , info( attrs.at( "info" ) )
     {}
 
     Resolved( const FloxFlakeRef   & input

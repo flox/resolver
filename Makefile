@@ -52,7 +52,7 @@ INCLUDEDIR ?= $(PREFIX)/include
 
 LIBFLOXRESOLVE = libflox-resolve$(libExt)
 
-BINS           =  resolver
+BINS           =  resolver list-pkgs
 LIBS           =  $(LIBFLOXRESOLVE)
 COMMON_HEADERS =  $(wildcard include/*.hh) $(wildcard include/flox/*.hh)
 TESTS          =  $(wildcard tests/*.cc)
@@ -157,6 +157,8 @@ bin/%: LDFLAGS  += $(bin_LDFLAGS)
 bin/%: LDFLAGS  += $(sqlite3_LDFLAGS) $(nix_LDFLAGS)
 bin/%: LDFLAGS  += $(floxresolve_LDFLAGS)
 bin/resolver: src/main.o lib/$(LIBFLOXRESOLVE)
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) "$<" -o "$@"
+bin/list-pkgs: src/main-list.o lib/$(LIBFLOXRESOLVE)
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) "$<" -o "$@"
 
 
