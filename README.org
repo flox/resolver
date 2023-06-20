@@ -24,37 +24,70 @@ $ ./bin/resolver -i '{"nixpkgs":"github:NixOS/nixpkgs"}' -d '{"name":"hello","ve
 [
   {
     "info": {
-      "names": {
-        "aarch64-darwin": "hello",
-        "aarch64-linux": "hello",
-        "x86_64-darwin": "hello",
-        "x86_64-linux": "hello"
+      "aarch64-darwin": {
+        "broken": false,
+        "license": "GPL-3.0-or-later",
+        "name": "hello-2.12.1",
+        "outputs": [
+          "out"
+        ],
+        "outputsToInstall": [
+          "out"
+        ],
+        "pname": "hello",
+        "semver": "2.12.1",
+        "unfree": false,
+        "version": "2.12.1"
       },
-      "semvers": {
-        "aarch64-darwin": "2.12.1",
-        "aarch64-linux": "2.12.1",
-        "x86_64-darwin": "2.12.1",
-        "x86_64-linux": "2.12.1"
+      "aarch64-linux": {
+        "broken": false,
+        "license": "GPL-3.0-or-later",
+        "name": "hello-2.12.1",
+        "outputs": [
+          "out"
+        ],
+        "outputsToInstall": [
+          "out"
+        ],
+        "pname": "hello",
+        "semver": "2.12.1",
+        "unfree": false,
+        "version": "2.12.1"
       },
-      "systems": [
-        "aarch64-darwin",
-        "x86_64-darwin",
-        "aarch64-linux",
-        "x86_64-linux"
-      ],
-      "versions": {
-        "aarch64-darwin": "2.12.1",
-        "aarch64-linux": "2.12.1",
-        "x86_64-darwin": "2.12.1",
-        "x86_64-linux": "2.12.1"
+      "x86_64-darwin": {
+        "broken": false,
+        "license": "GPL-3.0-or-later",
+        "name": "hello-2.12.1",
+        "outputs": [
+          "out"
+        ],
+        "outputsToInstall": [
+          "out"
+        ],
+        "pname": "hello",
+        "semver": "2.12.1",
+        "unfree": false,
+        "version": "2.12.1"
+      },
+      "x86_64-linux": {
+        "broken": false,
+        "license": "GPL-3.0-or-later",
+        "name": "hello-2.12.1",
+        "outputs": [
+          "out"
+        ],
+        "outputsToInstall": [
+          "out"
+        ],
+        "pname": "hello",
+        "semver": "2.12.1",
+        "unfree": false,
+        "version": "2.12.1"
       }
     },
     "input": {
-      "lastModified": 1686600087,
-      "narHash": "sha256-vvKp4tIiKxm9fXh+Ndi6o1KzSuVhscy48/w93YHVL2M=",
       "owner": "NixOS",
       "repo": "nixpkgs",
-      "rev": "80a3b4b7de2fa0570904c1e4bea7fda58be60c5d",
       "type": "github"
     },
     "path": [
@@ -62,7 +95,7 @@ $ ./bin/resolver -i '{"nixpkgs":"github:NixOS/nixpkgs"}' -d '{"name":"hello","ve
       null,
       "hello"
     ],
-    "uri": "github:NixOS/nixpkgs/80a3b4b7de2fa0570904c1e4bea7fda58be60c5d#legacyPackages.{{system}}.hello"
+    "uri": "github:NixOS/nixpkgs#legacyPackages.{{system}}.hello"
   }
 ]
 #+END_SRC

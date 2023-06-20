@@ -9,7 +9,7 @@ MAKEFILE_DIR ?= $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
 # ---------------------------------------------------------------------------- #
 
 .PHONY: all clean FORCE
-.DEFAULT_GOAL = all
+.DEFAULT_GOAL = bin
 
 
 # ---------------------------------------------------------------------------- #
