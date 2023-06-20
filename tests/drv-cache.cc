@@ -8,6 +8,7 @@
 #include <iostream>
 #include "resolve.hh"
 #include "flox/drv-cache.hh"
+#include "flox/util.hh"
 
 
 /* -------------------------------------------------------------------------- */
@@ -74,7 +75,7 @@ test_getDrvInfos1()
   /* While I don't like hard coding this, we explicitly want to ensure we aren't
    * off by one and dropping the "first" or "last" query result.
    * Because we are using a pinned flake this shouldn't be a real issue. */
-  return infos.size() == 46535;
+  return infos.size() == 64037;
 }
 
 

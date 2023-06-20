@@ -72,55 +72,6 @@ void to_json(         nlohmann::json & j, const Descriptor & p );
 
 /* -------------------------------------------------------------------------- */
 
-class DescriptorFunctor {
-  private:
-          nix::ref<nix::EvalState>   state;
-    const Preferences              * prefs;
-    const Descriptor               * desc;
-          PkgPredicate               prefsPredicate = defaultPkgPredicate;
-
-  public:
-    // TODO: make private
-    std::unordered_map<AttrPathGlob, Resolved> results;
-
-    DescriptorFunctor( nix::ref<nix::EvalState> & state
-                     , const Preferences        & prefs
-                     , const Descriptor         & desc
-                     )
-      : state( state )
-      , prefs( & prefs )
-      , desc( & desc )
-      , prefsPredicate( prefs.pred() )
-    {}
-
-    /* std::vector<std::pair<Cursor, std::vector<nix::Symbol>>> */
-    std::vector<CursorPos> getRoots(
-      std::string_view                         inputId
-    , std::shared_ptr<nix::flake::LockedFlake> flake
-    );
-
-    bool shouldRecur(       Cursor                     pos
-                    , const std::vector<nix::Symbol> & path
-                    );
-    bool packagePredicate(       Cursor                     pos
-                         , const std::vector<nix::Symbol> & path
-                         );
-
-    void addResult( const FloxFlakeRef                & ref
-                  , const std::vector<nix::SymbolStr> & path
-                  ,       std::string_view              name
-                  ,       std::string_view              version
-                  );
-
-    void visit( const FloxFlakeRef             & ref
-              ,       Cursor                     cur
-              , const std::vector<nix::Symbol> & attrPath
-              );
-};
-
-
-/* -------------------------------------------------------------------------- */
-
   }  /* End Namespace `flox::resolve' */
 }  /* End Namespace `flox' */
 

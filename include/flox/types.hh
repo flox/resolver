@@ -23,14 +23,6 @@
 #include <queue>
 #include <any>
 
-/* In `nix' 2.14.0 they moved some class declarations around, so this
- * selects the correct header so that we can refer to `InstallableFlake'. */
-#ifdef HAVE_INSTALLABLE_FLAKE
-#  include <nix/installable-flake.hh>
-#else
-#  include <nix/installables.hh>
-#endif
-
 
 /* -------------------------------------------------------------------------- */
 
@@ -69,7 +61,7 @@ class DrvDb;
 
 typedef enum { ST_PACKAGES, ST_LEGACY, ST_CATALOG } subtree_type;
 
-  static subtree_type
+  static inline subtree_type
 parseSubtreeType( std::string_view subtree )
 {
   if ( subtree == "legacyPackages" ) { return ST_LEGACY;   }
@@ -97,14 +89,14 @@ typedef enum {
 
 struct AttrPathGlob {
 
-  attr_parts path;
+  attr_parts path = {};
 
-  static AttrPathGlob fromStrings( const std::vector<std::string>      & path );
-  static AttrPathGlob fromStrings( const std::vector<std::string_view> & path );
-  static AttrPathGlob fromJSON(    const nlohmann::json                & path );
+  static AttrPathGlob fromStrings( const std::vector<std::string>      & pp );
+  static AttrPathGlob fromStrings( const std::vector<std::string_view> & pp );
+  static AttrPathGlob fromJSON(    const nlohmann::json                & pp );
 
   AttrPathGlob() = default;
-  AttrPathGlob( const attr_parts & path );
+  AttrPathGlob( const attr_parts & pp );
 
   std::string    toString() const;
   nlohmann::json toJSON()   const;
@@ -118,6 +110,8 @@ struct AttrPathGlob {
 
   bool globEq(     const AttrPathGlob & other ) const;
   bool operator==( const AttrPathGlob & other ) const;
+
+  size_t size() const { return this->path.size(); }
 
 };
 
@@ -149,22 +143,6 @@ void to_json(         nlohmann::json & j, const Inputs & i );
 
 /* -------------------------------------------------------------------------- */
 
-using PkgPredicate = std::function<bool(
-                             Cursor
-                     , const std::vector<nix::Symbol> &
-                     )>;
-
-  static bool
-defaultPkgPredicate(       Cursor                     pos
-                   , const std::vector<nix::Symbol> & path
-                   )
-{
-  return true;
-}
-
-
-/* -------------------------------------------------------------------------- */
-
 static const std::vector<std::string> defaultCatalogStabilities = {
   "stable", "staging", "unstable"
 };
@@ -192,7 +170,6 @@ struct Preferences {
 
   nlohmann::json toJSON() const;
 
-  PkgPredicate                       pred()    const;
   flox::resolve::predicates::PkgPred pred_V2() const;
 
   int compareInputs(
@@ -289,7 +266,6 @@ class FloxFlake : public std::enable_shared_from_this<FloxFlake> {
     FloxFlakeRef getFlakeRef() const { return this->_flakeRef; }
 
     std::list<std::string>            getSystems()                      const;
-    std::list<std::list<std::string>> getDefaultFlakeAttrPaths()        const;
     std::list<std::list<std::string>> getDefaultFlakeAttrPathPrefixes() const;
     std::list<std::list<std::string>> getFlakeAttrPathPrefixes()        const;
 
@@ -298,13 +274,21 @@ class FloxFlake : public std::enable_shared_from_this<FloxFlake> {
 
     /* Like `findAttrAlongPath' but without suggestions.
      * Note that each invocation opens the `EvalCache', so use sparingly. */
-    Cursor      openCursor(      const std::vector<nix::Symbol> & path );
-    MaybeCursor maybeOpenCursor( const std::vector<nix::Symbol> & path );
+    Cursor      openCursor(      const std::vector<nix::Symbol>    & path );
+    Cursor      openCursor(      const std::vector<nix::SymbolStr> & path );
+    Cursor      openCursor(      const std::vector<std::string>    & path );
+    MaybeCursor maybeOpenCursor( const std::vector<nix::Symbol>    & path );
+    MaybeCursor maybeOpenCursor( const std::vector<nix::SymbolStr> & path );
+    MaybeCursor maybeOpenCursor( const std::vector<std::string>    & path );
 
     /* Opens `EvalCache' once, staying open until all cursors die. */
     std::list<Cursor> getFlakePrefixCursors();
 
     std::list<std::vector<std::string>> getActualFlakeAttrPathPrefixes();
+
+    /* Try opening cursors from an absolute or relative path with globs.
+     * Glob is only accepted for `system'. */
+    std::list<Cursor> openCursorsByAttrPathGlob( const AttrPathGlob & path );
 
     /* Populate this flake's `DrvDb' with paths for all derivations under the
      * given prefix.
@@ -348,21 +332,43 @@ class FloxFlake : public std::enable_shared_from_this<FloxFlake> {
 
 class Resolved {
   private:
-    std::string  uri;
     FloxFlakeRef input;
 
   public:
     AttrPathGlob   path;
     nlohmann::json info;
 
-    Resolved( const nlohmann::json & attrs );
+    Resolved( const nlohmann::json & attrs )
+      : input( nix::FlakeRef::fromAttrs(
+                 nix::fetchers::jsonToAttrs( attrs.at( "input" ) )
+               ) )
+      , path( AttrPathGlob::fromJSON( attrs.at( "path" ) ) )
+      , info( attrs.at( "info" ) )
+    {}
+
     Resolved( const FloxFlakeRef   & input
             , const AttrPathGlob   & path
             , const nlohmann::json & info
-            );
+            )
+      : input( input ), path( path ), info( info )
+    {}
 
-    nlohmann::json toJSON()   const;
-    std::string    toString() const { return this->uri; }
+      std::string
+    toString() const
+    {
+      return this->input.to_string() + "#" + this->path.toString();
+    }
+
+      nlohmann::json
+    toJSON() const
+    {
+      return {
+        { "input", nix::fetchers::attrsToJSON( this->input.toAttrs() ) }
+      , { "uri",   this->toString() }
+      , { "info",  this->info }
+      , { "path",  this->path.toJSON() }
+      };
+    }
 };
 
 

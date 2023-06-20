@@ -15,6 +15,11 @@
 
 /* -------------------------------------------------------------------------- */
 
+#define FLOX_DRVDB_SCHEMA_VERSION  "0.1.0"
+
+
+/* -------------------------------------------------------------------------- */
+
 namespace flox {
   namespace resolve {
 
@@ -125,6 +130,7 @@ class DrvDb {
   private:
     std::atomic_bool failed { false };
 
+  public:
     struct State {
       nix::SQLite                     db;
       nix::SQLiteStmt                 insertDrv;
@@ -141,20 +147,25 @@ class DrvDb {
       std::unique_ptr<nix::SQLiteTxn> txn;
     };
 
+  private:
     std::unique_ptr<nix::Sync<State>> _state;
 
   public:
 
     DrvDb( const nix::flake::Fingerprint & fingerprint );
     ~DrvDb();
-    template<typename F> uint64_t doSQLite( F && fun );
-    uint64_t setDrv( const Package & p );
-    uint64_t setDrvInfo( const Package & p );
 
-    uint64_t setDrv( std::string_view                 subtree
-                   , std::string_view                 system
-                   , const std::vector<std::string> & path
-                   );
+    void startCommit();
+    void endCommit();
+
+    template<typename F> uint64_t doSQLite( F && fun );
+    void setDrv( const Package & p );
+    void setDrvInfo( const Package & p );
+
+    void setDrv(       std::string_view           subtree
+               ,       std::string_view           system
+               , const std::vector<std::string> & path
+               );
 
     std::optional<bool> hasDrv(       std::string_view           subtree
                               ,       std::string_view           system

@@ -106,9 +106,11 @@ main( int argc, char * argv[], char ** envp )
   /* TODO: make an option */
   nix::verbosity = nix::lvlError;
 
+  ResolverState rs( inputs, prefs );
+
   if ( one )
     {
-      std::optional<Resolved> rsl = resolveOne( inputs, prefs, desc );
+      std::optional<Resolved> rsl = resolveOne_V2( rs, desc );
       if ( ! rsl.has_value() )
         {
           std::cout << "null" << std::endl;
@@ -122,12 +124,13 @@ main( int argc, char * argv[], char ** envp )
     }
   else
     {
-      std::vector<Resolved> rsl = resolve( inputs, prefs, desc );
+      std::list<Resolved> rsl = resolve_V2( rs, desc );
       std::cout << nlohmann::json( rsl ).dump() << std::endl;
-      return quiet ? EXIT_SUCCESS : EXIT_FAILURE;
+      return ( quiet || ( ! rsl.empty() ) ) ? EXIT_SUCCESS : EXIT_FAILURE;
     }
 
-  return EXIT_SUCCESS;
+  /* Unreachable */
+  return EXIT_FAILURE;
 }
 
 

@@ -60,6 +60,8 @@ EvalPackage::init( bool checkDrv )
 
   this->_system = this->_pathS[1];
 
+  // TODO: typecheck these attrs
+
   MaybeCursor c = this->_cursor->maybeGetAttr( "meta" );
   this->_hasMetaAttr = c != nullptr;
 
@@ -70,10 +72,15 @@ EvalPackage::init( bool checkDrv )
   c = this->_cursor->maybeGetAttr( "version" );
   if ( c != nullptr )
     {
-      this->_hasPnameAttr = true;
-      std::string v = c->getString();
-      if ( v.empty() )   { v = this->_dname.version; }
-      if ( ! v.empty() ) { this->_semver = coerceSemver( v ); }
+      std::string v;
+      try
+        {
+          v = c->getString();
+          this->_hasVersionAttr = true;
+        }
+      catch( ... ) {}
+      if ( v.empty() ) { v = this->_dname.version; }
+      else             { this->_semver = coerceSemver( v ); }
     }
   else if ( ! this->_dname.version.empty() )
     {
@@ -208,7 +215,14 @@ EvalPackage::getLicense() const
   if ( ! this->_hasMetaAttr ) { return std::nullopt; }
   MaybeCursor l = this->_cursor->getAttr( "meta" )->maybeGetAttr( "license" );
   if ( l == nullptr ) { return std::nullopt; }
-  return l->getAttr( "spdxId" )->getString();
+  try
+    {
+      return l->getAttr( "spdxId" )->getString();
+    }
+  catch( ... )
+    {
+      return std::nullopt;
+    }
 }
 
 

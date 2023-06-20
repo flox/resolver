@@ -52,7 +52,7 @@ INCLUDEDIR ?= $(PREFIX)/include
 
 LIBFLOXRESOLVE = libflox-resolve$(libExt)
 
-BINS           =  resolver
+BINS           =  resolver list-pkgs
 LIBS           =  $(LIBFLOXRESOLVE)
 COMMON_HEADERS =  $(wildcard include/*.hh) $(wildcard include/flox/*.hh)
 TESTS          =  $(wildcard tests/*.cc)
@@ -105,17 +105,6 @@ bin_CXXFLAGS += $(argparse_CFLAGS)
 
 # ---------------------------------------------------------------------------- #
 
-HAVE_INSTALLABLE_FLAKE =                                                   \
-	$(shell $(TEST) -r $(nix_INCDIR)/nix/installable-flake.hh && echo 1||:)
-ifeq (,$(HAVE_INSTALLABLE_FLAKE))
-  CXXFLAGS += -UHAVE_INSTALLABLE_FLAKE
-else
-	CXXFLAGS += -DHAVE_INSTALLABLE_FLAKE='$(HAVE_INSTALLABLE_FLAKE)'
-endif
-
-
-# ---------------------------------------------------------------------------- #
-
 SEMVER_PATH ?=                                                        \
   $(shell $(NIX) build --no-link --print-out-paths                    \
 	                     'github:aakropotkin/floco#semver')/bin/semver
@@ -124,11 +113,12 @@ CXXFLAGS += -DSEMVER_PATH='$(SEMVER_PATH)'
 
 # ---------------------------------------------------------------------------- #
 
-.PHONY: bin lib include
+.PHONY: bin lib include tests
 
-bin: $(addprefix bin/,$(BINS))
-lib: $(addprefix lib/,$(LIBS))
+bin:     $(addprefix bin/,$(BINS))
+lib:     $(addprefix lib/,$(LIBS))
 include: $(addprefix include/,$(COMMON_HEADERS))
+tests:   $(TESTS:.cc=)
 
 
 # ---------------------------------------------------------------------------- #
@@ -139,7 +129,7 @@ clean: FORCE
 	-$(RM) src/*.o
 	-$(RM) result
 	-$(RM) -r $(PREFIX)
-	-$(RM) tests/$(TESTS:.cc=)
+	-$(RM) $(TESTS:.cc=)
 
 
 # ---------------------------------------------------------------------------- #
@@ -169,6 +159,8 @@ bin/%: LDFLAGS  += $(sqlite3_LDFLAGS) $(nix_LDFLAGS)
 bin/%: LDFLAGS  += $(floxresolve_LDFLAGS)
 bin/resolver: src/main.o lib/$(LIBFLOXRESOLVE)
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) "$<" -o "$@"
+bin/list-pkgs: src/main-list.o lib/$(LIBFLOXRESOLVE)
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) "$<" -o "$@"
 
 
 # ---------------------------------------------------------------------------- #
@@ -195,7 +187,7 @@ install-include: $(addprefix $(INCLUDEDIR)/,$(COMMON_HEADERS))
 
 # ---------------------------------------------------------------------------- #
 
-.PHONY: tests check
+.PHONY: check
 
 tests/%: CXXFLAGS += $(sqlite3_CFLAGS) $(nljson_CFLAGS)
 tests/%: CXXFLAGS += $(nix_CFLAGS) $(nljson_CFLAGS) $(bin_CXXFLAGS)

@@ -37,6 +37,8 @@ ResolverState::ResolverState(
 )
 : _prefs( prefs )
 {
+  /* Increase the default stack size. This aligns with `nix' new CLI usage. */
+  nix::setStackSize( 64 * 1024 * 1024 );
   nix::initNix();
   nix::initGC();
   // TODO: make this an option. It risks making cross-system eval impossible.
@@ -314,6 +316,7 @@ ResolverState::resolveInInput( std::string_view id, const Descriptor & desc )
           if ( dbps < DBPS_INFO_DONE )
             {
               /* Mark this prefix as being "in progress". */
+              cache.startCommit();
               cache.promoteProgress( subtree, system, DBPS_PARTIAL );
 
               for ( const nix::Symbol s : todos.front()->getAttrs() )
@@ -350,6 +353,7 @@ ResolverState::resolveInInput( std::string_view id, const Descriptor & desc )
                       // TODO: Catch errors in `packages'.
                     }
                 }
+              cache.endCommit();
             }
           else  /* If progress is past `DBPS_INFO_DONE' use cached info. */
             {
@@ -401,8 +405,29 @@ ResolverState::resolveInInput( std::string_view id, const Descriptor & desc )
       goods.pop();
     }
 
-  // TODO: Merge results by glob path
-  // TODO: Sort results by version and depth.
+  mergeResolvedByAttrPathGlob( results );
+
+  /* TODO: Sort by version. This is tricky because of systems. */
+  auto sortResults = []( const Resolved & a, const Resolved & b )
+  {
+    if ( a.path.size() != b.path.size() )
+      {
+        return a.path.size() <= b.path.size();
+      }
+    /* Break ties lexicographically. */
+    for ( size_t i = 0; i < a.path.size(); ++i )
+      {
+        if ( i == 1 ) { continue; }  /* Skip system. */
+        if ( a.path.path[i] != b.path.path[i] )
+          {
+            return std::get<std::string>( a.path.path[a.path.size() - 1] ) <=
+                   std::get<std::string>( b.path.path[b.path.size() - 1] );
+          }
+      }
+    return true;
+  };
+
+  results.sort( sortResults );
 
   return results;
 }
