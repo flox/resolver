@@ -144,11 +144,7 @@ or short-name.
 ** TODO
 - [ ] Read Inputs from =flake.lock= and =registry.json=.
 - [ ] Parse descriptor strings.
-- [ ] Optimize with supplemental database.
-- [ ] Optimize resolution by =path=.
-- [ ] More sensible =info= structure.
 - [ ] Additional tests.
-- [ ] Drop unused routines.
 - [ ] Multi-threading.
 - [ ] Disable =builtins.trace= warnings.
 - [ ] Consider how =packages.*.default= is handled.
