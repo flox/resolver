@@ -111,7 +111,7 @@ packages down to a satisfactory set.
 The simplest for of descriptor is likely a package name, or an attribute
 path to a package.
 This resolver features a number of additional filters which may be used to
-describe pacakges.
+describe packages.
 
 *** Fields
 
