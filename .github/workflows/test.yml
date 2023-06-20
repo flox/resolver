@@ -72,7 +72,7 @@ jobs:
           set -eu;
           set -o pipefail;
           rev="e8039594435c68eb4f780f3e9bf3972a7399c4b1"
-          ./bin/list-pkgs -i "github:NixOS/nixpkgs/$rev"|jq length;
+          ./bin/list-pkgs -i "github:NixOS/nixpkgs/$rev" -j|jq length;
 
       - name: Build Tests
         run: nix develop --no-update-lock-file --command make tests -j4
