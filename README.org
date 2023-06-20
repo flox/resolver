@@ -141,7 +141,7 @@ or short-name.
 #+END_SRC
 
 
-** TODO
+** TODOs
 - [ ] Read Inputs from =flake.lock= and =registry.json=.
 - [ ] Parse descriptor strings.
 - [ ] Additional tests.
