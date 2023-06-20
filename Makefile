@@ -113,11 +113,12 @@ CXXFLAGS += -DSEMVER_PATH='$(SEMVER_PATH)'
 
 # ---------------------------------------------------------------------------- #
 
-.PHONY: bin lib include
+.PHONY: bin lib include tests
 
-bin: $(addprefix bin/,$(BINS))
-lib: $(addprefix lib/,$(LIBS))
+bin:     $(addprefix bin/,$(BINS))
+lib:     $(addprefix lib/,$(LIBS))
 include: $(addprefix include/,$(COMMON_HEADERS))
+tests:   $(TESTS:.cc=)
 
 
 # ---------------------------------------------------------------------------- #
@@ -128,7 +129,7 @@ clean: FORCE
 	-$(RM) src/*.o
 	-$(RM) result
 	-$(RM) -r $(PREFIX)
-	-$(RM) tests/$(TESTS:.cc=)
+	-$(RM) $(TESTS:.cc=)
 
 
 # ---------------------------------------------------------------------------- #
@@ -186,7 +187,7 @@ install-include: $(addprefix $(INCLUDEDIR)/,$(COMMON_HEADERS))
 
 # ---------------------------------------------------------------------------- #
 
-.PHONY: tests check
+.PHONY: check
 
 tests/%: CXXFLAGS += $(sqlite3_CFLAGS) $(nljson_CFLAGS)
 tests/%: CXXFLAGS += $(nix_CFLAGS) $(nljson_CFLAGS) $(bin_CXXFLAGS)
