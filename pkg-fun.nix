@@ -20,7 +20,6 @@
     filter = name: type: let
       bname   = baseNameOf name;
       ignores = [
-        "flox-resolve"
         "default.nix"
         "pkg-fun.nix"
         "flake.nix"
@@ -36,7 +35,10 @@
       notIgnored = ! ( builtins.elem bname ignores );
       notObject  = ( builtins.match ".*\\.o" name ) == null;
       notResult  = ( builtins.match "result(-*)?" bname ) == null;
-    in notIgnored && notObject && notResult;
+      isSrc      = ( builtins.match ".*\\.cc" name ) != null;
+    in notIgnored && notObject && notResult && (
+      ( ( dirOf name ) == "tests" ) -> isSrc
+    );
   };
   libExt            = stdenv.hostPlatform.extensions.sharedLibrary;
   nativeBuildInputs = [pkg-config];
@@ -57,6 +59,9 @@
     fi
     runHook postConfigure;
   '';
+  # Checks require internet
+  doCheck        = false;
+  doInstallCheck = false;
 }
 
 
