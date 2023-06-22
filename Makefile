@@ -52,12 +52,12 @@ INCLUDEDIR ?= $(PREFIX)/include
 
 LIBFLOXRESOLVE = libflox-resolve$(libExt)
 
-BINS           =  resolver list-pkgs
+BINS           =  resolver list-pkgs lock-inputs
 LIBS           =  $(LIBFLOXRESOLVE)
 COMMON_HEADERS =  $(wildcard include/*.hh) $(wildcard include/flox/*.hh)
 TESTS          =  $(wildcard tests/*.cc)
 SRCS           =  $(wildcard src/*.cc)
-bin_SRCS       =  src/main.cc
+bin_SRCS       =  src/main.cc src/lock-inputs.cc src/main-list.cc
 lib_SRCS       =  $(filter-out $(bin_SRCS), $(SRCS))
 
 
@@ -160,6 +160,8 @@ bin/%: LDFLAGS  += $(floxresolve_LDFLAGS)
 bin/resolver: src/main.o lib/$(LIBFLOXRESOLVE)
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) "$<" -o "$@"
 bin/list-pkgs: src/main-list.o lib/$(LIBFLOXRESOLVE)
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) "$<" -o "$@"
+bin/lock-inputs: src/lock-inputs.o lib/$(LIBFLOXRESOLVE)
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) "$<" -o "$@"
 
 
