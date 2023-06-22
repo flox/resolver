@@ -1,6 +1,8 @@
 /* ========================================================================== *
  *
- * Lock inputs
+ * Lock inputs command.
+ * This largely exists to serve as an example for using the `nix' arg parser
+ * without registering commands or using `main' from `<nix>src/nix/main.cc'.
  *
  * -------------------------------------------------------------------------- */
 
@@ -153,7 +155,7 @@ mainWrapped( int argc, char * argv[] )
   int
 main( int argc, char * argv[], char ** envp )
 {
-  return nix::handleExceptions( argv[0], [&]() { mainWrapped(argc, argv); } );
+  return nix::handleExceptions( argv[0], [&]() { mainWrapped( argc, argv ); } );
   return EXIT_SUCCESS;
 }
 

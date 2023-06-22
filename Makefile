@@ -52,13 +52,13 @@ INCLUDEDIR ?= $(PREFIX)/include
 
 LIBFLOXRESOLVE = libflox-resolve$(libExt)
 
-BINS           =  resolver list-pkgs lock-inputs
-LIBS           =  $(LIBFLOXRESOLVE)
-COMMON_HEADERS =  $(wildcard include/*.hh) $(wildcard include/flox/*.hh)
-TESTS          =  $(wildcard tests/*.cc)
-SRCS           =  $(wildcard src/*.cc)
-bin_SRCS       =  src/main.cc src/lock-inputs.cc src/main-list.cc
-lib_SRCS       =  $(filter-out $(bin_SRCS), $(SRCS))
+LIBS           = $(LIBFLOXRESOLVE)
+COMMON_HEADERS = $(wildcard include/*.hh) $(wildcard include/flox/*.hh)
+TESTS          = $(wildcard tests/*.cc)
+SRCS           = $(wildcard src/*.cc)
+bin_SRCS       = $(filter src/main%.cc, $(SRCS))
+lib_SRCS       = $(filter-out $(bin_SRCS),$(SRCS))
+BINS           = $(patsubst src/main-%.cc,%,$(bin_SRCS))
 
 
 # ---------------------------------------------------------------------------- #
@@ -75,6 +75,9 @@ ifneq ($(DEBUG),)
 	CXXFLAGS += -ggdb3 -pg
 	LDFLAGS  += -ggdb3 -pg
 endif
+
+
+# ---------------------------------------------------------------------------- #
 
 nljson_CFLAGS   =  $(shell $(PKG_CONFIG) --cflags nlohmann_json)
 argparse_CFLAGS =  $(shell $(PKG_CONFIG) --cflags argparse)
@@ -100,7 +103,15 @@ endif
 
 # ---------------------------------------------------------------------------- #
 
+lib_CXXFLAGS += $(sqlite3_CFLAGS)
 bin_CXXFLAGS += $(argparse_CFLAGS)
+CXXFLAGS     += $(nix_CFLAGS) $(nljson_CFLAGS)
+
+lib_LDFLAGS += -Wl,--as-needed
+lib_LDFLAGS += $(nix_LDFLAGS) $(sqlite3_LDFLAGS)
+lib_LDFLAGS += -Wl,--no-as-needed
+
+bin_LDFLAGS += $(nix_LDFLAGS) $(floxresolve_LDFLAGS)
 
 
 # ---------------------------------------------------------------------------- #
@@ -117,7 +128,7 @@ CXXFLAGS += -DSEMVER_PATH='$(SEMVER_PATH)'
 
 bin:     $(addprefix bin/,$(BINS))
 lib:     $(addprefix lib/,$(LIBS))
-include: $(addprefix include/,$(COMMON_HEADERS))
+include: $(COMMON_HEADERS)
 tests:   $(TESTS:.cc=)
 
 
@@ -126,10 +137,11 @@ tests:   $(TESTS:.cc=)
 clean: FORCE
 	-$(RM) $(addprefix bin/,$(BINS))
 	-$(RM) $(addprefix lib/,$(LIBS))
-	-$(RM) src/*.o
+	-$(RM) src/*.o tests/*.o
 	-$(RM) result
 	-$(RM) -r $(PREFIX)
 	-$(RM) $(TESTS:.cc=)
+	-$(RM) gmon.out *.log
 
 
 # ---------------------------------------------------------------------------- #
@@ -137,31 +149,20 @@ clean: FORCE
 %.o: %.cc $(COMMON_HEADERS)
 	$(CXX) $(CXXFLAGS) -c "$<" -o "$@"
 
-$(info $(lib_SRCS:.cc=.o))
 
-
-lib/$(LIBFLOXRESOLVE): CXXFLAGS += $(lib_CXXFLAGS) $(nix_CFLAGS)
-lib/$(LIBFLOXRESOLVE): CXXFLAGS += $(nljson_CFLAGS) $(sqlite3_CFLAGS)
+lib/$(LIBFLOXRESOLVE): CXXFLAGS += $(lib_CXXFLAGS)
 lib/$(LIBFLOXRESOLVE): LDFLAGS  += $(lib_LDFLAGS)
-lib/$(LIBFLOXRESOLVE): LDFLAGS  += -Wl,--as-needed
-lib/$(LIBFLOXRESOLVE): LDFLAGS  += $(nix_LDFLAGS) $(sqlite3_LDFLAGS)
-lib/$(LIBFLOXRESOLVE): LDFLAGS  += -Wl,--no-as-needed
 lib/$(LIBFLOXRESOLVE): $(lib_SRCS:.cc=.o)
+	$(MKDIR_P) $(@D)
 	$(CXX) $^ $(LDFLAGS) -o "$@"
 
 
 # ---------------------------------------------------------------------------- #
 
 bin/%: CXXFLAGS += $(bin_CXXFLAGS)
-bin/%: CXXFLAGS += $(sqlite3_CFLAGS) $(nljson_CFLAGS) $(nix_CFLAGS)
 bin/%: LDFLAGS  += $(bin_LDFLAGS)
-bin/%: LDFLAGS  += $(sqlite3_LDFLAGS) $(nix_LDFLAGS)
-bin/%: LDFLAGS  += $(floxresolve_LDFLAGS)
-bin/resolver: src/main.o lib/$(LIBFLOXRESOLVE)
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) "$<" -o "$@"
-bin/list-pkgs: src/main-list.o lib/$(LIBFLOXRESOLVE)
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) "$<" -o "$@"
-bin/lock-inputs: src/lock-inputs.o lib/$(LIBFLOXRESOLVE)
+$(addprefix bin/,$(BINS)): bin/%: src/main-%.o lib/$(LIBFLOXRESOLVE)
+	$(MKDIR_P) $(@D)
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) "$<" -o "$@"
 
 
@@ -184,7 +185,8 @@ $(BINDIR)/%: bin/% | install-dirs
 
 install-bin: $(addprefix $(BINDIR)/,$(BINS))
 install-lib: $(addprefix $(LIBDIR)/,$(LIBS))
-install-include: $(addprefix $(INCLUDEDIR)/,$(COMMON_HEADERS))
+install-include:                                                    \
+	$(addprefix $(INCLUDEDIR)/,$(subst include/,,$(COMMON_HEADERS)))
 
 
 # ---------------------------------------------------------------------------- #

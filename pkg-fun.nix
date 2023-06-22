@@ -52,6 +52,9 @@
   configurePhase = ''
     runHook preConfigure;
     export PREFIX="$out";
+    if [[ "''${enableParallelBuilding:-1}" = 1 ]]; then
+      makeFlagsArray+=( '-j4' );
+    fi
     runHook postConfigure;
   '';
 }
