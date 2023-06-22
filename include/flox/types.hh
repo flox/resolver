@@ -81,9 +81,11 @@ typedef enum {
 , DBPS_PATHS_DONE = 2 /* Indicates that we know all derivation paths. */
 , DBPS_INFO_DONE  = 3 /* Indicates that we have collected info metadata. */
 , DBPS_EMPTY      = 4 /* Indicates that a prefix has no values. */
-, DBPS_FORCE      = 5 /* This should always have highest value. */
+, DBPS_MISSING    = 5 /* Indicates that a DB is completely fresh. */
+, DBPS_FORCE      = 6 /* This should always have highest value. */
 }  progress_status;
 
+std::string_view progressStatusToString( const progress_status & ps );
 
 /* -------------------------------------------------------------------------- */
 

@@ -141,6 +141,7 @@ class DrvDb {
       nix::SQLiteStmt                 queryDrvInfos;
       nix::SQLiteStmt                 insertProgress;
       nix::SQLiteStmt                 queryProgress;
+      nix::SQLiteStmt                 queryProgresses;
       nix::SQLiteStmt                 insertFingerprint;
       nix::SQLiteStmt                 queryFingerprint;
       nix::SQLiteStmt                 queryVersionInfo;
@@ -206,6 +207,11 @@ class DrvDb {
                                    , std::string_view system
                                    , progress_status  status
                                    );
+  std::unordered_map<std::string
+                    , std::unordered_map<std::string
+                                        , progress_status
+                                        >
+                    >                                     getProgresses();
 
 };  /* End class `DrvDb' */
 

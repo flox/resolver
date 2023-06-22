@@ -96,29 +96,20 @@ class CmdGetProgress : public virtual nix::Args
         + ".sqlite";
       if ( ! std::filesystem::exists( dbName) )
         {
-          nix::logger->cout( "MISSING" );
+          nix::logger->cout( "NO DB" );
           return;
         }
       DrvDb db( flake->getLockedFlake()->getFingerprint() );
-      nix::SQLiteStmt stmt( db.getDbState()->db, "SELECT * FROM Progress" );
-      auto query = stmt.use();
-      while ( query.next() )
+      for ( auto & [subtree, subs] : db.getProgresses() )
         {
-          std::string status;
-          switch ( query.getInt( 2 ) )
+          for ( auto & [system, status] : std::move( subs ) )
             {
-              case DBPS_NONE:       status = "NONE";       break;
-              case DBPS_PARTIAL:    status = "PARTIAL";    break;
-              case DBPS_PATHS_DONE: status = "PATHS_DONE"; break;
-              case DBPS_INFO_DONE:  status = "INFO_DONE";  break;
-              case DBPS_EMPTY:      status = "EMPTY";      break;
-              default:              status = "ERROR";      break;
+              nix::logger->cout( "%s.%s %s"
+                               , subtree
+                               , std::move( system )
+                               , progressStatusToString( std::move( status ) )
+                               );
             }
-          nix::logger->cout( "%s.%s %s"
-                           , query.getStr( 0 )
-                           , query.getStr( 1 )
-                           , status
-                           );
         }
     }
 
