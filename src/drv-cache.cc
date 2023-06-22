@@ -314,7 +314,8 @@ DrvDb::setDrv(       std::string_view           subtree
              )
 {
   nlohmann::json relPath = path;
-  doSQLite( [&]() {
+  doSQLite( [&]()
+  {
     auto state( this->_state->lock() );
     state->insertDrv.use()( subtree )( system )( relPath.dump() ).exec();
     uint64_t rowId = state->db.getLastInsertedRowId();
@@ -678,6 +679,15 @@ CachedPackage::CachedPackage( const nlohmann::json & drvInfo )
   this->_pathS.push_back( drvInfo["subtree"] );
   this->_pathS.push_back( drvInfo["system"] );
   for ( auto & p : drvInfo["path"] ) { this->_pathS.push_back( p ); }
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+  nix::Sync<DrvDb::State>::Lock
+DrvDb::getDbState()
+{
+  return this->_state->lock();
 }
 
 

@@ -158,6 +158,8 @@ class DrvDb {
     void startCommit();
     void endCommit();
 
+    nix::Sync<DrvDb::State>::Lock getDbState();
+
     template<typename F> uint64_t doSQLite( F && fun );
     void setDrv( const Package & p );
     void setDrvInfo( const Package & p );
