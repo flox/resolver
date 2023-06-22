@@ -46,14 +46,14 @@ ResolverState::ResolverState(
   nix::evalSettings.pureEval.setDefault( true );
   nix::evalSettings.useEvalCache.setDefault( true );
 
-  for ( auto & [id, ref] : inputs.inputs )
+  for ( auto & id : inputs.getInputNames() )
     {
 #if HAVE_BOEHMGC
       this->_inputs.emplace( id, std::allocate_shared<FloxFlake>(
         traceable_allocator<FloxFlake>()
       , this->getEvalState()
       , id
-      , ref
+      , inputs.get( id )
       , this->_prefs
       , systems
       ) );
@@ -141,15 +141,12 @@ ResolverState::getSymbolTable()
 
 /* -------------------------------------------------------------------------- */
 
-  std::list<std::string>
+  std::list<std::string_view>
 ResolverState::getInputNames() const
 {
-  std::list<std::string> names;
-  for ( const auto & [id, flake] : this->_inputs )
-    {
-      names.push_back( id );
-    }
-  return names;
+  std::list<std::string_view> rsl;
+  for ( const auto & [id, _] : this->_inputs ) { rsl.push_back( id ); }
+  return rsl;
 }
 
 

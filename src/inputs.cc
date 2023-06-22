@@ -73,6 +73,18 @@ Inputs::toJSON() const
 
 /* -------------------------------------------------------------------------- */
 
+  std::list<std::string_view>
+Inputs::getInputNames() const
+{
+  std::list<std::string_view> rsl;
+  for ( const auto & [id, _] : this->inputs ) { rsl.push_back( id ); }
+  return rsl;
+}
+
+
+
+/* -------------------------------------------------------------------------- */
+
   void
 from_json( const nlohmann::json & j, Inputs & i )
 {

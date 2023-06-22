@@ -98,12 +98,15 @@ class CmdInputsLock : virtual nix::EvalCommand, public virtual nix::Args
           } );
         }
 
-      for ( const auto & [_id, _input] : this->_inputs->inputs )
+      for ( auto & id : this->_inputs->getInputNames() )
         {
           nix::flake::LockedFlake lockedFlake =
-            nix::flake::lockFlake( * state, _input, floxFlakeLockFlags );
+            nix::flake::lockFlake( * state
+                                 , this->_inputs->get( id )
+                                 , floxFlakeLockFlags
+                                 );
           rsl.emplace(
-            _id
+            id
           , nix::fetchers::attrsToJSON( lockedFlake.flake.lockedRef.toAttrs() )
           );
         }

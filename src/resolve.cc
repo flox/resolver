@@ -49,7 +49,7 @@ resolve_V2( ResolverState & rs, const Descriptor    & desc, bool one )
       return rs.resolveInInput( desc.inputId.value(), desc );
     }
   std::list<Resolved> results;
-  for ( std::string & id : rs.getInputNames() )
+  for ( const std::string_view & id : rs.getInputNames() )
     {
       results.splice( results.end(), rs.resolveInInput( id, desc ) );
       if ( one && ( ! results.empty() ) )

@@ -123,10 +123,11 @@ void to_json(         nlohmann::json & j, const AttrPathGlob & path );
 
 class Inputs {
   private:
+    std::unordered_map<std::string, FloxFlakeRef> inputs;
+
     void init( const nlohmann::json & j );
 
   public:
-    std::unordered_map<std::string, FloxFlakeRef> inputs;
 
     Inputs() = default;
     Inputs( const nlohmann::json & j ) { this->init( j ); }
@@ -134,6 +135,8 @@ class Inputs {
     bool           has( std::string_view id ) const;
     FloxFlakeRef   get( std::string_view id ) const;
     nlohmann::json toJSON()                   const;
+
+    std::list<std::string_view> getInputNames() const;
 };
 
 
@@ -401,7 +404,7 @@ class ResolverState {
     Preferences getPreferences() const { return this->_prefs; }
 
     std::map<std::string, nix::ref<FloxFlake>> getInputs() const;
-    std::list<std::string>                     getInputNames() const;
+    std::list<std::string_view>                getInputNames() const;
 
     std::optional<nix::ref<FloxFlake>> getInput( std::string_view id ) const;
 
