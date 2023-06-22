@@ -100,9 +100,7 @@ class CmdGetProgress : public virtual nix::Args
           return;
         }
       DrvDb db( flake->getLockedFlake()->getFingerprint() );
-      auto state( db.getDbState() );
-      nix::SQLiteStmt stmt;
-      stmt.create( state->db, "SELECT * FROM Progress" );
+      nix::SQLiteStmt stmt( db.getDbState()->db, "SELECT * FROM Progress" );
       auto query = stmt.use();
       while ( query.next() )
         {
