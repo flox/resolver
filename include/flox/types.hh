@@ -97,8 +97,13 @@ struct AttrPathGlob {
   static AttrPathGlob fromStrings( const std::vector<std::string_view> & pp );
   static AttrPathGlob fromJSON(    const nlohmann::json                & pp );
 
-  AttrPathGlob() = default;
-  AttrPathGlob( const attr_parts & pp );
+  AttrPathGlob()                        = default;
+  AttrPathGlob( const AttrPathGlob &  ) = default;
+  AttrPathGlob(       AttrPathGlob && ) = default;
+  AttrPathGlob( const attr_parts &  pp );
+  AttrPathGlob(       attr_parts && pp );
+
+  AttrPathGlob & operator=( const AttrPathGlob & ) = default;
 
   std::string    toString() const;
   nlohmann::json toJSON()   const;

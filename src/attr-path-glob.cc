@@ -19,7 +19,8 @@ namespace flox {
 
 AttrPathGlob::AttrPathGlob( const attr_parts & pp )
 {
-  for ( size_t i = 0; i < pp.size(); ++i )
+  size_t s = pp.size();
+  for ( size_t i = 0; i < s; ++i )
     {
       if ( ( std::holds_alternative<std::nullptr_t>( pp[i] ) ) ||
            ( std::get<std::string>( pp[i] ) == "{{system}}" )
@@ -31,13 +32,42 @@ AttrPathGlob::AttrPathGlob( const attr_parts & pp )
                 "Resolved `path' may only contain `null' as its second member."
               );
             }
-          this->path.push_back( nullptr );
+          this->path.emplace_back( nullptr );
         }
       else
         {
-          this->path.push_back( pp[i] );
+          this->path.emplace_back( pp[i] );
         }
     }
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+AttrPathGlob::AttrPathGlob( attr_parts && pp )
+{
+  size_t s = pp.size();
+  bool nsys = false;
+  for ( size_t i = 0; i < s; ++i )
+    {
+      if ( ( std::holds_alternative<std::nullptr_t>( pp[i] ) ) ||
+           ( std::get<std::string>( pp[i] ) == "{{system}}" )
+         )
+        {
+          if ( i == 1 )
+            {
+              nsys = true;
+            }
+          else
+            {
+              throw ResolverException(
+                "Resolved `path' may only contain `null' as its second member."
+              );
+            }
+        }
+    }
+  this->path = std::move( pp );
+  if ( nsys ) { this->path[1] = nullptr; }
 }
 
 
