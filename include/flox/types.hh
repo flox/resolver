@@ -282,8 +282,10 @@ class FloxFlake : public std::enable_shared_from_this<FloxFlake> {
     std::shared_ptr<nix::flake::LockedFlake> getLockedFlake();
     nix::ref<nix::eval_cache::EvalCache>     openEvalCache();
 
-    /* Like `findAttrAlongPath' but without suggestions.
-     * Note that each invocation opens the `EvalCache', so use sparingly. */
+    /**
+     * Like `findAttrAlongPath' but without suggestions.
+     * Note that each invocation opens the `EvalCache', so use sparingly.
+     */
     Cursor      openCursor(      const std::vector<nix::Symbol>    & path );
     Cursor      openCursor(      const std::vector<nix::SymbolStr> & path );
     Cursor      openCursor(      const std::vector<std::string>    & path );
@@ -291,42 +293,58 @@ class FloxFlake : public std::enable_shared_from_this<FloxFlake> {
     MaybeCursor maybeOpenCursor( const std::vector<nix::SymbolStr> & path );
     MaybeCursor maybeOpenCursor( const std::vector<std::string>    & path );
 
-    /* Opens `EvalCache' once, staying open until all cursors die. */
+    /** Opens `EvalCache' once, staying open until all cursors die. */
     std::list<Cursor> getFlakePrefixCursors();
 
     std::list<std::vector<std::string>> getActualFlakeAttrPathPrefixes();
 
-    /* Try opening cursors from an absolute or relative path with globs.
-     * Glob is only accepted for `system'. */
+    /**
+     * Try opening cursors from an absolute or relative path with globs.
+     * Glob is only accepted for `system'.
+     */
     std::list<Cursor> openCursorsByAttrPathGlob( const AttrPathGlob & path );
 
-    /* Populate this flake's `DrvDb' with paths for all derivations under the
+    /**
+     * Determine which output prefixes exist in this flake, ignoring
+     * `preferences' and mark them in the `DrvDb'.
+     * This allows optimized lookups in later attempts to resolve against the
+     * same flake with different preferences.
+     */
+    void recordPrefixes( bool force = false /** Do not optimize out eval. */ );
+
+    /**
+     * Populate this flake's `DrvDb' with paths for all derivations under the
      * given prefix.
      * This does NOT populate "info" fields, it only records paths to
      * all derivations.
      * This routine is significantly more lightweight than ones focused on
      * scraping "info" fields making it suitable for quickly resolving
-     * absolute and relative path descriptors. */
+     * absolute and relative path descriptors.
+     */
     progress_status populateDerivations( std::string_view subtree
                                        , std::string_view system
                                        );
 
-    /* Apply a function to all derivations with access to an `AttrCursor'.
+    /**
+     * Apply a function to all derivations with access to an `AttrCursor'.
      * `nonDrvOp' allows you to control recursive descent into additional
-     * subtrees by appending the `todos' argument passed to `cursor_op'. */
+     * subtrees by appending the `todos' argument passed to `cursor_op'.
+     */
     progress_status derivationsDo(
       std::string_view subtree
     , std::string_view system
-    , progress_status  doneStatus  /* Use `DBPS_FORCE' to avoid skipping. */
+    , progress_status  doneStatus  /** Use `DBPS_FORCE' to avoid skipping. */
     , derivation_op    drvOp
     , cursor_op        nonDrvOp   = handleRecurseForDerivations
     );
 
-    /* Apply a function to all `Packages' under a prefix.
+    /**
+     * Apply a function to all `Packages' under a prefix.
      * This abstracts lookups in caches vs. eval, and will implicitly populate
      * missing cache members unless `allowCache' disables this behavior.
      * Arbitrary auxilary data can be accessed within `op' by the `aux'
-     * argument ( optional ). */
+     * argument ( optional ).
+     */
     void packagesDo(
       std::string_view                                         subtree
     , std::string_view                                         system

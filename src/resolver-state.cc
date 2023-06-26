@@ -208,6 +208,7 @@ ResolverState::resolveInInput( std::string_view id, const Descriptor & desc )
   std::shared_ptr<FloxFlake> flake = this->_inputs.at( _id );
 
   /* Handle `absAttrPath' */
+  // TODO: use caches here
   if ( desc.absAttrPath.has_value() )
     {
       if ( desc.absAttrPath.value().hasGlob() )

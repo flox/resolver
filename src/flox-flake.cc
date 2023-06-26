@@ -263,17 +263,155 @@ FloxFlake::getFlakePrefixCursors()
   std::list<std::vector<std::string>>
 FloxFlake::getActualFlakeAttrPathPrefixes()
 {
+  this->recordPrefixes();
+  DrvDb db( this->getLockedFlake()->getFingerprint() );
   std::list<std::vector<std::string>> rsl;
-  for ( const Cursor c : this->getFlakePrefixCursors() )
+
+  for ( std::list<std::string> & prefix : this->getFlakeAttrPathPrefixes() )
     {
-      std::vector<std::string> path;
-      for ( const nix::Symbol & s : c->getAttrPath() )
+      std::string subtree = std::move( prefix.front() );
+      prefix.pop_front();
+      std::string system  = std::move( prefix.front() );
+      prefix.pop_front();
+      progress_status status = db.getProgress( subtree, system );
+      switch ( status )
         {
-          path.push_back( this->_state->symbols[s] );
+          case DBPS_EMPTY:   continue; break;
+          case DBPS_MISSING: continue; break;
+          case DBPS_NONE:
+            throw ResolverException(
+              "FloxFlake::getActualFlakeAttrPathPrefixes(): Failed to read "
+              "progress from DrvDb."
+            );
+            break;
+          case DBPS_INFO_DONE:
+          case DBPS_PATHS_DONE:
+            /* Handle stabilities */
+            if ( prefix.empty() )
+              {
+                std::vector<std::string> path = {
+                  std::move( subtree ), std::move( system )
+                };
+                rsl.push_back( std::move( path ) );
+              }
+            else
+              {
+                std::string stability = std::move( prefix.front() );
+                prefix.pop_front();
+                auto state = db.getDbState();
+                nix::SQLiteStmt stmt;
+                stmt.create( state->db
+                , "SELECT COUNT( subtree ) FROM Derivations WHERE "
+                  "( subtree = ? ) AND ( system = ? ) AND ( path LIKE ? )"
+                );
+                std::string like( "[\"" + stability + "\",%" );
+                nix::SQLiteStmt::Use query =
+                  stmt.use()( subtree )( system )( like );
+                assert( query.next() );
+                if ( query.getInt( 0 ) != 0 )
+                  {
+                    std::vector<std::string> path = {
+                      std::move( subtree )
+                    , std::move( system )
+                    , std::move( stability )
+                    };
+                    rsl.push_back( std::move( path ) );
+                  }
+              }
+            break;
+
+          default:
+            /* Handle stabilities */
+            if ( prefix.empty() )
+              {
+                std::vector<std::string> path = {
+                  std::move( subtree ), std::move( system )
+                };
+                rsl.push_back( std::move( path ) );
+              }
+            else
+              {
+                std::vector<std::string> path = {
+                  std::move( subtree )
+                , std::move( system )
+                , std::move( prefix.front() )
+                };
+                prefix.pop_front();
+                if ( this->maybeOpenCursor( path ) != nullptr )
+                  {
+                    rsl.push_back( std::move( path ) );
+                  }
+              }
+            break;
         }
-      rsl.push_back( std::move( path ) );
     }
+
   return rsl;
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+  void
+FloxFlake::recordPrefixes( bool force )
+{
+  DrvDb db( this->getLockedFlake()->getFingerprint() );
+
+  /* Skip if they're already recorded. */
+  if ( ! force )
+    {
+      size_t dones = 0;
+      for ( const auto & [_, subs] : db.getProgresses() )
+        {
+          dones += subs.size();
+        }
+      if ( ( defaultAttrPathPrefixes.size() * defaultSystems.size() ) <= dones )
+        {
+          return;
+        }
+    }
+
+  nix::ref<nix::eval_cache::EvalCache> cache = this->openEvalCache();
+  Cursor      root      = cache->getRoot();
+  MaybeCursor subtree   = nullptr;
+  MaybeCursor system    = nullptr;
+
+  auto hasContent = []( MaybeCursor & c )
+  {
+    if ( ( c == nullptr ) ) { return false; }
+    try { if ( 0 < c->getAttrs().size() ) { return true; } } catch( ... ) {}
+    return false;
+  };
+
+  for ( const auto & st : defaultAttrPathPrefixes )
+    {
+      subtree = root->maybeGetAttr( st );
+      if ( subtree == nullptr )
+        {
+          for ( const auto & sys : defaultSystems )
+            {
+              db.setProgress( st, sys, DBPS_MISSING );
+            }
+        }
+      else
+        {
+          for ( const auto & sys : defaultSystems )
+            {
+              MaybeCursor system = subtree->maybeGetAttr( sys );
+              if ( hasContent( system ) )
+                {
+                  db.promoteProgress( st, sys, DBPS_PARTIAL );
+                }
+              else
+                {
+                  db.setProgress( st, sys, DBPS_EMPTY );
+                }
+              system.reset();
+            }
+        }
+      subtree.reset();
+    }
+  db.endCommit();
 }
 
 
@@ -300,8 +438,8 @@ FloxFlake::derivationsDo( std::string_view subtree
   /* If there is no such prefix mark it as empty and bail. */
   if ( mc == nullptr )
     {
-      db.promoteProgress( subtree, system, DBPS_EMPTY );
-      return DBPS_EMPTY;
+      db.promoteProgress( subtree, system, DBPS_MISSING );
+      return DBPS_MISSING;
     }
 
   subtree_type stt = parseSubtreeType( subtree );
@@ -320,6 +458,7 @@ FloxFlake::derivationsDo( std::string_view subtree
   ) { nonDrvOp( stt, system, todos, parentRelPath, attrName, cur ); };
 
   db.promoteProgress( subtree, system, DBPS_PARTIAL );
+  bool hasContent = false;
 
   /* For `packages' prefix we can just fill attrnames. */
   db.startCommit();
@@ -333,6 +472,7 @@ FloxFlake::derivationsDo( std::string_view subtree
                   , (std::string_view) this->_state->symbols[a]
                   , mc->getAttr( a )
                   );
+          hasContent = true;
         }
     }
   else
@@ -349,6 +489,7 @@ FloxFlake::derivationsDo( std::string_view subtree
             }
           for ( const nix::Symbol s : todos.front()->getAttrs() )
             {
+              hasContent = true;
               try
                 {
                   Cursor c = todos.front()->getAttr( s );
@@ -375,9 +516,20 @@ FloxFlake::derivationsDo( std::string_view subtree
           todos.pop();
         }
     }
-  if ( doneStatus != DBPS_FORCE )
+  if ( hasContent )
     {
-      db.promoteProgress( subtree, system, doneStatus );
+      if ( doneStatus != DBPS_FORCE )
+        {
+          db.promoteProgress( subtree, system, doneStatus );
+        }
+      else
+        {
+          db.promoteProgress( subtree, system, DBPS_PARTIAL );
+        }
+    }
+  else
+    {
+      db.setProgress( subtree, system, DBPS_EMPTY );
     }
   db.endCommit();
 

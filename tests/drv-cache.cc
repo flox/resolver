@@ -151,6 +151,21 @@ test_CachedPackageFromInfo1()
 
 
 /* -------------------------------------------------------------------------- */
+  bool
+test_FloxFlake_getActualFlakeAttrPathPrefixes1()
+{
+  Inputs        inputs( (nlohmann::json) { { "nixpkgs", nixpkgsRef } } );
+  Preferences   prefs;
+  ResolverState rs( inputs, prefs );
+  std::optional<nix::ref<FloxFlake>>  mf       = rs.getInput( "nixpkgs" );
+  nix::ref<FloxFlake>                 flake    = mf.value();
+  std::list<std::vector<std::string>> prefixes =
+    flake->getActualFlakeAttrPathPrefixes();
+  return prefixes.size() == defaultSystems.size();
+}
+
+
+/* -------------------------------------------------------------------------- */
 
 #define RUN_TEST( _NAME )                                              \
   try                                                                  \
@@ -176,11 +191,15 @@ main( int argc, char * argv[], char ** envp )
   int ec = EXIT_SUCCESS;
 
   /* Ensure that database is initialized */
-  Inputs        inputs( (nlohmann::json) { { "nixpkgs", nixpkgsRef } } );
-  Preferences   prefs;
-  ResolverState rs( inputs, prefs );
-  Descriptor    desc( (nlohmann::json) { { "name", "hello" } } );
-  rs.resolveInInput( "nixpkgs", desc );
+  {
+    Inputs        inputs( (nlohmann::json) { { "nixpkgs", nixpkgsRef } } );
+    Preferences   prefs;
+    ResolverState rs( inputs, prefs );
+    Descriptor    desc( (nlohmann::json) { { "name", "hello" } } );
+
+    rs.resolveInInput( "nixpkgs", desc );
+
+  }
 
   RUN_TEST( getProgress1 );
   RUN_TEST( getDrvInfo1 );
@@ -188,6 +207,9 @@ main( int argc, char * argv[], char ** envp )
   RUN_TEST( CachedPackageFromDb1 );
   RUN_TEST( CachedPackageFromDb2 );
   RUN_TEST( CachedPackageFromInfo1 );
+  //RUN_TEST( FloxFlake_getActualFlakeAttrPathPrefixes1 );
+
+  nix::verbosity = nix::lvlInfo;
 
   return ec;
 }
