@@ -207,7 +207,7 @@ main( int argc, char * argv[], char ** envp )
   RUN_TEST( CachedPackageFromDb1 );
   RUN_TEST( CachedPackageFromDb2 );
   RUN_TEST( CachedPackageFromInfo1 );
-  //RUN_TEST( FloxFlake_getActualFlakeAttrPathPrefixes1 );
+  RUN_TEST( FloxFlake_getActualFlakeAttrPathPrefixes1 );
 
   nix::verbosity = nix::lvlInfo;
 
