@@ -391,14 +391,18 @@ DrvDb::hasDrv(       std::string_view           subtree
 {
   progress_status s = this->getProgress( subtree, system );
   if ( s < DBPS_PARTIAL ) { return std::nullopt; }
-  nlohmann::json relPath = path;
-  auto state( this->getDbState() );
-  nix::SQLiteStmt::Use query =
-    state->hasDrv.use()( subtree )( system )( relPath.dump() );
-  assert( query.next() );
-  if ( query.getInt( 0 ) != 0 )    { return true; }
-  else if ( DBPS_PATHS_DONE <= s ) { return false; }
-  return std::nullopt;  /* Inconclusive */
+  nlohmann::json relPath  = path;
+  std::optional<bool> rsl = std::nullopt;
+  this->doSQLite( [&]() {
+    auto state( this->getDbState() );
+    nix::SQLiteStmt::Use query =
+      state->hasDrv.use()( subtree )( system )( relPath.dump() );
+    assert( query.next() );
+    if ( query.getInt( 0 ) != 0 )    { rsl = true; }
+    else if ( DBPS_PATHS_DONE <= s ) { rsl = false; }
+    return 0;
+  } );
+  return rsl;  /* Inconclusive */
 }
 
 
@@ -414,12 +418,15 @@ DrvDb::getDrvPaths( std::string_view subtree, std::string_view system )
       return std::nullopt;
     }
   std::list<std::vector<std::string>> rsl;
-  auto state( this->getDbState() );
-  auto query = state->queryDrvs.use()( subtree )( system );
-  while ( query.next() )
-    {
-      rsl.push_back( nlohmann::json::parse( query.getStr( 2 ) ) );
-    }
+  this->doSQLite( [&]() {
+    auto state( this->getDbState() );
+    auto query = state->queryDrvs.use()( subtree )( system );
+    while ( query.next() )
+      {
+        rsl.push_back( nlohmann::json::parse( query.getStr( 2 ) ) );
+      }
+    return 0;
+  } );
   return rsl;
 }
 
@@ -439,7 +446,7 @@ DrvDb::setDrvInfo( const Package & p )
   nlohmann::json outputs          = p.getOutputs();
   nlohmann::json outputsToInstall = p.getOutputsToInstall();
 
-  doSQLite( [&]() {
+  this->doSQLite( [&]() {
     auto state( this->getDbState() );
     state->insertDrv.use()( path[0] )( path[1] )( relPath.dump() ).exec();
     uint64_t rowId = state->db.getLastInsertedRowId();
@@ -545,12 +552,17 @@ DrvDb::getDrvInfo(       std::string_view           subtree
                  , const std::vector<std::string> & path
                  )
 {
-  nlohmann::json relPath = path;
-  auto state( this->getDbState() );
-  nix::SQLiteStmt::Use query =
-    state->queryDrvInfo.use()( subtree )( system )( relPath.dump() );
-  if ( ! query.next() ) { return std::nullopt; }
-  return infoFromQuery( query );
+  nlohmann::json relPath            = path;
+  std::optional<nlohmann::json> rsl = std::nullopt;
+  this->doSQLite( [&]() {
+    auto state( this->getDbState() );
+    nix::SQLiteStmt::Use query =
+      state->queryDrvInfo.use()( subtree )( system )( relPath.dump() );
+    if ( ! query.next() ) { rsl = std::nullopt;           }
+    else                  { rsl = infoFromQuery( query ); }
+    return 0;
+  } );
+  return rsl;
 }
 
 
@@ -560,9 +572,12 @@ DrvDb::getDrvInfo(       std::string_view           subtree
 DrvDb::getDrvInfos( std::string_view subtree, std::string_view system )
 {
   std::list<nlohmann::json> rsl;
-  auto state( this->getDbState() );
-  auto query = state->queryDrvInfos.use()( subtree )( system );
-  while ( query.next() ) { rsl.push_back( infoFromQuery( query ) ); }
+  this->doSQLite( [&]() {
+    auto state( this->getDbState() );
+    auto query = state->queryDrvInfos.use()( subtree )( system );
+    while ( query.next() ) { rsl.push_back( infoFromQuery( query ) ); }
+    return 0;
+  } );
   return rsl;
 }
 
@@ -572,10 +587,12 @@ DrvDb::getDrvInfos( std::string_view subtree, std::string_view system )
   progress_status
 DrvDb::getProgress( std::string_view subtree, std::string_view system )
 {
-  auto state( this->getDbState() );
-  auto query = state->queryProgress.use()( subtree )( system );
-  if ( ! query.next() ) { return DBPS_NONE; }
-  return (progress_status) query.getInt( 0 );
+  return (progress_status) this->doSQLite( [&]() {
+    auto state( this->getDbState() );
+    auto query = state->queryProgress.use()( subtree )( system );
+    if ( ! query.next() ) { return (uint64_t) DBPS_NONE; }
+    return (uint64_t) query.getInt( 0 );
+  } );
 }
 
 
@@ -588,11 +605,11 @@ DrvDb::setProgress( std::string_view subtree
                   )
 {
   if ( status == DBPS_FORCE ) { return DBPS_FORCE; }
-  auto state( this->getDbState() );
-  auto query = state->queryProgress.use()( subtree )( system );
   progress_status old = DBPS_NONE;
-  if ( query.next() ) { old = (progress_status) query.getInt( 0 ); }
-  doSQLite( [&](){
+  this->doSQLite( [&]() {
+    auto state( this->getDbState() );
+    auto query = state->queryProgress.use()( subtree )( system );
+    if ( query.next() ) { old = (progress_status) query.getInt( 0 ); }
     state->insertProgress.use()( subtree )( system )( (int) status ).exec();
     uint64_t rowId = state->db.getLastInsertedRowId();
     assert( rowId != 0 );
@@ -611,12 +628,12 @@ DrvDb::promoteProgress( std::string_view subtree
                       )
 {
   if ( status == DBPS_FORCE ) { return DBPS_FORCE; }
-  auto state( this->getDbState() );
-  auto query = state->queryProgress.use()( subtree )( system );
   progress_status old = DBPS_NONE;
-  if ( query.next() ) { old = (progress_status) query.getInt( 0 ); }
-  if ( status <= old ) { return old; }
-  doSQLite( [&](){
+  this->doSQLite( [&]() {
+    auto state( this->getDbState() );
+    auto query = state->queryProgress.use()( subtree )( system );
+    if ( query.next() ) { old = (progress_status) query.getInt( 0 ); }
+    if ( status <= old ) { return (uint64_t) 0; }
     state->insertProgress.use()( subtree )( system )( (int) status ).exec();
     uint64_t rowId = state->db.getLastInsertedRowId();
     assert( rowId != 0 );
@@ -718,8 +735,6 @@ CachedPackage::CachedPackage( const nlohmann::json & drvInfo )
                     >
 DrvDb::getProgresses()
 {
-  auto state( this->getDbState() );
-  auto query = state->queryProgresses.use();
   std::unordered_map<std::string
                     , std::unordered_map<std::string
                                         , progress_status
@@ -739,13 +754,18 @@ DrvDb::getProgresses()
           prev->second.insert( std::move( e.extract( e.begin() ) ) );
         }
     };
-  while ( query.next() )
-    {
-      insert( query.getStr( 0 )
-            , query.getStr( 1 )
-            , (progress_status) query.getInt( 2 )
-            );
-    }
+  this->doSQLite( [&]() {
+    auto state( this->getDbState() );
+    auto query = state->queryProgresses.use();
+    while ( query.next() )
+      {
+        insert( query.getStr( 0 )
+              , query.getStr( 1 )
+              , (progress_status) query.getInt( 2 )
+              );
+      }
+    return 0;
+  } );
   return rsl;
 }
 

@@ -100,7 +100,7 @@ class RawPackageSet : public PackageSet {
      auto it = p._pathS.cbegin();
      it += ( p.getSubtreeType() == resolve::ST_CATALOG ) ? 3 : 2;
      for ( ; it != p._pathS.cend(); ++it ) { relPath.push_back( * it ); }
-     this->_pkgs.emplace( relPath, p );
+     this->_pkgs.emplace( std::move( relPath ), p );
    }
 
       iterator
