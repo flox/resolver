@@ -76,6 +76,27 @@ std::list<Resolved> & mergeResolvedByAttrPathGlob( std::list<Resolved> & lst );
 }    /* End namespace `flox' */
 
 
+/* -------------------------------------------------------------------------- */
+
+/* Required for `RawPackageSet' */
+template<>
+struct std::hash<std::list<std::string_view>>
+{
+    std::size_t
+  operator()( const std::list<std::string_view> & lst ) const noexcept
+  {
+    if ( lst.empty() ) { return 0; }
+    auto it = lst.begin();
+    std::size_t h1 = std::hash<std::string_view>{}( * it );
+    for ( ; it != lst.cend(); ++it )
+      {
+        h1 = ( h1 >> 1 ) ^ ( std::hash<std::string_view>{}( *it ) << 1 );
+      }
+    return h1;
+  }
+};
+
+
 /* -------------------------------------------------------------------------- *
  *
  *

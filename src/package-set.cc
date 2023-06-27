@@ -6,26 +6,7 @@
 
 #include "flox/package-set.hh"
 #include "flox/drv-cache.hh"
-
-
-/* -------------------------------------------------------------------------- */
-
-template<>
-struct std::hash<std::list<std::string_view>>
-{
-    std::size_t
-  operator()( const std::list<std::string_view> & lst ) const noexcept
-  {
-    if ( lst.empty() ) { return 0; }
-    auto it = lst.begin();
-    std::size_t h1 = std::hash<std::string_view>{}( * it );
-    for ( ; it != lst.cend(); ++it )
-      {
-        h1 = ( h1 >> 1 ) ^ ( std::hash<std::string_view>{}( *it ) << 1 );
-      }
-    return h1;
-  }
-};
+#include "flox/util.hh"
 
 
 /* -------------------------------------------------------------------------- */
