@@ -97,9 +97,9 @@ class PackageSet {
       using iterator_category = std::forward_iterator_tag;
       using value_type        =
         typename std::conditional<IS_CONST, const Package, Package>::type;
-      using different_type    = std::ptrdiff_t;
-      using pointer           = std::shared_ptr<value_type>;
-      using reference         = nix::ref<value_type>;
+      using different_type = std::ptrdiff_t;
+      using pointer        = std::shared_ptr<value_type>;
+      using reference      = nix::ref<value_type>;
 
       explicit iterator_impl() = default;
       explicit iterator_impl( std::function<pointer()> next )
@@ -136,7 +136,12 @@ class PackageSet {
         return lhs._ptr != rhs._ptr;
       }
 
-      iterator_impl & operator++() { this->_ptr = this->_next(); return * this; }
+        iterator_impl &
+      operator++()
+      {
+        this->_ptr = this->_next();
+        return * this;
+      }
 
         iterator_impl
       operator++( int )
