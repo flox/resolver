@@ -92,7 +92,7 @@ class PackageSet {
     using iterator       = iterator_impl<false>;
     using const_iterator = iterator_impl<true>;
 
-      template<bool IS_CONST>
+    template<bool IS_CONST>
     struct iterator_impl {
       using iterator_category = std::forward_iterator_tag;
       using value_type        =

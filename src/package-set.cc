@@ -10,6 +10,26 @@
 
 /* -------------------------------------------------------------------------- */
 
+template<>
+struct std::hash<std::list<std::string_view>>
+{
+    std::size_t
+  operator()( const std::list<std::string_view> & lst ) const noexcept
+  {
+    if ( lst.empty() ) { return 0; }
+    auto it = lst.begin();
+    std::size_t h1 = std::hash<std::string_view>{}( * it );
+    for ( ; it != lst.cend(); ++it )
+      {
+        h1 = ( h1 >> 1 ) ^ ( std::hash<std::string_view>{}( *it ) << 1 );
+      }
+    return h1;
+  }
+};
+
+
+/* -------------------------------------------------------------------------- */
+
 namespace flox {
   namespace resolve {
 
@@ -42,11 +62,11 @@ to_string( const FlakeRefWithPath & rp )
 class RawPackageSet : public PackageSet {
 
   protected:
-    std::list<CachedPackage>   _pkgs;
-    subtree_type               _subtree;
-    std::string                _system;
-    std::optional<std::string> _stability;
-    FloxFlakeRef               _ref;
+    std::unordered_map<std::list<std::string_view>, CachedPackage> _pkgs;
+    subtree_type                                                   _subtree;
+    std::string                                                    _system;
+    std::optional<std::string>                                     _stability;
+    FloxFlakeRef                                                   _ref;
 
   public:
     std::string_view getType()    const override { return "raw";          }
@@ -69,58 +89,78 @@ class RawPackageSet : public PackageSet {
       bool
     hasRelPath( const std::list<std::string_view> & path ) override
     {
-      // TODO
-      return false;
+      return this->_pkgs.find( path ) != this->_pkgs.cend();
     }
 
       std::shared_ptr<Package>
     maybeGetRelPath( const std::list<std::string_view> & path ) override
     {
-      // TODO
-      return nullptr;
+      auto search = this->_pkgs.find( path );
+      if ( search == this->_pkgs.cend() )
+        {
+          return nullptr;
+        }
+      else
+        {
+          return std::shared_ptr<Package>( (Package *) & search->second );
+        }
+    }
+
+      nix::ref<Package>
+    getRelPath( const std::list<std::string_view> & path ) override
+    {
+      return nix::ref<Package>( & this->_pkgs.at( path ) );
     }
 
       iterator
     begin() override
     {
-      std::list<CachedPackage>::iterator it = this->_pkgs.begin();
+      std::unordered_map<std::list<std::string_view>
+                        , CachedPackage
+                        >::iterator                  it = this->_pkgs.begin();
       return iterator( [&]()
       {
         ++it;
-        return std::shared_ptr<iterator::value_type>( & ( * it ) );
+        return std::shared_ptr<iterator::value_type>( & it->second );
       } );
     }
 
       iterator
     end() override
     {
-      std::list<CachedPackage>::iterator it = this->_pkgs.end();
+      std::unordered_map<std::list<std::string_view>
+                        , CachedPackage
+                        >::iterator                  it = this->_pkgs.end();
       return iterator( [&]()
       {
         ++it;
-        return std::shared_ptr<iterator::value_type>( & ( * it ) );
+        return std::shared_ptr<iterator::value_type>( & it->second );
       } );
     }
 
       const_iterator
     begin() const override
     {
-      std::list<CachedPackage>::const_iterator it = this->_pkgs.cbegin();
+      std::unordered_map<std::list<std::string_view>
+                        , CachedPackage
+                        >::const_iterator            it = this->_pkgs.cbegin();
       return const_iterator( [&]()
       {
         ++it;
-        return std::shared_ptr<const_iterator::value_type>( & ( * it ) );
+        return std::shared_ptr<const_iterator::value_type>( & it->second );
       } );
     }
 
       const_iterator
     end() const override
     {
-      std::list<CachedPackage>::const_iterator it = this->_pkgs.cend();
+      std::unordered_map<std::list<std::string_view>
+                        , CachedPackage
+                        >::const_iterator            it = this->_pkgs.cend();
       return const_iterator( [&]()
       {
         ++it;
-        return std::shared_ptr<const_iterator::value_type>( & ( * it ) );
+        return std::shared_ptr<const_iterator::value_type>( & it->second );
       } );
     }
 
