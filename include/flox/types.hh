@@ -35,15 +35,20 @@ static const std::list<std::string> defaultSystems = {
  "x86_64-linux", "aarch64-linux", "x86_64-darwin", "aarch64-darwin"
 };
 
+static const std::vector<std::string> defaultSubtrees = {
+  "catalog", "packages", "legacyPackages"
+};
+
+static const std::vector<std::string> defaultCatalogStabilities = {
+  "stable", "staging", "unstable"
+};
+
 
 /* -------------------------------------------------------------------------- */
 
 using FloxFlakeRef = nix::FlakeRef;
 using input_pair   =
   std::pair<std::string, std::shared_ptr<nix::flake::LockedFlake>>;
-
-using attr_part  = std::variant<std::nullptr_t, std::string>;
-using attr_parts = std::vector<attr_part>;
 
 using Cursor      = nix::ref<nix::eval_cache::AttrCursor>;
 using CursorPos   = std::pair<Cursor, std::vector<nix::Symbol>>;
@@ -59,18 +64,22 @@ class DrvDb;
 
 /* -------------------------------------------------------------------------- */
 
-typedef enum { ST_PACKAGES, ST_LEGACY, ST_CATALOG } subtree_type;
+typedef enum {
+  ST_NONE     = 0
+, ST_PACKAGES = 1
+, ST_LEGACY   = 2
+, ST_CATALOG  = 3
+} subtree_type;
 
-  static inline subtree_type
-parseSubtreeType( std::string_view subtree )
-{
-  if ( subtree == "legacyPackages" ) { return ST_LEGACY;   }
-  if ( subtree == "packages" )       { return ST_PACKAGES; }
-  if ( subtree == "catalog" )        { return ST_CATALOG;  }
-  throw ResolverException(
-    "Failed to parse invalid subtree '" + std::string( subtree ) + "'."
-  );
-}
+NLOHMANN_JSON_SERIALIZE_ENUM( subtree_type, {
+  { ST_NONE,     nullptr          }
+, { ST_PACKAGES, "packages"       }
+, { ST_LEGACY,   "legacyPackages" }
+, { ST_CATALOG,  "catalog"        }
+} )
+
+subtree_type     parseSubtreeType( std::string_view subtree );
+std::string_view subtreeTypeToString( const subtree_type & st );
 
 
 /* -------------------------------------------------------------------------- */
@@ -88,6 +97,9 @@ typedef enum {
 std::string_view progressStatusToString( const progress_status & ps );
 
 /* -------------------------------------------------------------------------- */
+
+using attr_part  = std::variant<std::nullptr_t, std::string>;
+using attr_parts = std::vector<attr_part>;
 
 struct AttrPathGlob {
 
@@ -152,14 +164,6 @@ void to_json(         nlohmann::json & j, const Inputs & i );
 
 
 /* -------------------------------------------------------------------------- */
-
-static const std::vector<std::string> defaultCatalogStabilities = {
-  "stable", "staging", "unstable"
-};
-
-static const std::vector<std::string> defaultAttrPathPrefixes = {
-  "catalog", "packages", "legacyPackages"
-};
 
 namespace predicates { struct PkgPred; };
 

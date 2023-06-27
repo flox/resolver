@@ -42,16 +42,24 @@ to_string( const FlakeRefWithPath & rp )
 class RawPackageSet : public PackageSet {
 
   protected:
-    std::list<CachedPackage> _pkgs;
-    std::string              _subtree;
-    std::string              _system;
-    FloxFlakeRef             _ref;
+    std::list<CachedPackage>   _pkgs;
+    subtree_type               _subtree;
+    std::string                _system;
+    std::optional<std::string> _stability;
+    FloxFlakeRef               _ref;
 
   public:
     std::string_view getType()    const override { return "raw";          }
-    std::string_view getSubtree() const override { return this->_subtree; }
+    subtree_type     getSubtree() const override { return this->_subtree; }
     std::string_view getSystem()  const override { return this->_system;  }
     FloxFlakeRef     getRef()     const override { return this->_ref;     }
+
+      std::optional<std::string_view>
+    getStability() const override
+    {
+      if ( this->_stability.has_value() ) { return this->_stability; }
+      else                                { return std::nullopt;     }
+    }
 
     std::size_t size()  override { return this->_pkgs.size();  }
     std::size_t size()  const    { return this->_pkgs.size();  }
@@ -72,15 +80,6 @@ class RawPackageSet : public PackageSet {
       return std::nullopt;
     }
 
-      FlakeRefWithPath
-    getRefWithPath() const override
-    {
-      return FlakeRefWithPath {
-        this->getRef()
-      , std::list { this->_subtree, this->_system }
-      };
-    }
-
 
       PkgIter
     begin() override
@@ -96,7 +95,7 @@ class RawPackageSet : public PackageSet {
       return PkgIter( [&]() { ++it; return & ( * it ); } );
     }
 
-};
+};  /* End class `RawPackageSet' */
 
 
 /* -------------------------------------------------------------------------- */

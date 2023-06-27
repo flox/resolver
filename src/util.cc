@@ -45,6 +45,37 @@ mergeResolvedByAttrPathGlob( std::list<Resolved> & lst )
 
 /* -------------------------------------------------------------------------- */
 
+  std::string_view
+subtreeTypeToString( const subtree_type & st )
+{
+  switch ( st )
+    {
+      case ST_LEGACY:   return "legacyPackages"; break;
+      case ST_PACKAGES: return "packages";       break;
+      case ST_CATALOG:  return "catalog";        break;
+      case ST_NONE:     return "NONE";           break;
+      default:
+        throw ResolverException( "Failed to identify invalid subtree." );
+    }
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+  subtree_type
+parseSubtreeType( std::string_view subtree )
+{
+  if ( subtree == "legacyPackages" ) { return ST_LEGACY;   }
+  if ( subtree == "packages" )       { return ST_PACKAGES; }
+  if ( subtree == "catalog" )        { return ST_CATALOG;  }
+  throw ResolverException(
+    "Failed to parse invalid subtree '" + std::string( subtree ) + "'."
+  );
+}
+
+
+/* -------------------------------------------------------------------------- */
+
   }  /* End namespace `flox::resolve' */
 }    /* End namespace `flox' */
 

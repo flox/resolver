@@ -46,7 +46,7 @@ FloxFlake::FloxFlake(       nix::ref<nix::EvalState>   state
   , _prefsPrefixes(
       ( prefs.prefixes.find( std::string( id ) ) != prefs.prefixes.end() )
       ? prefs.prefixes.at( std::string( id ) )
-      : defaultAttrPathPrefixes
+      : defaultSubtrees
     )
 {
 }
@@ -365,7 +365,7 @@ FloxFlake::recordPrefixes( bool force )
         {
           dones += subs.size();
         }
-      if ( ( defaultAttrPathPrefixes.size() * defaultSystems.size() ) <= dones )
+      if ( ( defaultSubtrees.size() * defaultSystems.size() ) <= dones )
         {
           return;
         }
@@ -383,7 +383,7 @@ FloxFlake::recordPrefixes( bool force )
     return false;
   };
 
-  for ( const auto & st : defaultAttrPathPrefixes )
+  for ( const auto & st : defaultSubtrees )
     {
       subtree = root->maybeGetAttr( st );
       if ( subtree == nullptr )

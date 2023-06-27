@@ -31,13 +31,43 @@ class PackageSet {
 
   public:
     virtual std::string_view getType()        const                         = 0;
-    virtual std::string_view getSubtree()     const                         = 0;
+    virtual subtree_type     getSubtree()     const                         = 0;
     virtual std::string_view getSystem()      const                         = 0;
     virtual FloxFlakeRef     getRef()         const                         = 0;
-    virtual FlakeRefWithPath getRefWithPath() const                         = 0;
     virtual std::size_t      size()                                         = 0;
     virtual bool             empty()                                        = 0;
     virtual bool             hasRelPath( std::list<std::string_view> path ) = 0;
+
+    virtual std::optional<std::string_view> getStability() const = 0;
+
+      virtual std::list<std::string_view>
+    getPrefix() const
+    {
+      auto s = this->getStability();
+      if ( s.has_value() )
+        {
+          return {
+            subtreeTypeToString( this->getSubtree() )
+          , this->getSystem()
+          , s.value()
+          };
+        }
+      else
+        {
+          return {
+            subtreeTypeToString( this->getSubtree() )
+          , this->getSystem()
+          };
+        }
+    }
+
+      virtual FlakeRefWithPath
+    getRefWithPath() const
+    {
+      FlakeRefWithPath rp = { this->getRef(), {} };
+      for ( auto & p : this->getPrefix() ) { rp.path.emplace_back( p ); }
+      return rp;
+    }
 
     virtual std::optional<Package *> maybeGetRelPath(
       std::list<std::string_view> path
