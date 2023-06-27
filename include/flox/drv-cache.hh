@@ -26,12 +26,15 @@ namespace flox {
 /* -------------------------------------------------------------------------- */
 
 class DrvDb;
+class RawPackageSet;
 
 /* -------------------------------------------------------------------------- */
 
 class CachedPackage : public Package {
-  private:
+  protected:
     std::vector<std::string>    _pathS;
+
+  private:
     std::string                 _fullname;
     std::string                 _pname;
     std::optional<std::string>  _version;
@@ -119,6 +122,8 @@ class CachedPackage : public Package {
                  );
 
     CachedPackage( const nlohmann::json & drvInfo );
+
+    friend RawPackageSet;
 
 };  /* End class `CachedPackage' */
 

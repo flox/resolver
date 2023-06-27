@@ -93,6 +93,16 @@ class RawPackageSet : public PackageSet {
       return nix::ref<Package>( & this->_pkgs.at( path ) );
     }
 
+      void
+   addPackage( CachedPackage && p )
+   {
+     std::list<std::string_view> relPath;
+     auto it = p._pathS.cbegin();
+     it += ( p.getSubtreeType() == resolve::ST_CATALOG ) ? 3 : 2;
+     for ( ; it != p._pathS.cend(); ++it ) { relPath.push_back( * it ); }
+     this->_pkgs.emplace( relPath, p );
+   }
+
       iterator
     begin() override
     {
