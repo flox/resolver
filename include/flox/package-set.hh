@@ -30,12 +30,12 @@ std::string to_string( const FlakeRefWithPath & rp );
 class PackageSet {
 
   public:
-    virtual std::string_view getType()        const = 0;
-    virtual subtree_type     getSubtree()     const = 0;
-    virtual std::string_view getSystem()      const = 0;
-    virtual FloxFlakeRef     getRef()         const = 0;
-    virtual std::size_t      size()                 = 0;
-    virtual bool             empty()                = 0;
+    virtual std::string_view getType()    const = 0;
+    virtual subtree_type     getSubtree() const = 0;
+    virtual std::string_view getSystem()  const = 0;
+    virtual FloxFlakeRef     getRef()     const = 0;
+    virtual std::size_t      size()             = 0;
+    virtual bool             empty()            = 0;
 
     virtual bool hasRelPath( const std::list<std::string_view> & path ) = 0;
 
