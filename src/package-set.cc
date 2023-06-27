@@ -67,33 +67,64 @@ class RawPackageSet : public PackageSet {
     bool        empty() const    { return this->_pkgs.empty(); }
 
       bool
-    hasRelPath( std::list<std::string_view> path ) override
+    hasRelPath( const std::list<std::string_view> & path ) override
     {
       // TODO
       return false;
     }
 
-      std::optional<Package *>
-    maybeGetRelPath( std::list<std::string_view> path ) override
+      std::shared_ptr<Package>
+    maybeGetRelPath( const std::list<std::string_view> & path ) override
     {
       // TODO
-      return std::nullopt;
+      return nullptr;
     }
 
-
-      PkgIter
+      iterator
     begin() override
     {
       std::list<CachedPackage>::iterator it = this->_pkgs.begin();
-      return PkgIter( [&]() { ++it; return & ( * it ); } );
+      return iterator( [&]()
+      {
+        ++it;
+        return std::shared_ptr<iterator::value_type>( & ( * it ) );
+      } );
     }
 
-      PkgIter
+      iterator
     end() override
     {
       std::list<CachedPackage>::iterator it = this->_pkgs.end();
-      return PkgIter( [&]() { ++it; return & ( * it ); } );
+      return iterator( [&]()
+      {
+        ++it;
+        return std::shared_ptr<iterator::value_type>( & ( * it ) );
+      } );
     }
+
+      const_iterator
+    begin() const override
+    {
+      std::list<CachedPackage>::const_iterator it = this->_pkgs.cbegin();
+      return const_iterator( [&]()
+      {
+        ++it;
+        return std::shared_ptr<const_iterator::value_type>( & ( * it ) );
+      } );
+    }
+
+      const_iterator
+    end() const override
+    {
+      std::list<CachedPackage>::const_iterator it = this->_pkgs.cend();
+      return const_iterator( [&]()
+      {
+        ++it;
+        return std::shared_ptr<const_iterator::value_type>( & ( * it ) );
+      } );
+    }
+    const_iterator cbegin() const override { return this->begin(); }
+    const_iterator cend()   const override { return this->cend(); }
 
 };  /* End class `RawPackageSet' */
 

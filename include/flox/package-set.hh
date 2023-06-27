@@ -36,7 +36,8 @@ class PackageSet {
     virtual FloxFlakeRef     getRef()         const                         = 0;
     virtual std::size_t      size()                                         = 0;
     virtual bool             empty()                                        = 0;
-    virtual bool             hasRelPath( std::list<std::string_view> path ) = 0;
+
+    virtual bool hasRelPath( const std::list<std::string_view> & path ) = 0;
 
     virtual std::optional<std::string_view> getStability() const = 0;
 
@@ -69,62 +70,101 @@ class PackageSet {
       return rp;
     }
 
-    virtual std::optional<Package *> maybeGetRelPath(
-      std::list<std::string_view> path
+    virtual std::shared_ptr<Package> maybeGetRelPath(
+      const std::list<std::string_view> & path
     ) = 0;
 
-    struct PkgIter {
-      using iterator_category = std::forward_iterator_tag;
-      using value_type        = Package;
-      using different_type    = std::ptrdiff_t;
-      using pointer           = Package *;
-      using reference         = Package &;
+      virtual nix::ref<Package>
+    getRelPath( const std::list<std::string_view> & path )
+    {
+      std::shared_ptr<Package> p = this->maybeGetRelPath( path );
+      if ( p == nullptr )
+        {
+          std::string msg( "PackageSet::getRelPath(): No such path '" );
+          msg += this->getRefWithPath().toString();
+          msg += "'.";
+          throw ResolverException( msg.c_str() );
+        }
+      return (nix::ref<Package>) p;
+    }
 
-      explicit PkgIter() = default;
-      explicit PkgIter( std::function<Package *()> next )
+    template<bool IS_CONST> struct iterator_impl;
+    using iterator       = iterator_impl<false>;
+    using const_iterator = iterator_impl<true>;
+
+      template<bool IS_CONST>
+    struct iterator_impl {
+      using iterator_category = std::forward_iterator_tag;
+      using value_type        =
+        typename std::conditional<IS_CONST, const Package, Package>::type;
+      using different_type    = std::ptrdiff_t;
+      using pointer           = std::shared_ptr<value_type>;
+      using reference         = nix::ref<value_type>;
+
+      explicit iterator_impl() = default;
+      explicit iterator_impl( std::function<pointer()> next )
         : _next( std::move( next ) ), _ptr( nullptr )
       {
         this->_ptr = this->_next();
       }
 
-        friend constexpr bool
-      operator==( const PkgIter & lhs, const PkgIter & rhs ) noexcept
+        friend bool
+      operator==( const iterator_impl  & lhs
+                , const const_iterator & rhs
+                ) noexcept
       {
         return lhs._ptr == rhs._ptr;
       }
 
-        friend constexpr bool
-      operator!=( const PkgIter & lhs, const PkgIter & rhs ) noexcept
+        friend bool
+      operator==( const iterator_impl & lhs, const iterator & rhs ) noexcept
+      {
+        return lhs._ptr == rhs._ptr;
+      }
+
+        friend bool
+      operator!=( const iterator_impl  & lhs
+                , const const_iterator & rhs
+                ) noexcept
       {
         return lhs._ptr != rhs._ptr;
       }
 
-      PkgIter & operator++() { this->_ptr = this->_next(); return * this; }
+        friend bool
+      operator!=( const iterator_impl & lhs, const iterator & rhs ) noexcept
+      {
+        return lhs._ptr != rhs._ptr;
+      }
 
-        PkgIter
+      iterator_impl & operator++() { this->_ptr = this->_next(); return * this; }
+
+        iterator_impl
       operator++( int )
       {
-        PkgIter tmp = * this;
+        iterator_impl tmp = * this;
         ++( * this );
         return tmp;
       }
 
-            Package & operator*()        { return * this->_ptr; }
-      const Package & operator*() const  { return * this->_ptr; }
-            Package * operator->()       { return this->_ptr;   }
+            reference operator*()        { return (reference) this->_ptr; }
+      const reference operator*() const  { return (reference) this->_ptr; }
+            pointer   operator->()       { return this->_ptr;   }
 
       protected:
-        Package                    * _ptr  = nullptr;
-        std::function<Package *()>   _next = [](){ return nullptr; };
+        pointer                  _ptr  = nullptr;
+        std::function<pointer()> _next = [](){ return nullptr; };
 
-    };
+      friend iterator;
+      friend const_iterator;
 
-    virtual PkgIter begin()        = 0;
-    virtual PkgIter end()          = 0;
+    };  /* End struct `PackageSet::iterator' */
 
-    // TODO: your `_next' function would need to return `const Package *'
-    //virtual PkgIter cbegin() const = 0;
-    //virtual PkgIter cend()   const = 0;
+    virtual iterator       begin()        = 0;
+    virtual iterator       end()          = 0;
+    virtual const_iterator begin()  const = 0;
+    virtual const_iterator end()    const = 0;
+    virtual const_iterator cbegin() const = 0;
+    virtual const_iterator cend()   const = 0;
 
 };  /* End class `PackageSet' */
 
