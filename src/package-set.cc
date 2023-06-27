@@ -123,8 +123,6 @@ class RawPackageSet : public PackageSet {
         return std::shared_ptr<const_iterator::value_type>( & ( * it ) );
       } );
     }
-    const_iterator cbegin() const override { return this->begin(); }
-    const_iterator cend()   const override { return this->cend(); }
 
 };  /* End class `RawPackageSet' */
 

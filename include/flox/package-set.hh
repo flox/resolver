@@ -151,13 +151,12 @@ class PackageSet {
         return tmp;
       }
 
-            reference operator*()        { return (reference) this->_ptr; }
-      const reference operator*() const  { return (reference) this->_ptr; }
-            pointer   operator->()       { return this->_ptr;   }
+      reference operator*()  const { return (reference) this->_ptr; }
+      pointer   operator->() const { return this->_ptr;             }
 
       protected:
         pointer                  _ptr  = nullptr;
-        std::function<pointer()> _next = [](){ return nullptr; };
+        std::function<pointer()> _next = [](){ return nullptr; };  /** PIMPL */
 
       friend iterator;
       friend const_iterator;
@@ -168,8 +167,8 @@ class PackageSet {
     virtual iterator       end()          = 0;
     virtual const_iterator begin()  const = 0;
     virtual const_iterator end()    const = 0;
-    virtual const_iterator cbegin() const = 0;
-    virtual const_iterator cend()   const = 0;
+    virtual const_iterator cbegin() const { return this->begin(); }
+    virtual const_iterator cend()   const { return this->end();   }
 
 };  /* End class `PackageSet' */
 
