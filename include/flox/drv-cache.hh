@@ -130,6 +130,17 @@ class CachedPackage : public Package {
 
 /* -------------------------------------------------------------------------- */
 
+std::string getDrvDbName( const nix::flake::Fingerprint & fingerprint );
+
+  static inline std::string
+getDrvDbName( const nix::flake::LockedFlake & flake )
+{
+  return getDrvDbName( flake.getFingerprint() );
+}
+
+
+/* -------------------------------------------------------------------------- */
+
 class DrvDb {
 
   private:

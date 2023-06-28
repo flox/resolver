@@ -43,6 +43,18 @@ progressStatusToString( const progress_status & ps )
 
 /* -------------------------------------------------------------------------- */
 
+  std::string
+getDrvDbName( const nix::flake::Fingerprint & fingerprint )
+{
+  nix::Path cacheDir = nix::getCacheDir() + "/flox/drv-cache-v0";
+  std::string fpStr  = fingerprint.to_string( nix::Base16, false );
+  nix::Path dbPath   = cacheDir + "/" + fpStr + ".sqlite";
+  return dbPath;
+}
+
+
+/* -------------------------------------------------------------------------- */
+
 static const char * schema = R"sql(
 CREATE TABLE IF NOT EXISTS Derivations (
   subtree  TEXT  NOT NULL
@@ -240,17 +252,12 @@ auditFingerprint( nix::Sync<DrvDb::State>::Lock & state
 DrvDb::DrvDb( const nix::flake::Fingerprint & fingerprint )
   : _state( std::make_unique<nix::Sync<State>>() )
 {
+  std::string fpStr  = fingerprint.to_string( nix::Base16, false );
+
   auto state( _state->lock() );
 
-  nix::Path cacheDir = nix::getCacheDir() + "/flox/drv-cache-v0";
-  nix::createDirs( cacheDir );
-
-  std::string fpStr = fingerprint.to_string( nix::Base16, false );
-
-  nix::Path dbPath = cacheDir + "/" + fpStr + ".sqlite";
-
   /* Boilerplate DB init. */
-  state->db = nix::SQLite( dbPath );
+  state->db = nix::SQLite( getDrvDbName( fingerprint ) );
   state->db.exec( schema );
   state->db.exec( setVersionInfo );
 
