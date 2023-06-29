@@ -172,12 +172,12 @@ FlakePackageSet::begin() const
 FlakePackageSet::flake_iterator_impl<IS_CONST>::operator++()
 {
   recur:
-    if ( this->_todo.empty() ) { return nullptr; }
+    if ( this->_todo.empty() ) { return this->end(); }
     ++this->it;
     if ( this->it == this->end )
       {
         this->todo.pop();
-        if ( this->todo.empty() ) { return nullptr; }
+        if ( this->todo.empty() ) { return this->end(); }
       }
     else
       {
@@ -185,12 +185,10 @@ FlakePackageSet::flake_iterator_impl<IS_CONST>::operator++()
         this->it  = this->todo.front()->getAttrs().begin();
         try
           {
-            Cursor c    = this->todo.front()->getAttr( * this->it );
+            Cursor c = this->todo.front()->getAttr( * this->it );
             if ( this->_subtree == ST_PACKAGES )
               {
-                return std::make_shared<EvalPackage>(
-                  c, this->_state->symbols, false
-                );
+                return * this;
               }
             else
               {
@@ -200,9 +198,7 @@ FlakePackageSet::flake_iterator_impl<IS_CONST>::operator++()
                   }
                 else
                   {
-                    MaybeCursor m = c->maybeGetAttr(
-                      "recurseForDerivations"
-                    );
+                    MaybeCursor m = c->maybeGetAttr( "recurseForDerivations" );
                     if ( ( m != nullptr ) && m->getBool() )
                       {
                         this->todo.push( (Cursor) c );
