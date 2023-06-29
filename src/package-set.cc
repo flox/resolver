@@ -103,6 +103,7 @@ class RawPackageSet : public PackageSet {
      this->_pkgs.emplace( std::move( relPath ), p );
    }
 
+#if 0
       iterator
     begin() override
     {
@@ -111,8 +112,9 @@ class RawPackageSet : public PackageSet {
                         >::iterator                  it = this->_pkgs.begin();
       return iterator( [&]()
       {
+        std::shared_ptr<iterator::value_type> ptr( & it->second );
         ++it;
-        return std::shared_ptr<iterator::value_type>( & it->second );
+        return ptr;
       } );
     }
 
@@ -124,8 +126,9 @@ class RawPackageSet : public PackageSet {
                         >::iterator                  it = this->_pkgs.end();
       return iterator( [&]()
       {
+        std::shared_ptr<iterator::value_type> ptr( & it->second );
         ++it;
-        return std::shared_ptr<iterator::value_type>( & it->second );
+        return ptr;
       } );
     }
 
@@ -137,8 +140,9 @@ class RawPackageSet : public PackageSet {
                         >::const_iterator            it = this->_pkgs.cbegin();
       return const_iterator( [&]()
       {
+        std::shared_ptr<const_iterator::value_type> ptr( & it->second );
         ++it;
-        return std::shared_ptr<const_iterator::value_type>( & it->second );
+        return ptr;
       } );
     }
 
@@ -150,10 +154,12 @@ class RawPackageSet : public PackageSet {
                         >::const_iterator            it = this->_pkgs.cend();
       return const_iterator( [&]()
       {
+        std::shared_ptr<const_iterator::value_type> ptr( & it->second );
         ++it;
-        return std::shared_ptr<const_iterator::value_type>( & it->second );
+        return ptr;
       } );
     }
+#endif
 
 };  /* End class `RawPackageSet' */
 

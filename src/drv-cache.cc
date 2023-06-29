@@ -189,7 +189,7 @@ initStatements( nix::Sync<DrvDb::State>::Lock & state )
   state->countDrvsStability.create(
     state->db
   , "SELECT COUNT( subtree ) FROM Derivations WHERE"
-    "( subtree = ? ) AND ( system = ? ) AND "
+    "( subtree = 'catalog' ) AND ( system = ? ) AND "
     "( json_extract( path, '$[0]' ) = ? )"
   );
 
@@ -205,6 +205,12 @@ initStatements( nix::Sync<DrvDb::State>::Lock & state )
   , "SELECT * FROM DerivationInfos WHERE ( subtree = ? ) AND ( system = ? )"
   );
 
+  state->queryDrvInfosStability.create(
+    state->db
+    , "SELECT * FROM DerivationInfos WHERE ( subtree = 'catalog' ) AND "
+      "( system = ? ) AND ( json_extract( path, '$[0]' ) = ? )"
+  );
+
   state->countDrvInfos.create(
     state->db
   , "SELECT COUNT( subtree ) FROM DerivationInfos WHERE"
@@ -214,7 +220,7 @@ initStatements( nix::Sync<DrvDb::State>::Lock & state )
   state->countDrvInfosStability.create(
     state->db
   , "SELECT COUNT( subtree ) FROM DerivationInfos WHERE"
-    "( subtree = ? ) AND ( system = ? ) AND "
+    "( subtree = 'catalog' ) AND ( system = ? ) AND "
     "( json_extract( path, '$[0]' ) = ? )"
   );
 
@@ -568,7 +574,7 @@ DrvDb::setDrvInfo( const Package & p )
 
 /* -------------------------------------------------------------------------- */
 
-  static nlohmann::json
+  nlohmann::json
 infoFromQuery( nix::SQLiteStmt::Use & query )
 {
   nlohmann::json info = {
@@ -658,6 +664,16 @@ DrvDb::getDrvInfo(       std::string_view           subtree
 
 /* -------------------------------------------------------------------------- */
 
+  nix::SQLiteStmt::Use
+DrvDb::useDrvInfos( std::string_view subtree, std::string_view system )
+{
+  auto state( this->getDbState() );
+  return state->queryDrvInfos.use()( subtree )( system );
+}
+
+
+/* -------------------------------------------------------------------------- */
+
   std::list<nlohmann::json>
 DrvDb::getDrvInfos( std::string_view subtree, std::string_view system )
 {
@@ -665,6 +681,36 @@ DrvDb::getDrvInfos( std::string_view subtree, std::string_view system )
   this->doSQLite( [&]() {
     auto state( this->getDbState() );
     auto query = state->queryDrvInfos.use()( subtree )( system );
+    while ( query.next() ) { rsl.push_back( infoFromQuery( query ) ); }
+    return 0;
+  } );
+  return rsl;
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+  nix::SQLiteStmt::Use
+DrvDb::useDrvInfosStability( std::string_view system
+                           , std::string_view stability
+                           )
+{
+  auto state( this->getDbState() );
+  return state->queryDrvInfosStability.use()( system )( stability );
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+  std::list<nlohmann::json>
+DrvDb::getDrvInfosStability( std::string_view system
+                           , std::string_view stability
+                           )
+{
+  std::list<nlohmann::json> rsl;
+  this->doSQLite( [&]() {
+    auto state( this->getDbState() );
+    auto query = state->queryDrvInfosStability.use()( system )( stability );
     while ( query.next() ) { rsl.push_back( infoFromQuery( query ) ); }
     return 0;
   } );

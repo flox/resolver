@@ -29,7 +29,7 @@ class FlakePackageSet : public PackageSet {
     nix::ref<nix::EvalState>                 _state;
 
       nix::ref<nix::eval_cache::EvalCache>
-    openEvalCache()
+    openEvalCache() const
     {
       nix::flake::Fingerprint fingerprint = this->getFingerprint();
       return nix::make_ref<nix::eval_cache::EvalCache>(
@@ -125,6 +125,90 @@ class FlakePackageSet : public PackageSet {
 
     bool        hasRelPath( const std::list<std::string_view> & path ) override;
     std::size_t size() override;
+
+
+/* -------------------------------------------------------------------------- */
+
+    template<bool IS_CONST> struct flake_iterator_impl;
+    using flake_iterator       = flake_iterator_impl<false>;
+    using flake_const_iterator = flake_iterator_impl<true>;
+
+      template<bool IS_CONST>
+    struct flake_iterator_impl : iterator_impl<IS_CONST>
+    {
+      private:
+        todo_queue                               _todo;
+        std::vector<nix::Symbol>::const_iterator _end;
+        std::vector<nix::Symbol>::iterator       _it;
+
+      public:
+        explicit flake_iterator_impl( todo_queue todo )
+          : _todo( todo )
+        {
+          if ( todo.empty() )
+            {
+              std::vector<nix::Symbol> e;
+              this->_end = e.end();
+              this->_it  = e.begin();
+            }
+          else
+            {
+              this->_end = this->_todo.front()->getAttrs().end();
+              this->_it  = this->_todo.front()->getAttrs().begin();
+            }
+        }
+        flake_iterator_impl() : flake_iterator_impl( todo_queue() ) {}
+
+        std::string_view getType() const { return "flake"; }
+
+        flake_iterator_impl & operator++();
+
+          flake_iterator_impl
+        operator++( int )
+        {
+          flake_iterator_impl tmp = * this;
+          ++( * this );
+          return tmp;
+        }
+
+        bool operator==( const iterator       & other ) const { return false; }
+        bool operator==( const const_iterator & other ) const { return false; }
+          bool
+        operator==( const flake_iterator & other ) const
+        {
+          return this->_it == other._it;
+        }
+          bool
+        operator==( const flake_const_iterator & other ) const
+        {
+          return this->_it == other._it;
+        }
+
+        bool operator!=( const iterator       & other ) const { return true; }
+        bool operator!=( const const_iterator & other ) const { return true; }
+          bool
+        operator!=( const flake_iterator & other ) const
+        {
+          return ! ( ( * this ) == other );
+        }
+          bool
+        operator!=( const flake_const_iterator & other ) const
+        {
+          return ! ( ( * this ) == other );
+        }
+
+      friend flake_const_iterator;
+      friend flake_iterator;
+
+    };  /* End struct `PackageSet::iterator_impl' */
+
+
+/* -------------------------------------------------------------------------- */
+
+    iterator       begin()       override;
+    iterator       end()         override;
+    const_iterator begin() const override;
+    const_iterator end()   const override;
 
 
 /* -------------------------------------------------------------------------- */

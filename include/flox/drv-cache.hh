@@ -163,6 +163,7 @@ class DrvDb {
 
       nix::SQLiteStmt queryDrvInfo;
       nix::SQLiteStmt queryDrvInfos;
+      nix::SQLiteStmt queryDrvInfosStability;
       nix::SQLiteStmt countDrvInfos;
       nix::SQLiteStmt countDrvInfosStability;
 
@@ -223,6 +224,21 @@ class DrvDb {
     , std::string_view system
     );
 
+    nix::SQLiteStmt::Use useDrvInfos(
+      std::string_view subtree
+    , std::string_view system
+    );
+
+    std::list<nlohmann::json> getDrvInfosStability(
+      std::string_view system
+    , std::string_view stability
+    );
+
+    nix::SQLiteStmt::Use useDrvInfosStability(
+      std::string_view system
+    , std::string_view stability
+    );
+
     /* Get status of a subtree/system collection. */
     progress_status getProgress( std::string_view subtree
                                , std::string_view system
@@ -259,6 +275,11 @@ class DrvDb {
                                     );
 
 };  /* End class `DrvDb' */
+
+
+/* -------------------------------------------------------------------------- */
+
+nlohmann::json infoFromQuery( nix::SQLiteStmt::Use & query );
 
 
 /* -------------------------------------------------------------------------- */

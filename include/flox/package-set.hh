@@ -93,76 +93,17 @@ class PackageSet {
     using iterator       = iterator_impl<false>;
     using const_iterator = iterator_impl<true>;
 
-    template<bool IS_CONST>
-    struct iterator_impl {
+      template<bool IS_CONST>
+    struct iterator_impl
+    {
       using iterator_category = std::forward_iterator_tag;
       using value_type        =
         typename std::conditional<IS_CONST, const Package, Package>::type;
-      using different_type = std::ptrdiff_t;
-      using pointer        = std::shared_ptr<value_type>;
-      using reference      = nix::ref<value_type>;
-
-      explicit iterator_impl() = default;
-      explicit iterator_impl( std::function<pointer()> next )
-        : _next( std::move( next ) ), _ptr( nullptr )
-      {
-        this->_ptr = this->_next();
-      }
-
-        friend bool
-      operator==( const iterator_impl  & lhs
-                , const const_iterator & rhs
-                ) noexcept
-      {
-        return lhs._ptr == rhs._ptr;
-      }
-
-        friend bool
-      operator==( const iterator_impl & lhs, const iterator & rhs ) noexcept
-      {
-        return lhs._ptr == rhs._ptr;
-      }
-
-        friend bool
-      operator!=( const iterator_impl  & lhs
-                , const const_iterator & rhs
-                ) noexcept
-      {
-        return lhs._ptr != rhs._ptr;
-      }
-
-        friend bool
-      operator!=( const iterator_impl & lhs, const iterator & rhs ) noexcept
-      {
-        return lhs._ptr != rhs._ptr;
-      }
-
-        iterator_impl &
-      operator++()
-      {
-        this->_ptr = this->_next();
-        return * this;
-      }
-
-        iterator_impl
-      operator++( int )
-      {
-        iterator_impl tmp = * this;
-        ++( * this );
-        return tmp;
-      }
-
-      reference operator*()  const { return (reference) this->_ptr; }
-      pointer   operator->() const { return this->_ptr;             }
-
-      protected:
-        pointer                  _ptr  = nullptr;
-        std::function<pointer()> _next = [](){ return nullptr; };  /** PIMPL */
-
-      friend iterator;
-      friend const_iterator;
-
-    };  /* End struct `PackageSet::iterator' */
+      using pointer   = std::shared_ptr<value_type>;
+      using reference = nix::ref<value_type>;
+      public:
+        std::string_view getType() const;
+    };  /* End struct `PackageSet::iterator_impl' */
 
     virtual iterator       begin()        = 0;
     virtual iterator       end()          = 0;

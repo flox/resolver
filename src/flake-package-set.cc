@@ -5,6 +5,7 @@
  * -------------------------------------------------------------------------- */
 
 #include "flox/types.hh"
+#include "flox/eval-package.hh"
 #include "flox/flake-package-set.hh"
 
 
@@ -104,6 +105,135 @@ FlakePackageSet::size()
       todos.pop();
     }
   return rsl;
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+  PackageSet::iterator
+FlakePackageSet::begin()
+{
+  MaybeCursor curr = this->openEvalCache()->getRoot();
+  if ( this->_subtree == ST_PACKAGES )
+    {
+      curr = curr->maybeGetAttr( "packages" );
+      if ( curr == nullptr ) { return this->end(); }
+      curr = curr->maybeGetAttr( this->_system );
+      if ( curr == nullptr ) { return this->end(); }
+    }
+  else
+    {
+      curr = curr->maybeGetAttr( subtreeTypeToString( this->_subtree ) );
+      if ( curr == nullptr ) { return this->end(); }
+      curr = curr->maybeGetAttr( this->_system );
+      if ( curr == nullptr ) { return this->end(); }
+      if ( this->_stability.has_value() )
+        {
+          curr = curr->maybeGetAttr( this->_stability.value() );
+          if ( curr == nullptr ) { return this->end(); }
+        }
+    }
+  todo_queue todo;
+  todo.emplace( std::move( curr ) );
+  return flake_iterator( std::move( todo ) );
+}
+
+  PackageSet::const_iterator
+FlakePackageSet::begin() const
+{
+  MaybeCursor curr = this->openEvalCache()->getRoot();
+  if ( this->_subtree == ST_PACKAGES )
+    {
+      curr = curr->maybeGetAttr( "packages" );
+      if ( curr == nullptr ) { return this->end(); }
+      curr = curr->maybeGetAttr( this->_system );
+      if ( curr == nullptr ) { return this->end(); }
+    }
+  else
+    {
+      curr = curr->maybeGetAttr( subtreeTypeToString( this->_subtree ) );
+      if ( curr == nullptr ) { return this->end(); }
+      curr = curr->maybeGetAttr( this->_system );
+      if ( curr == nullptr ) { return this->end(); }
+      if ( this->_stability.has_value() )
+        {
+          curr = curr->maybeGetAttr( this->_stability.value() );
+          if ( curr == nullptr ) { return this->end(); }
+        }
+    }
+  todo_queue todo;
+  todo.emplace( std::move( curr ) );
+  return flake_const_iterator( std::move( todo ) );
+}
+
+
+  template<bool IS_CONST>
+  FlakePackageSet::flake_iterator_impl<IS_CONST> &
+FlakePackageSet::flake_iterator_impl<IS_CONST>::operator++()
+{
+  recur:
+    if ( this->_todo.empty() ) { return nullptr; }
+    ++this->it;
+    if ( this->it == this->end )
+      {
+        this->todo.pop();
+        if ( this->todo.empty() ) { return nullptr; }
+      }
+    else
+      {
+        this->end = this->todo.front()->getAttrs().end();
+        this->it  = this->todo.front()->getAttrs().begin();
+        try
+          {
+            Cursor c    = this->todo.front()->getAttr( * this->it );
+            if ( this->_subtree == ST_PACKAGES )
+              {
+                return std::make_shared<EvalPackage>(
+                  c, this->_state->symbols, false
+                );
+              }
+            else
+              {
+                if ( c->isDerivation() )
+                  {
+                    return * this;
+                  }
+                else
+                  {
+                    MaybeCursor m = c->maybeGetAttr(
+                      "recurseForDerivations"
+                    );
+                    if ( ( m != nullptr ) && m->getBool() )
+                      {
+                        this->todo.push( (Cursor) c );
+                      }
+                    goto recur;
+                  }
+              }
+          }
+        catch( ... )
+          {
+            goto recur;
+          }
+      }
+    throw ResolverException(
+      "FlakePackageSet::flake_iterator_impl::operator++(): "
+      "Readched ALLEGEDLY unreachable block."
+    );
+    return * this;
+}  /* End `FlakePackageSet::flake_iterator::operator++()' */
+
+
+  PackageSet::iterator
+FlakePackageSet::end()
+{
+  return FlakePackageSet::flake_iterator();
+}
+
+  PackageSet::const_iterator
+FlakePackageSet::end() const
+{
+  return FlakePackageSet::flake_const_iterator();
 }
 
 
