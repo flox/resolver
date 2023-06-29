@@ -15,6 +15,7 @@
 #include "flox/package.hh"
 #include "flox/drv-cache.hh"
 #include "resolve.hh"
+#include <filesystem>
 
 
 /* -------------------------------------------------------------------------- */
@@ -100,8 +101,6 @@ CREATE TABLE IF NOT EXISTS VersionInfo (
   id       TEXT  PRIMARY KEY
 , version  TEXT  NOT NULL
 );
-
-CREATE TABLE IF NOT EXISTS Fingerprint ( fingerprint TEXT PRIMARY KEY );
 )sql";
 
 
@@ -117,16 +116,28 @@ static const char * setVersionInfo =
 
 /* -------------------------------------------------------------------------- */
 
+  static void
+requireWritable( const DrvDb & cache, std::string_view name )
+{
+  if ( ! cache.isWritable() )
+    {
+      std::string msg = "DrvDb::";
+      msg += name;
+      msg += " requires write access to the database, but this instance was"
+             " opened as read-only.";
+      throw CacheException( msg );
+    }
+}
+
+
+
+/* -------------------------------------------------------------------------- */
+
 /* Populate statement templates. */
   static inline void
 initStatements( nix::Sync<DrvDb::State>::Lock & state )
 {
   /* Inserts */
-
-  state->insertFingerprint.create(
-    state->db
-  , "INSERT OR IGNORE INTO Fingerprint VALUES ( ? )"
-  );
 
   state->insertDrv.create(
     state->db
@@ -150,11 +161,6 @@ initStatements( nix::Sync<DrvDb::State>::Lock & state )
   );
 
   /* Queries */
-
-  state->queryFingerprint.create(
-    state->db
-  , "SELECT fingerprint FROM Fingerprint LIMIT 1"
-  );
 
   state->queryVersionInfo.create(
     state->db
@@ -230,13 +236,13 @@ auditVersions( nix::Sync<DrvDb::State>::Lock & state )
   auto query1 = state->queryVersionInfo.use()( "resolver" );
   if ( ! query1.next() )
     {
-      throw ResolverException(
+      throw CacheException(
         "DrvDb(): Failed to read resolver version from from database"
       );
     }
   if ( query1.getStr( 0 ) != LIBFLOX_RESOLVE_VERSION )
     {
-      throw ResolverException(
+      throw CacheException(
         "DrvDb(): Resolver version mismatch. have: " + query1.getStr( 0 ) +
         ", want: " LIBFLOX_RESOLVE_VERSION
       );
@@ -245,13 +251,13 @@ auditVersions( nix::Sync<DrvDb::State>::Lock & state )
   auto query2 = state->queryVersionInfo.use()( "drvCacheSchema" );
   if ( ! query2.next() )
     {
-      throw ResolverException(
+      throw CacheException(
         "DrvDb(): Failed to read 'drvCacheSchema' from database"
       );
     }
   if ( query2.getStr( 0 ) != FLOX_DRVDB_SCHEMA_VERSION )
     {
-      throw ResolverException(
+      throw CacheException(
         "DrvDb(): Schema version mismatch. have: " + query2.getStr( 0 ) +
         ", want: " FLOX_DRVDB_SCHEMA_VERSION
       );
@@ -259,25 +265,24 @@ auditVersions( nix::Sync<DrvDb::State>::Lock & state )
 }
 
 
-  static inline void
-auditFingerprint( nix::Sync<DrvDb::State>::Lock & state
-                , std::string_view                fpStr
-                )
+/* -------------------------------------------------------------------------- */
+
+  static void
+createDb( bool recreate, bool trace, std::string_view path )
 {
-  auto query = state->queryFingerprint.use();
-  if ( ! query.next() )
+  std::filesystem::path p( path );
+  if ( ( ! recreate ) && std::filesystem::exists( p ) ) { return; }
+
+  if ( ! std::filesystem::exists( p.parent_path() ) )
     {
-      throw ResolverException(
-        "DrvDb(): Failed to read fingerprint from database"
-      );
+      std::filesystem::create_directories( p.parent_path() );
     }
-  if ( query.getStr( 0 ) != fpStr )
-    {
-      throw ResolverException(
-        "DrvDb(): Fingerprint mismatch in '" + std::string( fpStr ) +
-        ".sqlite' reporting: " + query.getStr( 0 )
-      );
-    }
+
+  if ( std::filesystem::exists( p ) ) { std::filesystem::remove( p ); }
+
+  sqlite::SQLiteDb db( std::string( path ), true, true, true, trace );
+  db.exec( schema );
+  db.exec( setVersionInfo );
 }
 
 
@@ -290,29 +295,60 @@ DrvDb::DrvDb( const nix::flake::Fingerprint & fingerprint
             )
   : _state( std::make_unique<nix::Sync<State>>() )
   , _write( write )
+  , fingerprint( fingerprint )
 {
-  std::string fpStr  = fingerprint.to_string( nix::Base16, false );
+  std::string fpStr = this->fingerprint.to_string( nix::Base16, false );
+  std::string path  = getDrvDbName( this->fingerprint );
 
   auto state( _state->lock() );
 
   /* Boilerplate DB init. */
+  if ( create ) { createDb( false, trace, path ); }
   state->db = sqlite::SQLiteDb(
-    getDrvDbName( fingerprint )
+    path
   , create
   , this->_write
   , true    /* cache */
   , trace
   );
 
-  state->db.exec( schema );
-  state->db.exec( setVersionInfo );
-
   /* Populate statement templates, and audit existing version and schema info on
    * the off chance that there's already a DB with this fingerprint. */
   initStatements( state );
-  auditVersions( state );
-  state->insertFingerprint.use()( fpStr ).exec();
-  auditFingerprint( state, fpStr );
+
+  /* Assert that the database's schema versions are good.
+   * If they arent' recreate a fresh DB if able. */
+  try
+    {
+      auditVersions( state );
+    }
+  catch( const CacheException & e )
+    {
+      if ( create )
+        {
+          try
+            {
+              if ( sqlite3_close( state->db.db ) != SQLITE_OK )
+                {
+                  nix::SQLiteError::throw_( state->db.db, "closing database" );
+                }
+              state->db.db = nullptr;
+            }
+          catch( ... )
+            {
+              nix::ignoreException();
+            }
+          createDb( true, trace, path );
+          sqlite::SQLiteDb reopen( path, false, write, true, trace );
+          state->db.db = reopen.db;
+          reopen.db    = nullptr;
+          auditVersions( state );
+        }
+      else
+        {
+          throw e;
+        }
+    }
 }
 
 
@@ -392,8 +428,9 @@ DrvDb::setDrv(       std::string_view           subtree
              , const std::vector<std::string> & path
              )
 {
+  requireWritable( * this, "setDrv" );
   nlohmann::json relPath = path;
-  doSQLite( [&]()
+  this->doSQLite( [&]()
   {
     auto state( this->getDbState() );
     state->insertDrv.use()( subtree )( system )( relPath.dump() ).exec();
@@ -412,6 +449,7 @@ DrvDb::setDrv(       std::string_view           subtree
   void
 DrvDb::setDrv( const Package & p )
 {
+  requireWritable( * this, "setDrv" );
   std::vector<std::string> path    = p.getPathStrs();
   nlohmann::json           relPath = nlohmann::json::array();
   for ( size_t i = 2; i < path.size(); ++i )
@@ -486,6 +524,7 @@ DrvDb::getDrvPaths( std::string_view subtree, std::string_view system )
   void
 DrvDb::setDrvInfo( const Package & p )
 {
+  requireWritable( * this, "setDrvInfo" );
   std::vector<std::string> path    = p.getPathStrs();
   nlohmann::json           relPath = nlohmann::json::array();
   for ( size_t i = 2; i < path.size(); ++i )
@@ -655,6 +694,7 @@ DrvDb::setProgress( std::string_view subtree
                   )
 {
   if ( status == DBPS_FORCE ) { return DBPS_FORCE; }
+  requireWritable( * this, "setProgress" );
   progress_status old = DBPS_NONE;
   this->doSQLite( [&]() {
     auto state( this->getDbState() );
@@ -678,6 +718,7 @@ DrvDb::promoteProgress( std::string_view subtree
                       )
 {
   if ( status == DBPS_FORCE ) { return DBPS_FORCE; }
+  requireWritable( * this, "setProgress" );
   progress_status old = DBPS_NONE;
   this->doSQLite( [&]() {
     auto state( this->getDbState() );

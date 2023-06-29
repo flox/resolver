@@ -149,13 +149,11 @@ class DrvDb {
       std::unique_ptr<nix::SQLiteTxn> txn;
 
       /* Inserts */
-      nix::SQLiteStmt insertFingerprint;
       nix::SQLiteStmt insertDrvInfo;
       nix::SQLiteStmt insertDrv;
       nix::SQLiteStmt insertProgress;
 
       /* Queries */
-      nix::SQLiteStmt queryFingerprint;
       nix::SQLiteStmt queryVersionInfo;
 
       nix::SQLiteStmt hasDrv;
@@ -174,11 +172,12 @@ class DrvDb {
     };
 
   private:
-    std::atomic_bool failed { false };
+    std::atomic_bool                  failed { false };
     std::unique_ptr<nix::Sync<State>> _state;
     bool                              _write;
 
   public:
+    const nix::flake::Fingerprint fingerprint;
 
     DrvDb( const nix::flake::Fingerprint & fingerprint
          ,       bool                      create      = true

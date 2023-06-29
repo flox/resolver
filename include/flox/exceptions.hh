@@ -37,6 +37,16 @@ class DescriptorException : public ResolverException {
 
 /* -------------------------------------------------------------------------- */
 
+class CacheException : public ResolverException {
+  public:
+    CacheException( std::string_view msg )
+      : ResolverException( msg )
+    {}
+};
+
+
+/* -------------------------------------------------------------------------- */
+
   }  /* End Namespace `flox::resolve' */
 }  /* End Namespace `flox' */
 
