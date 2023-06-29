@@ -8,7 +8,7 @@
 
 #include <string>
 #include "flox/package-set.hh"
-#include "flox/drv-cache.hh"
+#include "flox/util.hh"
 
 
 /* -------------------------------------------------------------------------- */
@@ -18,7 +18,7 @@ namespace flox {
 
 /* -------------------------------------------------------------------------- */
 
-class DbPackageSet : public PackageSet {
+class FlakePackageSet : public PackageSet {
 
   private:
 
@@ -26,12 +26,31 @@ class DbPackageSet : public PackageSet {
     std::string                              _system;
     std::optional<std::string>               _stability;
     std::shared_ptr<nix::flake::LockedFlake> _flake;
-    std::shared_ptr<DrvDb>                   _db;
+    nix::ref<nix::EvalState>                 _state;
 
-      nix::Sync<DrvDb::State>::Lock
-    getDbState()
+      nix::ref<nix::eval_cache::EvalCache>
+    openEvalCache()
     {
-      return this->_db->getDbState();
+      nix::flake::Fingerprint fingerprint = this->getFingerprint();
+      return nix::make_ref<nix::eval_cache::EvalCache>(
+        ( nix::evalSettings.useEvalCache && nix::evalSettings.pureEval )
+        ? std::optional { std::cref( fingerprint ) }
+        : std::nullopt
+      , * this->_state
+      , [&]()
+        {
+          nix::Value * vFlake = this->_state->allocValue();
+          nix::flake::callFlake( * this->_state, * this->_flake, * vFlake );
+          this->_state->forceAttrs(
+            * vFlake, nix::noPos, "while parsing cached flake data"
+          );
+          nix::Attr * aOutputs = vFlake->attrs->get(
+            this->_state->symbols.create( "outputs" )
+          );
+          assert( aOutputs != nullptr );
+          return aOutputs->value;
+        }
+      );
     }
 
 
@@ -41,36 +60,35 @@ class DbPackageSet : public PackageSet {
 
     // TODO: `readonly' flag for `db'
 
-    DbPackageSet(
-            std::shared_ptr<nix::flake::LockedFlake>   flake
-    ,       std::shared_ptr<DrvDb>                     db
+    FlakePackageSet(
+            nix::ref<nix::EvalState>                   state
+    ,       std::shared_ptr<nix::flake::LockedFlake>   flake
     , const subtree_type                             & subtree
     ,       std::string_view                           system
     , const std::optional<std::string_view>          & stability = std::nullopt
-    ) : _subtree( subtree )
+    ) : _state( state )
+      , _subtree( subtree )
       , _system( system )
       , _stability( stability )
       , _flake( flake )
-      , _db( db )
     {}
 
-    DbPackageSet(
-            std::shared_ptr<nix::flake::LockedFlake>   flake
+    FlakePackageSet(
+            nix::ref<nix::EvalState>                   state
+    , const FloxFlakeRef                             & flakeRef
     , const subtree_type                             & subtree
     ,       std::string_view                           system
     , const std::optional<std::string_view>          & stability = std::nullopt
     ,       bool                                       trace     = false
-    ) : DbPackageSet( flake
-                    , std::make_shared<DrvDb>(
-                        flake->getFingerprint()
-                      , false
-                      , false
-                      , trace
-                      )
-                    , subtree
-                    , system
-                    , stability
-                    )
+    ) : FlakePackageSet(
+          state
+        , std::make_shared<nix::flake::LockedFlake>(
+            nix::flake::lockFlake( * state, flakeRef, floxFlakeLockFlags )
+          )
+        , subtree
+        , system
+        , stability
+        )
     {}
 
 
@@ -85,7 +103,7 @@ class DbPackageSet : public PackageSet {
 
 /* -------------------------------------------------------------------------- */
 
-    std::string_view getType()    const override { return "db";           }
+    std::string_view getType()    const override { return "flake";        }
     subtree_type     getSubtree() const override { return this->_subtree; }
     std::string_view getSystem()  const override { return this->_system;  }
 
@@ -111,7 +129,7 @@ class DbPackageSet : public PackageSet {
 
 /* -------------------------------------------------------------------------- */
 
-};  /* End class `DbPackageSet' */
+};  /* End class `FlakePackageSet' */
 
 
 /* -------------------------------------------------------------------------- */
