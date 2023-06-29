@@ -160,6 +160,7 @@ initStatements( nix::Sync<DrvDb::State>::Lock & state )
     "( ?, ?, ? )"
   );
 
+
   /* Queries */
 
   state->queryVersionInfo.create(
@@ -858,6 +859,78 @@ DrvDb::getProgresses()
     return 0;
   } );
   return rsl;
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+  std::size_t
+DrvDb::countDrvs( std::string_view subtree, std::string_view system )
+{
+  return this->doSQLite( [&]() {
+    auto state = this->getDbState();
+    auto query = state->countDrvs.use()( subtree )( system );
+    if ( ! query.next() )
+      {
+        throw CacheException( "Failed to query table Derivations." );
+      }
+    return query.getInt( 0 );
+  } );
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+  std::size_t
+DrvDb::countDrvsStability( std::string_view system
+                         , std::string_view stability
+                         )
+{
+  return this->doSQLite( [&]() {
+    auto state = this->getDbState();
+    auto query = state->countDrvsStability.use()( system )( stability );
+    if ( ! query.next() )
+      {
+        throw CacheException( "Failed to query table Derivations." );
+      }
+    return query.getInt( 0 );
+  } );
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+  std::size_t
+DrvDb::countDrvInfos( std::string_view subtree, std::string_view system )
+{
+  return this->doSQLite( [&]() {
+    auto state = this->getDbState();
+    auto query = state->countDrvInfos.use()( subtree )( system );
+    if ( ! query.next() )
+      {
+        throw CacheException( "Failed to query table DerivationInfos." );
+      }
+    return query.getInt( 0 );
+  } );
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+  std::size_t
+DrvDb::countDrvInfosStability( std::string_view system
+                             , std::string_view stability
+                             )
+{
+  return this->doSQLite( [&]() {
+    auto state = this->getDbState();
+    auto query = state->countDrvInfosStability.use()( system )( stability );
+    if ( ! query.next() )
+      {
+        throw CacheException( "Failed to query table DerivationInfos." );
+      }
+    return query.getInt( 0 );
+  } );
 }
 
 

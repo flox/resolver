@@ -245,6 +245,19 @@ class DrvDb {
                                         >
                     >                                     getProgresses();
 
+  std::size_t countDrvs( std::string_view subtree
+                       , std::string_view system
+                       );
+  std::size_t countDrvsStability( std::string_view system
+                                , std::string_view stability
+                                );
+  std::size_t countDrvInfos( std::string_view subtree
+                           , std::string_view system
+                           );
+  std::size_t countDrvInfosStability( std::string_view system
+                                    , std::string_view stability
+                                    );
+
 };  /* End class `DrvDb' */
 
 
