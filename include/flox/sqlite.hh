@@ -21,6 +21,8 @@ namespace flox {
 class SQLiteDb : public nix::SQLite {
 
   public:
+    SQLiteDb() : nix::SQLite() {};
+
     SQLiteDb(
       const std::string & path
     ,       int           flags = SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE
@@ -32,12 +34,12 @@ class SQLiteDb : public nix::SQLite {
 
     SQLiteDb(
       const std::string & path
-    ,       bool   create = true
-    ,       bool   write  = true
-    ,       bool   cache  = false
-    ,       bool   trace  = false
-    , const char * vfs    = nix::settings.useSQLiteWAL ? nullptr
-                                                       : "unix-dotfile"
+    ,       bool          create = true
+    ,       bool          write  = true
+    ,       bool          cache  = false
+    ,       bool          trace  = false
+    , const char        * vfs    = nix::settings.useSQLiteWAL ? nullptr
+                                                              : "unix-dotfile"
     ) : SQLiteDb( path
                 , ( ( create ? SQLITE_OPEN_CREATE : 0 ) |
                     ( write  ? SQLITE_OPEN_READWRITE : SQLITE_OPEN_READONLY )

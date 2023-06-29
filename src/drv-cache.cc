@@ -121,14 +121,11 @@ static const char * setVersionInfo =
   static inline void
 initStatements( nix::Sync<DrvDb::State>::Lock & state )
 {
+  /* Inserts */
+
   state->insertFingerprint.create(
     state->db
   , "INSERT OR IGNORE INTO Fingerprint VALUES ( ? )"
-  );
-
-  state->queryFingerprint.create(
-    state->db
-  , "SELECT fingerprint FROM Fingerprint LIMIT 1"
   );
 
   state->insertDrv.create(
@@ -152,6 +149,19 @@ initStatements( nix::Sync<DrvDb::State>::Lock & state )
     "( ?, ?, ? )"
   );
 
+  /* Queries */
+
+  state->queryFingerprint.create(
+    state->db
+  , "SELECT fingerprint FROM Fingerprint LIMIT 1"
+  );
+
+  state->queryVersionInfo.create(
+    state->db
+  , "SELECT version FROM VersionInfo WHERE ( id = ? )"
+  );
+
+
   state->hasDrv.create(
     state->db
   , "SELECT COUNT( * ) FROM Derivations "
@@ -162,6 +172,20 @@ initStatements( nix::Sync<DrvDb::State>::Lock & state )
     state->db
   , "SELECT * FROM Derivations WHERE ( subtree = ? ) AND ( system = ? )"
   );
+
+  state->countDrvs.create(
+    state->db
+  , "SELECT COUNT( subtree ) FROM Derivations WHERE"
+    "( subtree = ? ) AND ( system = ? )"
+  );
+
+  state->countDrvsStability.create(
+    state->db
+  , "SELECT COUNT( subtree ) FROM Derivations WHERE"
+    "( subtree = ? ) AND ( system = ? ) AND "
+    "( json_extract( path, '$[0]' ) = ? )"
+  );
+
 
   state->queryDrvInfo.create(
     state->db
@@ -174,16 +198,26 @@ initStatements( nix::Sync<DrvDb::State>::Lock & state )
   , "SELECT * FROM DerivationInfos WHERE ( subtree = ? ) AND ( system = ? )"
   );
 
+  state->countDrvInfos.create(
+    state->db
+  , "SELECT COUNT( subtree ) FROM DerivationInfos WHERE"
+    "( subtree = ? ) AND ( system = ? )"
+  );
+
+  state->countDrvInfosStability.create(
+    state->db
+  , "SELECT COUNT( subtree ) FROM DerivationInfos WHERE"
+    "( subtree = ? ) AND ( system = ? ) AND "
+    "( json_extract( path, '$[0]' ) = ? )"
+  );
+
+
   state->queryProgress.create(
     state->db
   , "SELECT status FROM Progress WHERE ( subtree = ? ) AND ( system = ? )"
   );
-  state->queryProgresses.create( state->db, "SELECT * FROM Progress" );
 
-  state->queryVersionInfo.create(
-    state->db
-  , "SELECT version FROM VersionInfo WHERE ( id = ? )"
-  );
+  state->queryProgresses.create( state->db, "SELECT * FROM Progress" );
 
 }
 
@@ -249,15 +283,27 @@ auditFingerprint( nix::Sync<DrvDb::State>::Lock & state
 
 /* -------------------------------------------------------------------------- */
 
-DrvDb::DrvDb( const nix::flake::Fingerprint & fingerprint )
+DrvDb::DrvDb( const nix::flake::Fingerprint & fingerprint
+            ,       bool                      create
+            ,       bool                      write
+            ,       bool                      trace
+            )
   : _state( std::make_unique<nix::Sync<State>>() )
+  , _write( write )
 {
   std::string fpStr  = fingerprint.to_string( nix::Base16, false );
 
   auto state( _state->lock() );
 
   /* Boilerplate DB init. */
-  state->db = nix::SQLite( getDrvDbName( fingerprint ) );
+  state->db = sqlite::SQLiteDb(
+    getDrvDbName( fingerprint )
+  , create
+  , this->_write
+  , true    /* cache */
+  , trace
+  );
+
   state->db.exec( schema );
   state->db.exec( setVersionInfo );
 
@@ -267,9 +313,6 @@ DrvDb::DrvDb( const nix::flake::Fingerprint & fingerprint )
   auditVersions( state );
   state->insertFingerprint.use()( fpStr ).exec();
   auditFingerprint( state, fpStr );
-
-  /* Disable sync and enable journals. */
-  state->db.isCache();
 }
 
 

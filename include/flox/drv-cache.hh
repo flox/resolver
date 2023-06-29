@@ -9,7 +9,7 @@
 #include <nlohmann/json.hpp>
 #include <nix/flake/flake.hh>
 #include <nix/eval-cache.hh>
-#include <nix/sqlite.hh>
+#include "flox/sqlite.hh"
 #include "flox/package.hh"
 
 
@@ -143,39 +143,56 @@ getDrvDbName( const nix::flake::LockedFlake & flake )
 
 class DrvDb {
 
-  private:
-    std::atomic_bool failed { false };
-
   public:
     struct State {
-      nix::SQLite                     db;
-      nix::SQLiteStmt                 insertDrv;
-      nix::SQLiteStmt                 hasDrv;
-      nix::SQLiteStmt                 queryDrvs;
-      nix::SQLiteStmt                 insertDrvInfo;
-      nix::SQLiteStmt                 queryDrvInfo;
-      nix::SQLiteStmt                 queryDrvInfos;
-      nix::SQLiteStmt                 insertProgress;
-      nix::SQLiteStmt                 queryProgress;
-      nix::SQLiteStmt                 queryProgresses;
-      nix::SQLiteStmt                 insertFingerprint;
-      nix::SQLiteStmt                 queryFingerprint;
-      nix::SQLiteStmt                 queryVersionInfo;
+      sqlite::SQLiteDb                db;
       std::unique_ptr<nix::SQLiteTxn> txn;
+
+      /* Inserts */
+      nix::SQLiteStmt insertFingerprint;
+      nix::SQLiteStmt insertDrvInfo;
+      nix::SQLiteStmt insertDrv;
+      nix::SQLiteStmt insertProgress;
+
+      /* Queries */
+      nix::SQLiteStmt queryFingerprint;
+      nix::SQLiteStmt queryVersionInfo;
+
+      nix::SQLiteStmt hasDrv;
+      nix::SQLiteStmt queryDrvs;
+      nix::SQLiteStmt countDrvs;
+      nix::SQLiteStmt countDrvsStability;
+
+      nix::SQLiteStmt queryDrvInfo;
+      nix::SQLiteStmt queryDrvInfos;
+      nix::SQLiteStmt countDrvInfos;
+      nix::SQLiteStmt countDrvInfosStability;
+
+      nix::SQLiteStmt queryProgress;
+      nix::SQLiteStmt queryProgresses;
+
     };
 
   private:
+    std::atomic_bool failed { false };
     std::unique_ptr<nix::Sync<State>> _state;
+    bool                              _write;
 
   public:
 
-    DrvDb( const nix::flake::Fingerprint & fingerprint );
+    DrvDb( const nix::flake::Fingerprint & fingerprint
+         ,       bool                      create      = true
+         ,       bool                      write       = true
+         ,       bool                      trace       = false
+         );
     ~DrvDb();
 
     void startCommit();
     void endCommit();
 
     nix::Sync<DrvDb::State>::Lock getDbState();
+
+    bool isWritable() const { return this->_write; }
 
     template<typename F> uint64_t doSQLite( F && fun );
     void setDrv( const Package & p );
