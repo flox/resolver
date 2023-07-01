@@ -39,8 +39,6 @@ class DbPackageSet : public PackageSet {
 
   public:
 
-    // TODO: `readonly' flag for `db'
-
     DbPackageSet(
             std::shared_ptr<nix::flake::LockedFlake>   flake
     ,       std::shared_ptr<DrvDb>                     db
@@ -63,8 +61,8 @@ class DbPackageSet : public PackageSet {
     ) : DbPackageSet( flake
                     , std::make_shared<DrvDb>(
                         flake->getFingerprint()
-                      , false
-                      , false
+                      , false                   /* create */
+                      , false                   /* write  */
                       , trace
                       )
                     , subtree
@@ -111,59 +109,81 @@ class DbPackageSet : public PackageSet {
 
 /* -------------------------------------------------------------------------- */
 
-    struct iterator
+    std::shared_ptr<Package> maybeGetRelPath(
+      const std::list<std::string_view> & path
+    ) override;
+
+
+/* -------------------------------------------------------------------------- */
+
+    struct const_iterator
     {
+      using value_type = const CachedPackage;
+      using reference  = value_type &;
+      using pointer    = nix::ref<value_type>;
+
       private:
-        nix::SQLiteStmt::Use _query;
-        nlohmann::json       _val;
-        bool                 _hasNext = true;
+        std::optional<nix::SQLiteStmt::Use> _query;
+        std::shared_ptr<CachedPackage>      _ptr;
+        bool                                _hasNext = true;
 
       public:
-        iterator()
-          : _query( nix::SQLiteStmt().use() ), _val(), _hasNext( false )
+        const_iterator()
+          : _ptr( nullptr ), _hasNext( false ), _query( std::nullopt )
         {}
 
-        explicit iterator( nix::SQLiteStmt::Use query )
-          : _query( query )
+        explicit const_iterator( nix::SQLiteStmt::Use query )
+          : _query( query ), _ptr( nullptr ), _hasNext( true )
         {
           ++( * this );
         }
 
         std::string_view getType() const { return "db"; }
 
-          iterator &
+          const_iterator &
         operator++()
         {
-          if ( this->_hasNext )
+          if ( this->_hasNext && this->_query.has_value() )
             {
-              this->_hasNext = this->_query.next();
-              this->_val = infoFromQuery( this->_query );
+              this->_hasNext = this->_query.value().next();
+              this->_ptr = std::make_shared<CachedPackage>(
+                infoFromQuery( this->_query.value() )
+              );
             }
           else
             {
-              this->_val = nlohmann::json();  /* set `null' */
+              this->_query = std::nullopt;
+              this->_ptr   = nullptr;
             }
           return * this;
         }
 
-          iterator
+          const_iterator
         operator++( int )
         {
-          iterator tmp = * this;
+          const_iterator tmp = * this;
           ++( * this );
           return tmp;
         }
 
           bool
-        operator==( const iterator & other ) const
+        operator==( const const_iterator & other ) const
         {
-          return this->_val == other._val;
+          return this->_ptr == other._ptr;
         }
 
           bool
-        operator!=( const iterator & other ) const
+        operator!=( const const_iterator & other ) const
         {
-          return ! ( ( * this ) == other );
+          return  this->_ptr != other._ptr;
+        }
+
+        reference operator*()  const { return * this->_ptr; }
+
+          pointer
+        operator->()
+        {
+          return (nix::ref<const CachedPackage>) this->_ptr;
         }
 
     };  /* End struct `DbPackageSet::iterator' */
@@ -171,20 +191,20 @@ class DbPackageSet : public PackageSet {
 
 /* -------------------------------------------------------------------------- */
 
-      iterator
-    begin()
+      const_iterator
+    begin() const
     {
-      return iterator(
+      return const_iterator(
         this->_db->useDrvInfos( subtreeTypeToString( this->_subtree )
                               , this->_system
                               )
       );
     }
 
-      iterator
-    end()
+      const_iterator
+    end() const
     {
-      return iterator();
+      return const_iterator();
     }
 
 

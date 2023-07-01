@@ -654,8 +654,7 @@ DrvDb::getDrvInfo(       std::string_view           subtree
     auto state( this->getDbState() );
     nix::SQLiteStmt::Use query =
       state->queryDrvInfo.use()( subtree )( system )( relPath.dump() );
-    if ( ! query.next() ) { rsl = std::nullopt;           }
-    else                  { rsl = infoFromQuery( query ); }
+    if ( query.next() ) { rsl = infoFromQuery( query ); }
     return 0;
   } );
   return rsl;

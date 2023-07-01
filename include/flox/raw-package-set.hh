@@ -199,8 +199,8 @@ class RawPackageSet : public PackageSet {
           return this->_ptr != other._ptr;
         }
 
-        reference operator*() const { return * this->_ptr; }
-        pointer   operator->()      { return this->_ptr; }
+        reference operator*()  const { return * this->_ptr; }
+        pointer   operator->()       { return this->_ptr; }
 
         friend iterator;
         friend const_iterator;

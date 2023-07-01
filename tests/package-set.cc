@@ -8,8 +8,10 @@
 #include <iostream>
 #include <optional>
 #include "flox/raw-package-set.hh"
+#include "flox/types.hh"
+#include "descriptor.hh"
+#include "flox/db-package-set.hh"
 // #include "flox/flake-package-set.hh"
-// #include "flox/db-package-set.hh"
 
 
 /* -------------------------------------------------------------------------- */
@@ -121,6 +123,39 @@ test_RawPackageSet_addPackage1()
 
 /* -------------------------------------------------------------------------- */
 
+  bool
+test_DbPackageSet_iterator1()
+{
+  std::shared_ptr<nix::flake::LockedFlake> flake = nullptr;
+  {
+    Inputs      inputs( (nlohmann::json) { { "nixpkgs", nixpkgsRef } } );
+    Preferences prefs;
+    ResolverState rs(
+      inputs
+    , prefs
+    , (std::list<std::string>) { "x86_64-linux" }
+    );
+    // Initialize DB
+    Descriptor d( (nlohmann::json) { { "name", "hello" } } );
+    rs.resolveInInput( "nixpkgs", d );
+
+    nix::ref<FloxFlake> nixpkgs = rs.getInput( "nixpkgs" ).value();
+    flake = nixpkgs->getLockedFlake();
+  }
+
+  DbPackageSet ps( flake, ST_LEGACY, "x86_64-linux" );
+
+  size_t c1 = 0;
+  size_t c2 = 0;
+  for ( auto it = ps.begin(); it != ps.end(); ++it, ++c1 ) {}
+  for ( auto & p : ps ) { ++c2; }
+
+  return ( c1 == c2 ) && ( 0 < c1 );
+}
+
+
+/* -------------------------------------------------------------------------- */
+
 #define RUN_TEST( _NAME )                                              \
   try                                                                  \
     {                                                                  \
@@ -146,6 +181,8 @@ main( int argc, char * argv[], char ** envp )
 
   RUN_TEST( RawPackageSet_iterator1 );
   RUN_TEST( RawPackageSet_addPackage1 );
+  // FIXME
+  //RUN_TEST( DbPackageSet_iterator1 );
 
   return ec;
 }
