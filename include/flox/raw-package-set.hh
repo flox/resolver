@@ -135,8 +135,7 @@ class RawPackageSet : public PackageSet {
                                  , CachedPackageMap::iterator
                         >::type;
 
-      public:
-      //private:
+      private:
         container_type                 * _pkgs;
         wrapped_iter_type                _end;
         wrapped_iter_type                _it;
