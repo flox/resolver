@@ -138,38 +138,9 @@ FlakePackageSet::begin()
   return flake_iterator( std::move( todo ) );
 }
 
-  PackageSet::const_iterator
-FlakePackageSet::begin() const
-{
-  MaybeCursor curr = this->openEvalCache()->getRoot();
-  if ( this->_subtree == ST_PACKAGES )
-    {
-      curr = curr->maybeGetAttr( "packages" );
-      if ( curr == nullptr ) { return this->end(); }
-      curr = curr->maybeGetAttr( this->_system );
-      if ( curr == nullptr ) { return this->end(); }
-    }
-  else
-    {
-      curr = curr->maybeGetAttr( subtreeTypeToString( this->_subtree ) );
-      if ( curr == nullptr ) { return this->end(); }
-      curr = curr->maybeGetAttr( this->_system );
-      if ( curr == nullptr ) { return this->end(); }
-      if ( this->_stability.has_value() )
-        {
-          curr = curr->maybeGetAttr( this->_stability.value() );
-          if ( curr == nullptr ) { return this->end(); }
-        }
-    }
-  todo_queue todo;
-  todo.emplace( std::move( curr ) );
-  return flake_const_iterator( std::move( todo ) );
-}
 
-
-  template<bool IS_CONST>
-  FlakePackageSet::flake_iterator_impl<IS_CONST> &
-FlakePackageSet::flake_iterator_impl<IS_CONST>::operator++()
+  FlakePackageSet::flake_iterator &
+FlakePackageSet::flake_iterator::operator++()
 {
   recur:
     if ( this->_todo.empty() ) { return this->end(); }
@@ -213,7 +184,7 @@ FlakePackageSet::flake_iterator_impl<IS_CONST>::operator++()
           }
       }
     throw ResolverException(
-      "FlakePackageSet::flake_iterator_impl::operator++(): "
+      "FlakePackageSet::flake_iterator::operator++(): "
       "Readched ALLEGEDLY unreachable block."
     );
     return * this;
@@ -224,12 +195,6 @@ FlakePackageSet::flake_iterator_impl<IS_CONST>::operator++()
 FlakePackageSet::end()
 {
   return FlakePackageSet::flake_iterator();
-}
-
-  PackageSet::const_iterator
-FlakePackageSet::end() const
-{
-  return FlakePackageSet::flake_const_iterator();
 }
 
 

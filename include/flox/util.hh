@@ -7,13 +7,13 @@
 #pragma once
 
 #include <cstdio>
+#include <functional>
 #include <nix/eval-inline.hh>
 #include <nix/eval.hh>
 #include <nix/eval-cache.hh>
 #include <nix/flake/flake.hh>
 #include <nix/shared.hh>
 #include <nix/store-api.hh>
-#include "resolve.hh"
 #include <optional>
 #include <vector>
 #include <map>
@@ -21,8 +21,44 @@
 
 /* -------------------------------------------------------------------------- */
 
+/* Required for `RawPackageSet' */
+  template<>
+struct std::hash<std::list<std::string_view>>
+{
+    std::size_t
+  operator()( const std::list<std::string_view> & lst ) const noexcept
+  {
+    if ( lst.empty() ) { return 0; }
+    auto it = lst.begin();
+    std::size_t h1 = std::hash<std::string_view>{}( * it );
+    for ( ; it != lst.cend(); ++it )
+      {
+        h1 = ( h1 >> 1 ) ^ ( std::hash<std::string_view>{}( *it ) << 1 );
+      }
+    return h1;
+  }
+};
+
+
+/* -------------------------------------------------------------------------- */
+
 namespace flox {
   namespace resolve {
+
+/* -------------------------------------------------------------------------- */
+
+static const std::list<std::string> defaultSystems = {
+ "x86_64-linux", "aarch64-linux", "x86_64-darwin", "aarch64-darwin"
+};
+
+static const std::vector<std::string> defaultSubtrees = {
+  "catalog", "packages", "legacyPackages"
+};
+
+static const std::vector<std::string> defaultCatalogStabilities = {
+  "stable", "staging", "unstable"
+};
+
 
 /* -------------------------------------------------------------------------- */
 
@@ -67,34 +103,8 @@ shouldSearchSystem( std::string_view system )
 
 /* -------------------------------------------------------------------------- */
 
-std::list<Resolved> & mergeResolvedByAttrPathGlob( std::list<Resolved> & lst );
-
-
-/* -------------------------------------------------------------------------- */
-
   }  /* End namespace `flox::resolve' */
 }    /* End namespace `flox' */
-
-
-/* -------------------------------------------------------------------------- */
-
-/* Required for `RawPackageSet' */
-template<>
-struct std::hash<std::list<std::string_view>>
-{
-    std::size_t
-  operator()( const std::list<std::string_view> & lst ) const noexcept
-  {
-    if ( lst.empty() ) { return 0; }
-    auto it = lst.begin();
-    std::size_t h1 = std::hash<std::string_view>{}( * it );
-    for ( ; it != lst.cend(); ++it )
-      {
-        h1 = ( h1 >> 1 ) ^ ( std::hash<std::string_view>{}( *it ) << 1 );
-      }
-    return h1;
-  }
-};
 
 
 /* -------------------------------------------------------------------------- *

@@ -7,8 +7,8 @@
 #pragma once
 
 #include <string>
-#include "flox/package-set.hh"
 #include "flox/util.hh"
+#include "flox/package-set.hh"
 
 
 /* -------------------------------------------------------------------------- */
@@ -115,8 +115,7 @@ class FlakePackageSet : public PackageSet {
     }
 
       FloxFlakeRef
-    getRef() const override
-    {
+    getRef() const override {
       return this->_flake->flake.lockedRef;
     }
 
@@ -129,12 +128,7 @@ class FlakePackageSet : public PackageSet {
 
 /* -------------------------------------------------------------------------- */
 
-    template<bool IS_CONST> struct flake_iterator_impl;
-    using flake_iterator       = flake_iterator_impl<false>;
-    using flake_const_iterator = flake_iterator_impl<true>;
-
-      template<bool IS_CONST>
-    struct flake_iterator_impl : iterator_impl<IS_CONST>
+    struct flake_iterator : iterator
     {
       private:
         todo_queue                               _todo;
@@ -142,7 +136,7 @@ class FlakePackageSet : public PackageSet {
         std::vector<nix::Symbol>::iterator       _it;
 
       public:
-        explicit flake_iterator_impl( todo_queue todo )
+        explicit flake_iterator( todo_queue todo )
           : _todo( todo )
         {
           if ( todo.empty() )
@@ -157,58 +151,39 @@ class FlakePackageSet : public PackageSet {
               this->_it  = this->_todo.front()->getAttrs().begin();
             }
         }
-        flake_iterator_impl() : flake_iterator_impl( todo_queue() ) {}
+        flake_iterator() : flake_iterator( todo_queue() ) {}
 
         std::string_view getType() const { return "flake"; }
 
-        flake_iterator_impl & operator++();
+        flake_iterator & operator++();
 
-          flake_iterator_impl
+          flake_iterator
         operator++( int )
         {
-          flake_iterator_impl tmp = * this;
+          flake_iterator tmp = * this;
           ++( * this );
           return tmp;
         }
 
-        bool operator==( const iterator       & other ) const { return false; }
-        bool operator==( const const_iterator & other ) const { return false; }
           bool
         operator==( const flake_iterator & other ) const
         {
           return this->_it == other._it;
         }
-          bool
-        operator==( const flake_const_iterator & other ) const
-        {
-          return this->_it == other._it;
-        }
 
-        bool operator!=( const iterator       & other ) const { return true; }
-        bool operator!=( const const_iterator & other ) const { return true; }
           bool
         operator!=( const flake_iterator & other ) const
         {
           return ! ( ( * this ) == other );
         }
-          bool
-        operator!=( const flake_const_iterator & other ) const
-        {
-          return ! ( ( * this ) == other );
-        }
 
-      friend flake_const_iterator;
-      friend flake_iterator;
-
-    };  /* End struct `PackageSet::iterator_impl' */
+    };  /* End struct `PackageSet::iterator' */
 
 
 /* -------------------------------------------------------------------------- */
 
-    iterator       begin()       override;
-    iterator       end()         override;
-    const_iterator begin() const override;
-    const_iterator end()   const override;
+    iterator begin() override;
+    iterator end()   override;
 
 
 /* -------------------------------------------------------------------------- */

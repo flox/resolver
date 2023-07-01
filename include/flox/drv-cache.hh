@@ -49,6 +49,38 @@ class CachedPackage : public Package {
     bool                        _hasVersionAttr;
 
   public:
+    CachedPackage(
+      const std::vector<std::string_view>   & pathS            = {}
+    ,       std::string_view                  fullname         = {}
+    ,       std::string_view                  pname            = {}
+    ,       std::optional<std::string_view>   version          = std::nullopt
+    ,       std::optional<std::string_view>   semver           = std::nullopt
+    ,       std::optional<std::string_view>   license          = std::nullopt
+    , const std::vector<std::string_view>   & outputs          = { "out" }
+    , const std::vector<std::string_view>   & outputsToInstall = { "out" }
+    ,       std::optional<bool>               broken           = std::nullopt
+    ,       std::optional<bool>               unfree           = std::nullopt
+    ,       bool                              hasMetaAttr      = false
+    ,       bool                              hasPnameAttr     = false
+    ,       bool                              hasVersionAttr   = false
+    ) : _pname( pname )
+      , _version( version )
+      , _semver( semver )
+      , _license( license )
+      , _broken( broken )
+      , _unfree( unfree )
+      , _hasMetaAttr( hasMetaAttr )
+      , _hasPnameAttr( hasPnameAttr )
+      , _hasVersionAttr( hasVersionAttr )
+    {
+      for ( auto & s : pathS ) { this->_pathS.emplace_back( s ); }
+      for ( auto & s : outputs ) { this->_outputs.emplace_back( s ); }
+      for ( auto & s : outputsToInstall )
+        {
+          this->_outputsToInstall.emplace_back( s );
+        }
+    }
+
       std::vector<std::string>
     getPathStrs() const override
     {

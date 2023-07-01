@@ -111,12 +111,7 @@ class DbPackageSet : public PackageSet {
 
 /* -------------------------------------------------------------------------- */
 
-    template<bool IS_CONST> struct db_iterator_impl;
-    using db_iterator       = db_iterator_impl<false>;
-    using db_const_iterator = db_iterator_impl<true>;
-
-      template<bool IS_CONST>
-    struct db_iterator_impl : iterator_impl<IS_CONST>
+    struct db_iterator : iterator
     {
       private:
         nix::SQLiteStmt::Use _query;
@@ -124,11 +119,11 @@ class DbPackageSet : public PackageSet {
         bool                 _hasNext = true;
 
       public:
-        db_iterator_impl()
+        db_iterator()
           : _query( nix::SQLiteStmt().use() ), _val(), _hasNext( false )
         {}
 
-        explicit db_iterator_impl( nix::SQLiteStmt::Use query )
+        explicit db_iterator( nix::SQLiteStmt::Use query )
           : _query( query )
         {
           ++( * this );
@@ -136,7 +131,7 @@ class DbPackageSet : public PackageSet {
 
         std::string_view getType() const { return "db"; }
 
-          db_iterator_impl &
+          db_iterator &
         operator++()
         {
           if ( this->_hasNext )
@@ -151,44 +146,27 @@ class DbPackageSet : public PackageSet {
           return * this;
         }
 
-          db_iterator_impl
+          db_iterator
         operator++( int )
         {
-          db_iterator_impl tmp = * this;
+          db_iterator tmp = * this;
           ++( * this );
           return tmp;
         }
 
-        bool operator==( const iterator       & other ) const { return false; }
-        bool operator==( const const_iterator & other ) const { return false; }
           bool
         operator==( const db_iterator & other ) const
         {
           return this->_val == other._val;
         }
-          bool
-        operator==( const db_const_iterator & other ) const
-        {
-          return this->_val == other._val;
-        }
 
-        bool operator!=( const iterator       & other ) const { return true; }
-        bool operator!=( const const_iterator & other ) const { return true; }
           bool
         operator!=( const db_iterator & other ) const
         {
           return ! ( ( * this ) == other );
         }
-          bool
-        operator!=( const db_const_iterator & other ) const
-        {
-          return ! ( ( * this ) == other );
-        }
 
-      friend db_const_iterator;
-      friend db_iterator;
-
-    };  /* End struct `PackageSet::iterator_impl' */
+    };  /* End struct `DbPackageSet::db_iterator' */
 
 
 /* -------------------------------------------------------------------------- */
@@ -207,25 +185,6 @@ class DbPackageSet : public PackageSet {
     end() override
     {
       return db_iterator();
-    }
-
-
-/* -------------------------------------------------------------------------- */
-
-      const_iterator
-    begin() const override
-    {
-      return db_const_iterator(
-        this->_db->useDrvInfos( subtreeTypeToString( this->_subtree )
-                              , this->_system
-                              )
-      );
-    }
-
-      const_iterator
-    end() const override
-    {
-      return db_const_iterator();
     }
 
 

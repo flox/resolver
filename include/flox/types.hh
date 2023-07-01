@@ -20,6 +20,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include "flox/exceptions.hh"
+#include "flox/util.hh"
 #include <queue>
 #include <any>
 
@@ -28,21 +29,6 @@
 
 namespace flox {
   namespace resolve {
-
-/* -------------------------------------------------------------------------- */
-
-static const std::list<std::string> defaultSystems = {
- "x86_64-linux", "aarch64-linux", "x86_64-darwin", "aarch64-darwin"
-};
-
-static const std::vector<std::string> defaultSubtrees = {
-  "catalog", "packages", "legacyPackages"
-};
-
-static const std::vector<std::string> defaultCatalogStabilities = {
-  "stable", "staging", "unstable"
-};
-
 
 /* -------------------------------------------------------------------------- */
 
@@ -445,13 +431,18 @@ class ResolverState {
 
 /* -------------------------------------------------------------------------- */
 
+std::list<Resolved> & mergeResolvedByAttrPathGlob( std::list<Resolved> & lst );
+
+
+/* -------------------------------------------------------------------------- */
+
   }  /* End Namespace `flox::resolve' */
 }  /* End Namespace `flox' */
 
 
 /* -------------------------------------------------------------------------- */
 
-template<>
+  template<>
 struct std::hash<flox::resolve::AttrPathGlob>
 {
     std::size_t
