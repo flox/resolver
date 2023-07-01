@@ -55,9 +55,22 @@ test_RawPackageSet_iterator1()
   , nix::parseFlakeRef( nixpkgsRef )
   };
 
-  for ( auto & p : ps ) { return p.getPname() == "hello"; }
+  auto i = ps.begin();
+  assert( i._pkgs != nullptr );
+  assert( i._ptr  != nullptr );
 
-  return false;
+  for ( auto it = ps.begin(); it != ps.end(); ++it )
+    {
+      if ( ( * it ).getPname() != "hello" ) { return false; }
+      break;
+    }
+  for ( auto & p : ps )
+    {
+      if ( p.getPname() != "hello" ) { return false; }
+      break;
+    }
+
+  return true;
 }
 
 

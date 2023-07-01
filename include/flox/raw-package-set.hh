@@ -135,34 +135,39 @@ class RawPackageSet : public PackageSet {
                                  , CachedPackageMap::iterator
                         >::type;
 
-      private:
-        container_type                   * _pkgs;
-        CachedPackageMap::const_iterator   _end;
-        wrapped_iter_type                  _it;
-        nix::ref<CachedPackage>            _ptr;
+      public:
+      //private:
+        container_type                 * _pkgs;
+        wrapped_iter_type                _end;
+        wrapped_iter_type                _it;
+        std::shared_ptr<CachedPackage>   _ptr;
 
       public:
 
         iterator_impl( container_type * pkgs )
-          : _end( pkgs->cend() )
+          : _end( pkgs->end() )
           , _it( pkgs->begin() )
           , _pkgs( pkgs )
           , _ptr( nullptr )
         {
-          this->_ptr = this->_it->second;
+          if ( this->_it != this->_end ) { this->_ptr = this->_it->second; }
         }
 
         iterator_impl( container_type * pkgs, wrapped_iter_type it )
-          : _end( pkgs->cend() ), _it( it ), _pkgs( pkgs ), _ptr( it->second )
-        {}
+          : _end( pkgs->end() ), _it( it ), _pkgs( pkgs ), _ptr( nullptr )
+        {
+          if ( this->_it != this->_end ) { this->_ptr = this->_it->second; }
+        }
 
         std::string_view getType() const { return "raw"; }
 
           iterator_impl &
         operator++()
         {
+          if ( this->_it == this->_end ) { return * this; }
           ++this->_it;
-          this->_ptr = this->_it->second;
+          if ( this->_it == this->_end ) { this->_ptr = nullptr; }
+          else                           { this->_ptr = this->_it->second; }
           return * this;
         }
 
@@ -206,7 +211,7 @@ class RawPackageSet : public PackageSet {
 
 /* -------------------------------------------------------------------------- */
 
-    iterator begin() { return iterator( & this->_pkgs ); }
+    iterator begin() { return iterator( & this->_pkgs );                    }
     iterator end()   { return iterator( & this->_pkgs, this->_pkgs.end() ); }
 
     const_iterator begin() const { return const_iterator( & this->_pkgs ); }
