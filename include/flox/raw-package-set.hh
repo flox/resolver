@@ -121,17 +121,19 @@ class RawPackageSet : public PackageSet {
     struct iterator_impl
     {
       using value_type =
-        std::conditional<IS_CONST, const CachedPackage, CachedPackage>;
+        std::conditional<IS_CONST, const CachedPackage, CachedPackage>::type;
       using reference  = value_type &;
       using pointer    = nix::ref<value_type>;
 
       using container_type =
-        std::conditional<IS_CONST, const CachedPackageMap, CachedPackageMap>;
+        std::conditional<IS_CONST, const CachedPackageMap
+                                 , CachedPackageMap
+                        >::type;
 
       using wrapped_iter_type =
         std::conditional<IS_CONST, CachedPackageMap::const_iterator
                                  , CachedPackageMap::iterator
-                        >;
+                        >::type;
 
       private:
         container_type                   * _pkgs;
@@ -204,12 +206,7 @@ class RawPackageSet : public PackageSet {
 
 /* -------------------------------------------------------------------------- */
 
-      iterator
-    begin()
-    {
-      return iterator( (CachedPackageMap *) & this->_pkgs );
-    }
-
+    iterator begin() { return iterator( & this->_pkgs ); }
     iterator end()   { return iterator( & this->_pkgs, this->_pkgs.end() ); }
 
     const_iterator begin() const { return const_iterator( & this->_pkgs ); }
@@ -220,8 +217,8 @@ class RawPackageSet : public PackageSet {
       return const_iterator( & this->_pkgs, this->_pkgs.cend() );
     }
 
-    const_iterator cbegin() const { this->begin(); }
-    const_iterator cend()   const { this->end();   }
+    const_iterator cbegin() const { return this->begin(); }
+    const_iterator cend()   const { return this->end();   }
 
 
 /* -------------------------------------------------------------------------- */

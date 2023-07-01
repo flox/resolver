@@ -111,7 +111,7 @@ class DbPackageSet : public PackageSet {
 
 /* -------------------------------------------------------------------------- */
 
-    struct db_iterator : iterator
+    struct iterator
     {
       private:
         nix::SQLiteStmt::Use _query;
@@ -119,11 +119,11 @@ class DbPackageSet : public PackageSet {
         bool                 _hasNext = true;
 
       public:
-        db_iterator()
+        iterator()
           : _query( nix::SQLiteStmt().use() ), _val(), _hasNext( false )
         {}
 
-        explicit db_iterator( nix::SQLiteStmt::Use query )
+        explicit iterator( nix::SQLiteStmt::Use query )
           : _query( query )
         {
           ++( * this );
@@ -131,7 +131,7 @@ class DbPackageSet : public PackageSet {
 
         std::string_view getType() const { return "db"; }
 
-          db_iterator &
+          iterator &
         operator++()
         {
           if ( this->_hasNext )
@@ -146,35 +146,35 @@ class DbPackageSet : public PackageSet {
           return * this;
         }
 
-          db_iterator
+          iterator
         operator++( int )
         {
-          db_iterator tmp = * this;
+          iterator tmp = * this;
           ++( * this );
           return tmp;
         }
 
           bool
-        operator==( const db_iterator & other ) const
+        operator==( const iterator & other ) const
         {
           return this->_val == other._val;
         }
 
           bool
-        operator!=( const db_iterator & other ) const
+        operator!=( const iterator & other ) const
         {
           return ! ( ( * this ) == other );
         }
 
-    };  /* End struct `DbPackageSet::db_iterator' */
+    };  /* End struct `DbPackageSet::iterator' */
 
 
 /* -------------------------------------------------------------------------- */
 
       iterator
-    begin() override
+    begin()
     {
-      return db_iterator(
+      return iterator(
         this->_db->useDrvInfos( subtreeTypeToString( this->_subtree )
                               , this->_system
                               )
@@ -182,9 +182,9 @@ class DbPackageSet : public PackageSet {
     }
 
       iterator
-    end() override
+    end()
     {
-      return db_iterator();
+      return iterator();
     }
 
 

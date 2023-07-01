@@ -110,7 +110,7 @@ FlakePackageSet::size()
 
 /* -------------------------------------------------------------------------- */
 
-  PackageSet::iterator
+  FlakePackageSet::iterator
 FlakePackageSet::begin()
 {
   MaybeCursor curr = this->openEvalCache()->getRoot();
@@ -135,28 +135,38 @@ FlakePackageSet::begin()
     }
   todo_queue todo;
   todo.emplace( std::move( curr ) );
-  return flake_iterator( std::move( todo ) );
+  return iterator( this->_subtree, std::move( todo ) );
 }
 
 
-  FlakePackageSet::flake_iterator &
-FlakePackageSet::flake_iterator::operator++()
+  FlakePackageSet::iterator &
+FlakePackageSet::iterator::operator++()
 {
   recur:
-    if ( this->_todo.empty() ) { return this->end(); }
-    ++this->it;
-    if ( this->it == this->end )
+    if ( this->_todo.empty() )
       {
-        this->todo.pop();
-        if ( this->todo.empty() ) { return this->end(); }
+        this->_end = std::vector<nix::Symbol>().cend();
+        this->_it  = std::vector<nix::Symbol>().begin();
+        return * this;
+      }
+    ++this->_it;
+    if ( this->_it == this->_end )
+      {
+        this->_todo.pop();
+        if ( this->_todo.empty() )
+          {
+            this->_end = std::vector<nix::Symbol>().cend();
+            this->_it  = std::vector<nix::Symbol>().begin();
+            return * this;
+          }
       }
     else
       {
-        this->end = this->todo.front()->getAttrs().end();
-        this->it  = this->todo.front()->getAttrs().begin();
+        this->_end = this->_todo.front()->getAttrs().end();
+        this->_it  = this->_todo.front()->getAttrs().begin();
         try
           {
-            Cursor c = this->todo.front()->getAttr( * this->it );
+            Cursor c = this->_todo.front()->getAttr( * this->_it );
             if ( this->_subtree == ST_PACKAGES )
               {
                 return * this;
@@ -172,7 +182,7 @@ FlakePackageSet::flake_iterator::operator++()
                     MaybeCursor m = c->maybeGetAttr( "recurseForDerivations" );
                     if ( ( m != nullptr ) && m->getBool() )
                       {
-                        this->todo.push( (Cursor) c );
+                        this->_todo.push( (Cursor) c );
                       }
                     goto recur;
                   }
@@ -184,17 +194,17 @@ FlakePackageSet::flake_iterator::operator++()
           }
       }
     throw ResolverException(
-      "FlakePackageSet::flake_iterator::operator++(): "
+      "FlakePackageSet::iterator::operator++(): "
       "Readched ALLEGEDLY unreachable block."
     );
     return * this;
-}  /* End `FlakePackageSet::flake_iterator::operator++()' */
+}  /* End `FlakePackageSet::iterator::operator++()' */
 
 
-  PackageSet::iterator
+  FlakePackageSet::iterator
 FlakePackageSet::end()
 {
-  return FlakePackageSet::flake_iterator();
+  return iterator();
 }
 
 

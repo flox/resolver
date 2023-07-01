@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <nix/nixexpr.hh>
 #include "flox/util.hh"
+#include "flox/types.hh"
 
 
 /* -------------------------------------------------------------------------- */

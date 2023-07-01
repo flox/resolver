@@ -128,16 +128,17 @@ class FlakePackageSet : public PackageSet {
 
 /* -------------------------------------------------------------------------- */
 
-    struct flake_iterator : iterator
+    struct iterator
     {
       private:
+        subtree_type                             _subtree = ST_NONE;
         todo_queue                               _todo;
         std::vector<nix::Symbol>::const_iterator _end;
         std::vector<nix::Symbol>::iterator       _it;
 
       public:
-        explicit flake_iterator( todo_queue todo )
-          : _todo( todo )
+        explicit iterator( subtree_type subtree, todo_queue todo )
+          : _subtree( subtree ), _todo( todo )
         {
           if ( todo.empty() )
             {
@@ -151,39 +152,41 @@ class FlakePackageSet : public PackageSet {
               this->_it  = this->_todo.front()->getAttrs().begin();
             }
         }
-        flake_iterator() : flake_iterator( todo_queue() ) {}
+        iterator( subtree_type subtree = ST_NONE )
+          : iterator( subtree, todo_queue() )
+        {}
 
         std::string_view getType() const { return "flake"; }
 
-        flake_iterator & operator++();
+        iterator & operator++();
 
-          flake_iterator
+          iterator
         operator++( int )
         {
-          flake_iterator tmp = * this;
+          iterator tmp = * this;
           ++( * this );
           return tmp;
         }
 
           bool
-        operator==( const flake_iterator & other ) const
+        operator==( const iterator & other ) const
         {
           return this->_it == other._it;
         }
 
           bool
-        operator!=( const flake_iterator & other ) const
+        operator!=( const iterator & other ) const
         {
           return ! ( ( * this ) == other );
         }
 
-    };  /* End struct `PackageSet::iterator' */
+    };  /* End struct `FlakePackageSet::iterator' */
 
 
 /* -------------------------------------------------------------------------- */
 
-    iterator begin() override;
-    iterator end()   override;
+    iterator begin();
+    iterator end();
 
 
 /* -------------------------------------------------------------------------- */
