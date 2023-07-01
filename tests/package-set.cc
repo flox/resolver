@@ -31,7 +31,9 @@ test_RawPackageSet_iterator1()
   CachedPackageMap pkgs {
     { { "hello" }
     , nix::make_ref<CachedPackage>(
-        (std::vector<std::string_view>) { "hello" }
+        (std::vector<std::string_view>) {
+          "legacyPackages", "x86_64-linux", "hello"
+        }
       , "hello-2.12.1"
       , "hello"
       , "2.12.1"
@@ -54,6 +56,53 @@ test_RawPackageSet_iterator1()
   , std::nullopt
   , nix::parseFlakeRef( nixpkgsRef )
   };
+
+  for ( auto it = ps.begin(); it != ps.end(); ++it )
+    {
+      if ( ( * it ).getPname() != "hello" ) { return false; }
+      break;
+    }
+  for ( auto & p : ps )
+    {
+      if ( p.getPname() != "hello" ) { return false; }
+      break;
+    }
+
+  return true;
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+  bool
+test_RawPackageSet_addPackage1()
+{
+  CachedPackage pkg(
+    (std::vector<std::string_view>) {
+      "legacyPackages", "x86_64-linux", "hello"
+    }
+  , "hello-2.12.1"
+  , "hello"
+  , "2.12.1"
+  , "2.12.1"
+  , "GPL-3.0-or-later"
+  , (std::vector<std::string_view>) { "out" }
+  , (std::vector<std::string_view>) { "out" }
+  , std::make_optional( false )
+  , std::make_optional( false )
+  , true
+  , true
+  , true
+  );
+  RawPackageSet ps {
+    {}
+  , ST_LEGACY
+  , "x86_64-linux"
+  , std::nullopt
+  , nix::parseFlakeRef( nixpkgsRef )
+  };
+
+  ps.addPackage( std::move( pkg ) );
 
   for ( auto it = ps.begin(); it != ps.end(); ++it )
     {
@@ -96,6 +145,7 @@ main( int argc, char * argv[], char ** envp )
   int ec = EXIT_SUCCESS;
 
   RUN_TEST( RawPackageSet_iterator1 );
+  RUN_TEST( RawPackageSet_addPackage1 );
 
   return ec;
 }
