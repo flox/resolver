@@ -125,15 +125,14 @@ class DbPackageSet : public PackageSet {
       private:
         std::optional<nix::SQLiteStmt::Use> _query;
         std::shared_ptr<CachedPackage>      _ptr;
-        bool                                _hasNext = true;
 
       public:
         const_iterator()
-          : _ptr( nullptr ), _hasNext( false ), _query( std::nullopt )
+          : _ptr( nullptr ), _query( std::nullopt )
         {}
 
         explicit const_iterator( nix::SQLiteStmt::Use query )
-          : _query( query ), _ptr( nullptr ), _hasNext( true )
+          : _query( query ), _ptr( nullptr )
         {
           ++( * this );
         }
@@ -143,10 +142,7 @@ class DbPackageSet : public PackageSet {
           const_iterator &
         operator++()
         {
-          if ( this->_hasNext                                   &&
-               this->_query.has_value()                         &&
-               ( this->_hasNext = this->_query.value().next() )
-             )
+          if ( this->_query.has_value() && this->_query.value().next() )
             {
               this->_ptr = std::make_shared<CachedPackage>(
                 infoFromQuery( this->_query.value() )
@@ -154,9 +150,8 @@ class DbPackageSet : public PackageSet {
             }
           else
             {
-              this->_hasNext = false;
-              this->_query   = std::nullopt;
-              this->_ptr     = nullptr;
+              this->_query = std::nullopt;
+              this->_ptr   = nullptr;
             }
           return * this;
         }
@@ -197,11 +192,22 @@ class DbPackageSet : public PackageSet {
       const_iterator
     begin() const
     {
-      return const_iterator(
-        this->_db->useDrvInfos( subtreeTypeToString( this->_subtree )
-                              , this->_system
-                              )
-      );
+      if ( this->_subtree == ST_CATALOG )
+        {
+          return const_iterator(
+            this->_db->useDrvInfosStability( this->_system
+                                           , this->_stability.value()
+                                           )
+          );
+        }
+      else
+        {
+          return const_iterator(
+            this->_db->useDrvInfos( subtreeTypeToString( this->_subtree )
+                                  , this->_system
+                                  )
+          );
+        }
     }
 
       const_iterator
