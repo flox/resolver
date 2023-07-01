@@ -28,23 +28,24 @@ static const std::string nixpkgsRef =
   bool
 test_RawPackageSet_iterator1()
 {
-  CachedPackage p(
-    (std::vector<std::string_view>) { "hello" }
-  , "hello-2.12.1"
-  , "hello"
-  , "2.12.1"
-  , "2.12.1"
-  , "GPL-3.0-or-later"
-  , (std::vector<std::string_view>) { "out" }
-  , (std::vector<std::string_view>) { "out" }
-  , std::make_optional( false )
-  , std::make_optional( false )
-  , true
-  , true
-  , true
-  );
-  std::unordered_map<std::list<std::string_view>, CachedPackage> pkgs {
-    { { "hello" }, std::move( p ) }
+  CachedPackageMap pkgs {
+    { { "hello" }
+    , nix::make_ref<CachedPackage>(
+        (std::vector<std::string_view>) { "hello" }
+      , "hello-2.12.1"
+      , "hello"
+      , "2.12.1"
+      , "2.12.1"
+      , "GPL-3.0-or-later"
+      , (std::vector<std::string_view>) { "out" }
+      , (std::vector<std::string_view>) { "out" }
+      , std::make_optional( false )
+      , std::make_optional( false )
+      , true
+      , true
+      , true
+      )
+    }
   };
   RawPackageSet ps {
     std::move( pkgs )
@@ -54,7 +55,7 @@ test_RawPackageSet_iterator1()
   , nix::parseFlakeRef( nixpkgsRef )
   };
 
-  RawPackageSetIterator it = ps.begin();
+  for ( auto & p : ps.begin() ) { return p.getPname() == "hello"; }
   return false;
 }
 

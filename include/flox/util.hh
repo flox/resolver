@@ -17,6 +17,7 @@
 #include <optional>
 #include <vector>
 #include <map>
+#include <algorithm>
 
 
 /* -------------------------------------------------------------------------- */
@@ -38,6 +39,29 @@ struct std::hash<std::list<std::string_view>>
     return h1;
   }
 };
+
+
+/* -------------------------------------------------------------------------- */
+
+  static bool
+operator==( const std::list<std::string>      & lhs
+          , const std::list<std::string_view> & rhs
+          )
+{
+  return ( lhs.size() == rhs.size() ) && std::equal(
+    lhs.cbegin(), lhs.cend(), rhs.cbegin()
+  );
+}
+
+  static bool
+operator==( const std::list<std::string_view> & lhs
+          , const std::list<std::string>      & rhs
+          )
+{
+  return ( lhs.size() == rhs.size() ) && std::equal(
+    lhs.cbegin(), lhs.cend(), rhs.cbegin()
+  );
+}
 
 
 /* -------------------------------------------------------------------------- */

@@ -20,80 +20,16 @@ namespace flox {
 
 /* -------------------------------------------------------------------------- */
 
-struct RawPackageSetIterator : public PackageSetIterator
-{
-  private:
-    std::unordered_map<std::list<std::string_view>
-                      , CachedPackage
-                      >::iterator                  _end;
-    std::unordered_map<std::list<std::string_view>
-                      , CachedPackage
-                      >::iterator                  _it;
-
-  public:
-    explicit RawPackageSetIterator(
-      std::unordered_map<std::list<std::string_view>, CachedPackage> pkgs
-    ) : _end( pkgs.end() ), _it( pkgs.begin() )
-    {}
-
-    explicit RawPackageSetIterator(
-      std::unordered_map<std::list<std::string_view>, CachedPackage> pkgs
-    , std::unordered_map<std::list<std::string_view>
-                        , CachedPackage
-                        >::iterator                                  it
-    ) : _end( pkgs.end() ), _it( it )
-    {}
-
-    std::string_view getType() const override { return "raw"; }
-
-      RawPackageSetIterator &
-    operator++()
-    {
-      ++this->_it;
-      return * this;
-    }
-
-      RawPackageSetIterator
-    operator++( int )
-    {
-      RawPackageSetIterator tmp = * this;
-      ++( * this );
-      return tmp;
-    }
-
-      bool
-    operator==( const RawPackageSetIterator & other ) const
-    {
-      return this->_it == other._it;
-    }
-
-      bool
-    operator!=( const RawPackageSetIterator & other ) const
-    {
-      return this->_it != other._it;
-    }
-
-      reference
-    operator*() const override
-    {
-      return this->_it->second;
-    }
-
-      pointer
-    operator->() override
-    {
-      return & this->_it->second;
-    }
+using CachedPackageMap =
+  std::unordered_map<std::list<std::string_view>, nix::ref<CachedPackage>>;
 
 
-};  /* End struct `RawPackageSetIterator' */
+/* -------------------------------------------------------------------------- */
 
-
-
-class RawPackageSet : public PackageSet<RawPackageSetIterator> {
+class RawPackageSet : public PackageSet {
 
   protected:
-    std::unordered_map<std::list<std::string_view>, CachedPackage> _pkgs;
+    CachedPackageMap _pkgs;
 
   private:
     subtree_type               _subtree;
@@ -104,11 +40,11 @@ class RawPackageSet : public PackageSet<RawPackageSetIterator> {
   public:
 
     RawPackageSet(
-      std::unordered_map<std::list<std::string_view>, CachedPackage> pkgs
-    , subtree_type                                                   subtree
-    , std::string_view                                               system
-    , std::optional<std::string_view>                                stability
-    , FloxFlakeRef                                                   ref
+      CachedPackageMap                pkgs
+    , subtree_type                    subtree
+    , std::string_view                system
+    , std::optional<std::string_view> stability
+    , FloxFlakeRef                    ref
     ) : _pkgs( pkgs )
       , _subtree( subtree )
       , _system( system )
@@ -152,14 +88,14 @@ class RawPackageSet : public PackageSet<RawPackageSetIterator> {
         }
       else
         {
-          return std::shared_ptr<Package>( (Package *) & search->second );
+          return search->second.get_ptr();
         }
     }
 
       nix::ref<Package>
     getRelPath( const std::list<std::string_view> & path ) override
     {
-      return nix::ref<Package>( & this->_pkgs.at( path ) );
+      return this->_pkgs.at( path );
     }
 
       void
@@ -169,30 +105,126 @@ class RawPackageSet : public PackageSet<RawPackageSetIterator> {
      auto it = p._pathS.cbegin();
      it += ( p.getSubtreeType() == resolve::ST_CATALOG ) ? 3 : 2;
      for ( ; it != p._pathS.cend(); ++it ) { relPath.push_back( * it ); }
-     this->_pkgs.emplace( std::move( relPath ), p );
+     this->_pkgs.emplace(
+       std::move( relPath )
+     , nix::make_ref<CachedPackage>( p )
+     );
    }
 
 /* -------------------------------------------------------------------------- */
 
-      RawPackageSetIterator
-    begin() override
+    template<bool IS_CONST> struct iterator_impl;
+    using iterator       = iterator_impl<false>;
+    using const_iterator = iterator_impl<true>;
+
+      template<bool IS_CONST>
+    struct iterator_impl
     {
-      return RawPackageSetIterator( this->_pkgs );
-    }
+      using value_type =
+        std::conditional<IS_CONST, const CachedPackage, CachedPackage>;
+      using reference  = value_type &;
+      using pointer    = nix::ref<value_type>;
+
+      using container_type =
+        std::conditional<IS_CONST, const CachedPackageMap, CachedPackageMap>;
+
+      using wrapped_iter_type =
+        std::conditional<IS_CONST, CachedPackageMap::const_iterator
+                                 , CachedPackageMap::iterator
+                        >;
+
+      private:
+        container_type                   * _pkgs;
+        CachedPackageMap::const_iterator   _end;
+        wrapped_iter_type                  _it;
+        nix::ref<CachedPackage>            _ptr;
+
+      public:
+
+        iterator_impl( container_type * pkgs )
+          : _end( pkgs->cend() )
+          , _it( pkgs->begin() )
+          , _pkgs( pkgs )
+          , _ptr( nullptr )
+        {
+          this->_ptr = this->_it->second;
+        }
+
+        iterator_impl( container_type * pkgs, wrapped_iter_type it )
+          : _end( pkgs->cend() ), _it( it ), _pkgs( pkgs ), _ptr( it->second )
+        {}
+
+        std::string_view getType() const { return "raw"; }
+
+          iterator_impl &
+        operator++()
+        {
+          ++this->_it;
+          this->_ptr = this->_it->second;
+          return * this;
+        }
+
+          iterator_impl
+        operator++( int )
+        {
+          iterator_impl tmp = * this;
+          ++( * this );
+          return tmp;
+        }
+
+          bool
+        operator==( const iterator & other ) const
+        {
+          return this->_ptr == other._ptr;
+        }
+          bool
+        operator!=( const iterator & other ) const
+        {
+          return this->_ptr != other._ptr;
+        }
+          bool
+        operator==( const const_iterator & other ) const
+        {
+          return this->_ptr == other._ptr;
+        }
+          bool
+        operator!=( const const_iterator & other ) const
+        {
+          return this->_ptr != other._ptr;
+        }
+
+        reference operator*() const { return * this->_ptr; }
+        pointer   operator->()      { return this->_ptr; }
+
+        friend iterator;
+        friend const_iterator;
+
+    };  /* End struct `RawPackageSet::iterator_impl' */
 
 
 /* -------------------------------------------------------------------------- */
 
-      RawPackageSetIterator
-    end() override
+      iterator
+    begin()
     {
-      return RawPackageSetIterator( this->_pkgs, this->_pkgs.end() );
+      return iterator( (CachedPackageMap *) & this->_pkgs );
     }
 
+    iterator end()   { return iterator( & this->_pkgs, this->_pkgs.end() ); }
+
+    const_iterator begin() const { return const_iterator( & this->_pkgs ); }
+
+      const_iterator
+    end() const
+    {
+      return const_iterator( & this->_pkgs, this->_pkgs.cend() );
+    }
+
+    const_iterator cbegin() const { this->begin(); }
+    const_iterator cend()   const { this->end();   }
 
 
 /* -------------------------------------------------------------------------- */
-
 
 };  /* End class `RawPackageSet' */
 
