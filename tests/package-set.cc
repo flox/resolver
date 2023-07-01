@@ -182,7 +182,7 @@ main( int argc, char * argv[], char ** envp )
   RUN_TEST( RawPackageSet_iterator1 );
   RUN_TEST( RawPackageSet_addPackage1 );
   // FIXME
-  //RUN_TEST( DbPackageSet_iterator1 );
+  RUN_TEST( DbPackageSet_iterator1 );
 
   return ec;
 }

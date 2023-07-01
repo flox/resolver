@@ -143,17 +143,20 @@ class DbPackageSet : public PackageSet {
           const_iterator &
         operator++()
         {
-          if ( this->_hasNext && this->_query.has_value() )
+          if ( this->_hasNext                                   &&
+               this->_query.has_value()                         &&
+               ( this->_hasNext = this->_query.value().next() )
+             )
             {
-              this->_hasNext = this->_query.value().next();
               this->_ptr = std::make_shared<CachedPackage>(
                 infoFromQuery( this->_query.value() )
               );
             }
           else
             {
-              this->_query = std::nullopt;
-              this->_ptr   = nullptr;
+              this->_hasNext = false;
+              this->_query   = std::nullopt;
+              this->_ptr     = nullptr;
             }
           return * this;
         }
