@@ -191,13 +191,8 @@ class DbPackageSet : public PackageSet {
           return  this->_ptr != other._ptr;
         }
 
-        reference operator*() const { return * this->_ptr; }
-
-          pointer
-        operator->()
-        {
-          return (nix::ref<const CachedPackage>) this->_ptr;
-        }
+        reference operator*() { return * this->_ptr;                      }
+        pointer  operator->() { return (nix::ref<value_type>) this->_ptr; }
 
     };  /* End struct `DbPackageSet::iterator' */
 
@@ -232,11 +227,7 @@ class DbPackageSet : public PackageSet {
         }
     }
 
-      const_iterator
-    end() const
-    {
-      return const_iterator();
-    }
+    const_iterator end() const { return const_iterator(); }
 
 
 /* -------------------------------------------------------------------------- */
