@@ -183,6 +183,7 @@ class FlakePackageSet : public PackageSet {
           this->_end     = std::vector<nix::Symbol>().cend();
           this->_it      = std::vector<nix::Symbol>().begin();
           this->_ptr     = nullptr;
+          this->_todo    = {};
           return * this;
         }
 
