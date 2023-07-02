@@ -32,6 +32,7 @@ FlakePackageSet::hasRelPath( const std::list<std::string_view> & path )
     }
   catch( ... )
     {
+      nix::ignoreException();
       return false;
     }
   return true;
@@ -71,7 +72,7 @@ FlakePackageSet::size()
             }
           catch( ... )
             {
-              // If eval fails ignore the package.
+              /* If eval fails ignore the package. */
               nix::ignoreException();
             }
         }
@@ -120,7 +121,11 @@ FlakePackageSet::const_iterator::evalPackage()
           return true;
         }
     }
-  catch( ... ) {}
+  catch( ... )
+    {
+      /* If eval fails ignore the package. */
+      nix::ignoreException();
+    }
   this->_ptr = nullptr;
   return false;
 }
@@ -183,6 +188,7 @@ FlakePackageSet::const_iterator::operator++()
       }
     catch( ... )
       {
+        nix::ignoreException();
         /* Keep searching. */
         goto recur;
       }
