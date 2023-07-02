@@ -9,6 +9,7 @@
 #include <string>
 #include "flox/util.hh"
 #include "flox/package-set.hh"
+#include "flox/flake-package.hh"
 
 
 /* -------------------------------------------------------------------------- */
@@ -146,6 +147,10 @@ class FlakePackageSet : public PackageSet {
 
     bool        hasRelPath( const std::list<std::string_view> & path ) override;
     std::size_t size() override;
+
+    std::shared_ptr<Package> maybeGetRelPath(
+      const std::list<std::string_view> & path
+    ) override;
 
 
 /* -------------------------------------------------------------------------- */

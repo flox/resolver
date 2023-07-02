@@ -203,6 +203,16 @@ FlakePackageSet::const_iterator::operator++()
 
 /* -------------------------------------------------------------------------- */
 
+  std::shared_ptr<Package>
+FlakePackageSet::maybeGetRelPath( const std::list<std::string_view> & path )
+{
+  // TODO
+  return nullptr;
+}
+
+
+/* -------------------------------------------------------------------------- */
+
   }  /* End Namespace `flox::resolve' */
 }  /* End Namespace `flox' */
 

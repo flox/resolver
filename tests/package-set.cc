@@ -11,7 +11,7 @@
 #include "flox/types.hh"
 #include "descriptor.hh"
 #include "flox/db-package-set.hh"
-// #include "flox/flake-package-set.hh"
+#include "flox/flake-package-set.hh"
 
 
 /* -------------------------------------------------------------------------- */
@@ -149,6 +149,24 @@ test_DbPackageSet_size1( std::shared_ptr<nix::flake::LockedFlake> flake )
 
 /* -------------------------------------------------------------------------- */
 
+  bool
+test_FlakePackageSet_size1(
+  ResolverState                            & rs
+, std::shared_ptr<nix::flake::LockedFlake>   flake
+)
+{
+  FlakePackageSet ps( rs.getEvalState(), flake, ST_LEGACY, "x86_64-linux" );
+  size_t c = 0;
+  auto i = ps.begin(); // FIXME
+  i = ps.end();
+  for ( auto & p : ps ) { ++c; }
+  std::cerr << c << " " << ps.size() << std::endl;
+  return c == ps.size();
+}
+
+
+/* -------------------------------------------------------------------------- */
+
 #define RUN_TEST( _NAME )                                              \
   try                                                                  \
     {                                                                  \
@@ -179,6 +197,21 @@ test_DbPackageSet_size1( std::shared_ptr<nix::flake::LockedFlake> flake )
       std::cerr << "  ERROR: " # _NAME ": " << e.what() << std::endl;  \
     }
 
+#define RUN_TEST_WITH_STATE_FLAKE( _STATE, _FLAKE, _NAME )             \
+  try                                                                  \
+    {                                                                  \
+      if ( ! test_ ## _NAME ( _STATE, _FLAKE ) )                       \
+        {                                                              \
+          ec = EXIT_FAILURE;                                           \
+          std::cerr << "  fail: " # _NAME << std::endl;                \
+        }                                                              \
+    }                                                                  \
+  catch( std::exception & e )                                          \
+    {                                                                  \
+      ec = EXIT_FAILURE;                                               \
+      std::cerr << "  ERROR: " # _NAME ": " << e.what() << std::endl;  \
+    }
+
 
 /* -------------------------------------------------------------------------- */
 
@@ -190,15 +223,15 @@ main( int argc, char * argv[], char ** envp )
   RUN_TEST( RawPackageSet_iterator1 );
   RUN_TEST( RawPackageSet_addPackage1 );
 
-  std::shared_ptr<nix::flake::LockedFlake> flake = nullptr;
+  std::shared_ptr<nix::flake::LockedFlake> flake  = nullptr;
+  Inputs      inputs( (nlohmann::json) { { "nixpkgs", nixpkgsRef } } );
+  Preferences prefs;
+  ResolverState rs(
+    inputs
+  , prefs
+  , (std::list<std::string>) { "x86_64-linux" }
+  );
   {
-    Inputs      inputs( (nlohmann::json) { { "nixpkgs", nixpkgsRef } } );
-    Preferences prefs;
-    ResolverState rs(
-      inputs
-    , prefs
-    , (std::list<std::string>) { "x86_64-linux" }
-    );
     /* Initialize DB */
     Descriptor d( (nlohmann::json) { { "name", "hello" } } );
     rs.resolveInInput( "nixpkgs", d );
@@ -209,6 +242,9 @@ main( int argc, char * argv[], char ** envp )
 
   RUN_TEST_WITH_FLAKE( flake, DbPackageSet_iterator1 );
   RUN_TEST_WITH_FLAKE( flake, DbPackageSet_size1 );
+
+  // FIXME
+  //RUN_TEST_WITH_STATE_FLAKE( rs, flake, FlakePackageSet_size1 );
 
   return ec;
 }
