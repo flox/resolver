@@ -123,16 +123,31 @@ class DbPackageSet : public PackageSet {
       using pointer    = nix::ref<value_type>;
 
       private:
-        std::optional<nix::SQLiteStmt::Use> _query;
-        std::shared_ptr<CachedPackage>      _ptr;
+        /* The `nix::SQLiteStmt::Use' class contains a reference to its parent
+         * `nix::SQLiteStmt' instance which is gets passed to `sqlite3_reset'
+         * as `Use' is being destructed.
+         * If we try to pass and copy raw `Use' values we would be "resetting"
+         * our current position in the queue of SQLite3 rows.
+         * To avoid resetting the inner statement and its row iterator, we need
+         * to use a `shared_ptr' which is only deconstructed after all
+         * references go out of scope.
+         *
+         * An earlier attempt tried declaring the `_query' member of our
+         * iterator as a raw value, which unfortunately led to duplicate entries
+         * and unexpected "resets" to the iterator.
+         * Generally this duplicated the first element when looping over the
+         * iterator, so a good sanity check to use when modifying this class is
+         * to ensure that `DbPackageSet::size()' aligns with the number of
+         * elements in the iterator ( see `tests/package-set.cc' ). */
+        std::shared_ptr<nix::SQLiteStmt::Use> _query;
+        std::shared_ptr<CachedPackage>        _ptr;
 
       public:
-        const_iterator()
-          : _ptr( nullptr ), _query( std::nullopt )
-        {}
+        const_iterator() : _ptr( nullptr ), _query( nullptr ) {}
 
-        explicit const_iterator( nix::SQLiteStmt::Use query )
-          : _query( query ), _ptr( nullptr )
+        explicit const_iterator(
+          std::shared_ptr<nix::SQLiteStmt::Use> query
+        ) : _query( query ), _ptr( nullptr )
         {
           ++( * this );
         }
@@ -142,15 +157,15 @@ class DbPackageSet : public PackageSet {
           const_iterator &
         operator++()
         {
-          if ( this->_query.has_value() && this->_query.value().next() )
+          if ( ( this->_query != nullptr ) && this->_query->next() )
             {
               this->_ptr = std::make_shared<CachedPackage>(
-                infoFromQuery( this->_query.value() )
+                infoFromQuery( * this->_query )
               );
             }
           else
             {
-              this->_query = std::nullopt;
+              this->_query = nullptr;
               this->_ptr   = nullptr;
             }
           return * this;
@@ -176,7 +191,7 @@ class DbPackageSet : public PackageSet {
           return  this->_ptr != other._ptr;
         }
 
-        reference operator*()  const { return * this->_ptr; }
+        reference operator*() const { return * this->_ptr; }
 
           pointer
         operator->()
@@ -192,21 +207,28 @@ class DbPackageSet : public PackageSet {
       const_iterator
     begin() const
     {
+      std::shared_ptr<nix::SQLiteStmt::Use> u = nullptr;
       if ( this->_subtree == ST_CATALOG )
         {
-          return const_iterator(
-            this->_db->useDrvInfosStability( this->_system
-                                           , this->_stability.value()
-                                           )
-          );
+          {
+            auto state( this->_db->getDbState() );
+            u = std::make_shared<nix::SQLiteStmt::Use>(
+              state->queryDrvInfosStability.use()
+            );
+          }
+          ( * u )( this->_system )( this->_stability.value() );
+          return const_iterator( u );
         }
       else
         {
-          return const_iterator(
-            this->_db->useDrvInfos( subtreeTypeToString( this->_subtree )
-                                  , this->_system
-                                  )
-          );
+          {
+            auto state( this->_db->getDbState() );
+            u = std::make_shared<nix::SQLiteStmt::Use>(
+              state->queryDrvInfos.use()
+            );
+          }
+          ( * u )( subtreeTypeToString( this->_subtree ) )( this->_system );
+          return const_iterator( u );
         }
     }
 

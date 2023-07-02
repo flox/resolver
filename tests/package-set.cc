@@ -199,7 +199,7 @@ main( int argc, char * argv[], char ** envp )
     , prefs
     , (std::list<std::string>) { "x86_64-linux" }
     );
-    // Initialize DB
+    /* Initialize DB */
     Descriptor d( (nlohmann::json) { { "name", "hello" } } );
     rs.resolveInInput( "nixpkgs", d );
 
@@ -208,9 +208,7 @@ main( int argc, char * argv[], char ** envp )
   }
 
   RUN_TEST_WITH_FLAKE( flake, DbPackageSet_iterator1 );
-
-  // FIXME: duplicate entry for first package.
-  //RUN_TEST_WITH_FLAKE( flake, DbPackageSet_size1 );
+  RUN_TEST_WITH_FLAKE( flake, DbPackageSet_size1 );
 
   return ec;
 }
