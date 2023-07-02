@@ -5,7 +5,7 @@
  * -------------------------------------------------------------------------- */
 
 #include "flox/types.hh"
-#include "flox/eval-package.hh"
+#include "flox/flake-package.hh"
 #include "flox/flake-package-set.hh"
 
 
@@ -110,7 +110,7 @@ FlakePackageSet::size()
 
 /* -------------------------------------------------------------------------- */
 
-  FlakePackageSet::iterator
+  FlakePackageSet::const_iterator
 FlakePackageSet::begin()
 {
   MaybeCursor curr = this->openEvalCache()->getRoot();
@@ -135,12 +135,12 @@ FlakePackageSet::begin()
     }
   todo_queue todo;
   todo.emplace( std::move( curr ) );
-  return iterator( this->_subtree, std::move( todo ) );
+  return const_iterator( this->_subtree, std::move( todo ) );
 }
 
 
-  FlakePackageSet::iterator &
-FlakePackageSet::iterator::operator++()
+  FlakePackageSet::const_iterator &
+FlakePackageSet::const_iterator::operator++()
 {
   recur:
     if ( this->_todo.empty() )
@@ -194,17 +194,17 @@ FlakePackageSet::iterator::operator++()
           }
       }
     throw ResolverException(
-      "FlakePackageSet::iterator::operator++(): "
+      "FlakePackageSet::const_iterator::operator++(): "
       "Readched ALLEGEDLY unreachable block."
     );
     return * this;
-}  /* End `FlakePackageSet::iterator::operator++()' */
+}  /* End `FlakePackageSet::const_iterator::operator++()' */
 
 
-  FlakePackageSet::iterator
-FlakePackageSet::end()
+  FlakePackageSet::const_iterator
+FlakePackageSet::end() const
 {
-  return iterator();
+  return const_iterator();
 }
 
 

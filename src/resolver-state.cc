@@ -20,7 +20,7 @@
 #include "flox/predicates.hh"
 #include <queue>
 #include "flox/drv-cache.hh"
-#include "flox/eval-package.hh"
+#include "flox/flake-package.hh"
 
 
 /* -------------------------------------------------------------------------- */
@@ -319,13 +319,13 @@ ResolverState::resolveInInput( std::string_view id, const Descriptor & desc )
 
               for ( const nix::Symbol s : todos.front()->getAttrs() )
                 {
-                  EvalPackage * p = nullptr;
+                  FlakePackage * p = nullptr;
                   try
                     {
                       Cursor c = todos.front()->getAttr( s );
                       if ( c->isDerivation() )
                         {
-                          p = new EvalPackage(
+                          p = new FlakePackage(
                             c, this->getSymbolTable(), false
                           );
 
@@ -380,7 +380,7 @@ ResolverState::resolveInInput( std::string_view id, const Descriptor & desc )
         {
           if ( todos.front()->isDerivation() )
             {
-              EvalPackage * p = new EvalPackage( todos.front()
+              FlakePackage * p = new FlakePackage( todos.front()
                                                , this->getSymbolTable()
                                                , false
                                                );

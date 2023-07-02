@@ -12,7 +12,7 @@
 #include <nix/fetchers.hh>
 #include "flox/predicates.hh"
 #include "resolve.hh"
-#include "flox/eval-package.hh"
+#include "flox/flake-package.hh"
 
 
 /* -------------------------------------------------------------------------- */
@@ -45,7 +45,7 @@ test_predicates1()
   , s->symbols.create( "hello" )
   };
 
-  EvalPackage pkg( n->openCursor( path ), & s->symbols, false );
+  FlakePackage pkg( n->openCursor( path ), & s->symbols, false );
 
   PkgPred prn( hasName( "hello" ) );
   PkgPred prv( hasVersion( "2.12.1" ) );
@@ -73,7 +73,7 @@ test_predicates2()
   , s->symbols.create( "hello" )
   };
 
-  EvalPackage pkg( n->openCursor( path ), & s->symbols, false );
+  FlakePackage pkg( n->openCursor( path ), & s->symbols, false );
 
   PkgPred prs( hasSubtree( "legacyPackages" ) );
   PkgPred pre( hasSubtree( ST_LEGACY ) );
@@ -105,7 +105,7 @@ test_Preferences_pred()
   , s->symbols.create( "LAStools" )
   };
 
-  EvalPackage pkg( n->openCursor( path ), & s->symbols, false );
+  FlakePackage pkg( n->openCursor( path ), & s->symbols, false );
 
   return ! prefs.pred_V2()( pkg );
 }

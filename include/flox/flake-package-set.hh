@@ -58,8 +58,6 @@ class FlakePackageSet : public PackageSet {
 
   public:
 
-    // TODO: `readonly' flag for `db'
-
     FlakePackageSet(
             nix::ref<nix::EvalState>                   state
     ,       std::shared_ptr<nix::flake::LockedFlake>   flake
@@ -74,12 +72,12 @@ class FlakePackageSet : public PackageSet {
     {}
 
     FlakePackageSet(
-            nix::ref<nix::EvalState>                   state
-    , const FloxFlakeRef                             & flakeRef
-    , const subtree_type                             & subtree
-    ,       std::string_view                           system
-    , const std::optional<std::string_view>          & stability = std::nullopt
-    ,       bool                                       trace     = false
+            nix::ref<nix::EvalState>          state
+    , const FloxFlakeRef                    & flakeRef
+    , const subtree_type                    & subtree
+    ,       std::string_view                  system
+    , const std::optional<std::string_view> & stability = std::nullopt
+    ,       bool                              trace     = false
     ) : FlakePackageSet(
           state
         , std::make_shared<nix::flake::LockedFlake>(
@@ -110,8 +108,8 @@ class FlakePackageSet : public PackageSet {
       std::optional<std::string_view>
     getStability() const override
     {
-      if ( this->_stability.has_value() ) { return this->_stability; }
-      else                                { return std::nullopt;     }
+      if ( this->_stability.has_value() ) { return this->_stability.value(); }
+      else                                { return std::nullopt;             }
     }
 
       FloxFlakeRef
@@ -128,8 +126,12 @@ class FlakePackageSet : public PackageSet {
 
 /* -------------------------------------------------------------------------- */
 
-    struct iterator
+    struct const_iterator
     {
+      using value_type = const FlakePackage;
+      using reference  = value_type &;
+      using pointer    = nix::ref<value_type>;
+
       private:
         subtree_type                             _subtree = ST_NONE;
         todo_queue                               _todo;
@@ -137,7 +139,7 @@ class FlakePackageSet : public PackageSet {
         std::vector<nix::Symbol>::iterator       _it;
 
       public:
-        explicit iterator( subtree_type subtree, todo_queue todo )
+        explicit const_iterator( subtree_type subtree, todo_queue todo )
           : _subtree( subtree ), _todo( todo )
         {
           if ( todo.empty() )
@@ -152,41 +154,41 @@ class FlakePackageSet : public PackageSet {
               this->_it  = this->_todo.front()->getAttrs().begin();
             }
         }
-        iterator( subtree_type subtree = ST_NONE )
-          : iterator( subtree, todo_queue() )
+        const_iterator( subtree_type subtree = ST_NONE )
+          : const_iterator( subtree, todo_queue() )
         {}
 
         std::string_view getType() const { return "flake"; }
 
-        iterator & operator++();
+        const_iterator & operator++();
 
-          iterator
+          const_iterator
         operator++( int )
         {
-          iterator tmp = * this;
+          const_iterator tmp = * this;
           ++( * this );
           return tmp;
         }
 
           bool
-        operator==( const iterator & other ) const
+        operator==( const const_iterator & other ) const
         {
           return this->_it == other._it;
         }
 
           bool
-        operator!=( const iterator & other ) const
+        operator!=( const const_iterator & other ) const
         {
           return ! ( ( * this ) == other );
         }
 
-    };  /* End struct `FlakePackageSet::iterator' */
+    };  /* End struct `FlakePackageSet::const_iterator' */
 
 
 /* -------------------------------------------------------------------------- */
 
-    iterator begin();
-    iterator end();
+    const_iterator begin();
+    const_iterator end()   const;
 
 
 /* -------------------------------------------------------------------------- */

@@ -19,7 +19,7 @@
 #include "flox/util.hh"
 #include "flox/drv-cache.hh"
 #include <queue>
-#include "flox/eval-package.hh"
+#include "flox/flake-package.hh"
 
 
 /* -------------------------------------------------------------------------- */
@@ -611,7 +611,7 @@ FloxFlake::packagesDo(
             {
               Cursor c = prefix;
               for ( std::string a : rel ) { c = c->getAttr( a ); }
-              EvalPackage p( c, & this->_state->symbols, false );
+              FlakePackage p( c, & this->_state->symbols, false );
               /* Cache the result for next time. */
               db.setDrvInfo( p );
               /* Run our operation. */
@@ -632,7 +632,7 @@ FloxFlake::packagesDo(
   ,       std::string_view           attrName
   ,       Cursor                     cur
   ) {
-    EvalPackage p( cur, st, false );
+    FlakePackage p( cur, st, false );
     /* Cache the result for next time. */
     if ( allowCache ) { db.setDrvInfo( p ); }
     /* Run our operation. */
