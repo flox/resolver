@@ -201,9 +201,7 @@ class FlakePackageSet : public PackageSet {
         {
           if ( todo.empty() )
             {
-              std::vector<nix::Symbol> e;
-              this->_end = e.end();
-              this->_it  = e.begin();
+              this->clear();
             }
           else
             {
