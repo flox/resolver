@@ -110,7 +110,17 @@ FlakePackageSet::const_iterator::evalPackage()
   Cursor c = this->_todo.front();
   try
     {
-      c = c->getAttr( * this->_it );
+      MaybeCursor m = c->maybeGetAttr( * this->_it );
+      if ( m == nullptr )
+        {
+          this->_ptr = nullptr;
+          return false;
+        }
+      else
+        {
+          c = (Cursor) m;
+        }
+
       if ( ( this->_subtree == ST_PACKAGES ) || c->isDerivation() )
         {
           this->_ptr = std::make_shared<FlakePackage>(

@@ -209,6 +209,38 @@ class FlakePackageSet : public PackageSet {
               this->_it  = this->_todo.front()->getAttrs().begin();
               /* Try loading a package from the current position.
                * On failure seek until we find a package attribute. */
+
+              // FIXME: you're dereferencing a nullptr here, and it's prettty
+              // fucking definitely in `evalPackage'.
+              // if this hadn't been mentioned previously:
+              //   Rust is a fucking cursed language and the simple fact that
+              //   I'm going to spend like 20 minutes using GDB does not
+              //   discount the fact that C++ is the 3rd most popular
+              //   programming language.
+              //   Shut the fuck up all nerds who think that this dynamic is
+              //   going to change any time soon.
+              //   For all of its flaws C++ is the dominant compiled language
+              //   for enterprise applications - your dinky language invented 6
+              //   years ago that is used by <1% of companies and is mostly
+              //   supported by try-hard neanderthals on
+              //   `https://hacker-blog.gov' that couldn't learn how pointers
+              //   work is far from a viable replacement.
+              //
+              //   You took a shot at the king - and you fucking missed.
+              //
+              //   Sure nobody actually likes C++, and sure we'd all love to
+              //   replace it, because its an organization largely run by
+              //   psychotic PhD students from Scandanavia that have literally
+              //   never written a single practical piece of software used by
+              //   another human being in their entire careers, but you somehow
+              //   managed to be worse than that lot ( which is saying a lot
+              //   because they're some of the most privileged and out of touch
+              //   book-worms to ever have made contact with
+              //   industrial workers ).
+              //
+              //   Where was I? Right, I think you have a bug here or something.
+              //   Fuck C++, but fuck Rust, Haskell, Pascal, and the other
+              //   worthless pretenders even more,
               if ( ! this->evalPackage() ) { ++( * this ); }
             }
         }

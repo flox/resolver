@@ -244,7 +244,8 @@ main( int argc, char * argv[], char ** envp )
   RUN_TEST_WITH_FLAKE( flake, DbPackageSet_size1 );
 
   // FIXME
-  //RUN_TEST_WITH_STATE_FLAKE( rs, flake, FlakePackageSet_size1 );
+  // RUN_TEST_WITH_STATE_FLAKE( rs, flake, FlakePackageSet_size1 );
+  // test_FlakePackageSet_size1( rs, flake );
 
   return ec;
 }
