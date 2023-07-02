@@ -23,6 +23,11 @@ class DrvDb;
 
 /* -------------------------------------------------------------------------- */
 
+/**
+ * The simplest `Package' implementation comprised of raw values.
+ * This form largely exists for testing purposes, but it also serves as the
+ * basis for `CachedPackage' ( read from SQL databases ).
+ */
 class RawPackage : public Package {
 
   protected:

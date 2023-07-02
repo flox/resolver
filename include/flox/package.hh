@@ -29,6 +29,16 @@ namespace flox {
 
 /* -------------------------------------------------------------------------- */
 
+/**
+ * Abstract representation of a "package", analogous to a Nix `derivation'.
+ * This abstraction provides a common base for various backends that store,
+ * evaluate, and communicate package definitions.
+ *
+ * Notable Implementation of this interface include:
+ * - RawPackage    : Comprised of raw C++ values, often used for testing.
+ * - CachedPackage : A package definition stored in a SQL database.
+ * - FlakePackage  : A package definition evaluated from a Nix `flake'.
+ */
 class Package {
   public:
     virtual std::vector<std::string>    getPathStrs()         const = 0;
