@@ -19,19 +19,10 @@ namespace flox {
   bool
 FlakePackageSet::hasRelPath( const std::list<std::string_view> & path )
 {
+  MaybeCursor curr = this->openCursor();
+  if ( curr == nullptr ) { return false; }
   try
     {
-      MaybeCursor curr = this->openEvalCache()->getRoot();
-      curr = curr->maybeGetAttr( subtreeTypeToString( this->_subtree ) );
-      if ( curr == nullptr ) { return false; }
-      curr = curr->maybeGetAttr( this->_system );
-      if ( curr == nullptr ) { return false; }
-      if ( this->_stability.has_value() )
-        {
-          curr = curr->maybeGetAttr( this->_stability.value() );
-          if ( curr == nullptr ) { return false; }
-
-        }
       for ( auto & p : path )
         {
           curr = curr->maybeGetAttr( p );
@@ -52,27 +43,9 @@ FlakePackageSet::hasRelPath( const std::list<std::string_view> & path )
   std::size_t
 FlakePackageSet::size()
 {
-  if ( this->_subtree == ST_PACKAGES )
-    {
-      MaybeCursor curr =
-        this->openEvalCache()->getRoot()->maybeGetAttr( "packages" );
-      if ( curr == nullptr ) { return 0; }
-      curr = curr->maybeGetAttr( this->_system );
-      if ( curr == nullptr ) { return 0; }
-      return curr->getAttrs().size();
-    }
-
-  MaybeCursor curr = this->openEvalCache()->getRoot();
-  curr = curr->maybeGetAttr( subtreeTypeToString( this->_subtree ) );
+  MaybeCursor curr = this->openCursor();
   if ( curr == nullptr ) { return 0; }
-  curr = curr->maybeGetAttr( this->_system );
-  if ( curr == nullptr ) { return 0; }
-  if ( this->_stability.has_value() )
-    {
-      curr = curr->maybeGetAttr( this->_stability.value() );
-      if ( curr == nullptr ) { return 0; }
-    }
-
+  if ( this->_subtree == ST_PACKAGES ) { return curr->getAttrs().size(); }
   std::size_t rsl = 0;
   todo_queue todos;
   todos.push( (Cursor) std::move( curr ) );
@@ -113,26 +86,7 @@ FlakePackageSet::size()
   FlakePackageSet::const_iterator
 FlakePackageSet::begin()
 {
-  MaybeCursor curr = this->openEvalCache()->getRoot();
-  if ( this->_subtree == ST_PACKAGES )
-    {
-      curr = curr->maybeGetAttr( "packages" );
-      if ( curr == nullptr ) { return this->end(); }
-      curr = curr->maybeGetAttr( this->_system );
-      if ( curr == nullptr ) { return this->end(); }
-    }
-  else
-    {
-      curr = curr->maybeGetAttr( subtreeTypeToString( this->_subtree ) );
-      if ( curr == nullptr ) { return this->end(); }
-      curr = curr->maybeGetAttr( this->_system );
-      if ( curr == nullptr ) { return this->end(); }
-      if ( this->_stability.has_value() )
-        {
-          curr = curr->maybeGetAttr( this->_stability.value() );
-          if ( curr == nullptr ) { return this->end(); }
-        }
-    }
+  MaybeCursor curr = this->openCursor();
   todo_queue todo;
   todo.emplace( std::move( curr ) );
   return const_iterator( this->_subtree, std::move( todo ) );

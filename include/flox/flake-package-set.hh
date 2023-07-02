@@ -53,6 +53,30 @@ class FlakePackageSet : public PackageSet {
       );
     }
 
+      MaybeCursor
+    openCursor() const
+    {
+      MaybeCursor curr = this->openEvalCache()->getRoot();
+      if ( this->_subtree == ST_PACKAGES )
+        {
+          curr = curr->maybeGetAttr( "packages" );
+          if ( curr == nullptr ) { return nullptr; }
+          curr = curr->maybeGetAttr( this->_system );
+        }
+      else
+        {
+          curr = curr->maybeGetAttr( subtreeTypeToString( this->_subtree ) );
+          if ( curr == nullptr ) { return nullptr; }
+          curr = curr->maybeGetAttr( this->_system );
+          if ( this->_stability.has_value() )
+            {
+              if ( curr == nullptr ) { return nullptr; }
+              curr = curr->maybeGetAttr( this->_stability.value() );
+            }
+        }
+      return curr;
+    }
+
 
 /* -------------------------------------------------------------------------- */
 
