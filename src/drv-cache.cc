@@ -25,6 +25,53 @@ namespace flox {
 
 /* -------------------------------------------------------------------------- */
 
+CachedPackage::CachedPackage(       DrvDb                    & db
+                            ,       std::string_view           subtree
+                            ,       std::string_view           system
+                            , const std::vector<std::string> & path
+                            )
+{
+  std::optional _info = db.getDrvInfo( subtree, system, path );
+  if ( ! _info.has_value() )
+    {
+      std::string p = std::string( subtree );
+      p += ".";
+      p += system;
+      p += ".";
+      for ( size_t i = 0; i < path.size(); ++i )
+        {
+          p += path[i];
+          if ( ( i + 1 ) < path.size() )
+            {
+              p += ".";
+            }
+        }
+      throw ResolverException( "CachedPackage(): No such path '" + p + "'." );
+    }
+  nlohmann::json info = _info.value();
+  this->_pathS.push_back( info["subtree"] );
+  this->_pathS.push_back( info["system"] );
+  for ( auto & p : info["path"] ) { this->_pathS.push_back( p ); }
+  this->_fullname = info["name"];
+  this->_pname    = info["pname"];
+  this->_outputs  = info["outputs"];
+
+  this->_outputsToInstall = info["outputsToInstall"];
+
+  if ( ! info["version"].is_null() ) { this->_version = info["version"]; }
+  if ( ! info["semver"].is_null() )  { this->_semver  = info["semver"];  }
+  if ( ! info["license"].is_null() ) { this->_license = info["license"]; }
+  if ( ! info["broken"].is_null() )  { this->_broken  = info["broken"];  }
+  if ( ! info["unfree"].is_null() )  { this->_unfree  = info["unfree"];  }
+
+  this->_hasMetaAttr    = info["hasMetaAttr"];
+  this->_hasPnameAttr   = info["hasPnameAttr"];
+  this->_hasVersionAttr = info["hasVersionAttr"];
+}
+
+
+/* -------------------------------------------------------------------------- */
+
   std::string_view
 progressStatusToString( const progress_status & ps )
 {
@@ -777,91 +824,6 @@ DrvDb::promoteProgress( std::string_view subtree
     return rowId;
   } );
   return old;
-}
-
-
-/* -------------------------------------------------------------------------- */
-
-CachedPackage::CachedPackage(       DrvDb                    & db
-                            ,       std::string_view           subtree
-                            ,       std::string_view           system
-                            , const std::vector<std::string> & path
-                            )
-{
-  std::optional _info = db.getDrvInfo( subtree, system, path );
-  if ( ! _info.has_value() )
-    {
-      std::string p = std::string( subtree );
-      p += ".";
-      p += system;
-      p += ".";
-      for ( size_t i = 0; i < path.size(); ++i )
-        {
-          p += path[i];
-          if ( ( i + 1 ) < path.size() )
-            {
-              p += ".";
-            }
-        }
-      throw ResolverException( "CachedPackage(): No such path '" + p + "'." );
-    }
-  nlohmann::json info = _info.value();
-  this->_pathS.push_back( info["subtree"] );
-  this->_pathS.push_back( info["system"] );
-  for ( auto & p : info["path"] ) { this->_pathS.push_back( p ); }
-  this->_fullname = info["name"];
-  this->_pname    = info["pname"];
-  this->_outputs  = info["outputs"];
-
-  this->_outputsToInstall = info["outputsToInstall"];
-
-  if ( ! info["version"].is_null() ) { this->_version = info["version"]; }
-  if ( ! info["semver"].is_null() )  { this->_semver  = info["semver"];  }
-  if ( ! info["license"].is_null() ) { this->_license = info["license"]; }
-  if ( ! info["broken"].is_null() )  { this->_broken  = info["broken"];  }
-  if ( ! info["unfree"].is_null() )  { this->_unfree  = info["unfree"];  }
-
-  this->_hasMetaAttr    = info["hasMetaAttr"];
-  this->_hasPnameAttr   = info["hasPnameAttr"];
-  this->_hasVersionAttr = info["hasVersionAttr"];
-}
-
-
-/* -------------------------------------------------------------------------- */
-
-CachedPackage::CachedPackage( const nlohmann::json & drvInfo )
-  : _pathS()
-  , _fullname( drvInfo.at( "name" ) )
-  , _pname( drvInfo.at( "pname" ) )
-  , _outputs( drvInfo.at( "outputs" ) )
-  , _outputsToInstall( drvInfo.at( "outputsToInstall" ) )
-  , _version( drvInfo.at( "version" ).is_null()
-              ? std::nullopt
-              : std::make_optional( drvInfo.at( "version" ).get<std::string>() )
-            )
-  , _semver( drvInfo.at( "semver" ).is_null()
-              ? std::nullopt
-              : std::make_optional( drvInfo.at( "semver" ).get<std::string>() )
-            )
-  , _license( drvInfo.at( "license" ).is_null()
-              ? std::nullopt
-              : std::make_optional( drvInfo.at( "license" ).get<std::string>() )
-            )
-  , _broken( drvInfo.at( "broken" ).is_null()
-              ? std::nullopt
-              : std::make_optional( drvInfo.at( "broken" ).get<bool>() )
-            )
-  , _unfree( drvInfo.at( "unfree" ).is_null()
-              ? std::nullopt
-              : std::make_optional( drvInfo.at( "unfree" ).get<bool>() )
-            )
-  , _hasMetaAttr( drvInfo.at( "hasMetaAttr" ).get<bool>() )
-  , _hasPnameAttr( drvInfo.at( "hasPnameAttr" ).get<bool>() )
-  , _hasVersionAttr( drvInfo.at( "hasVersionAttr" ).get<bool>() )
-{
-  this->_pathS.push_back( drvInfo["subtree"] );
-  this->_pathS.push_back( drvInfo["system"] );
-  for ( auto & p : drvInfo["path"] ) { this->_pathS.push_back( p ); }
 }
 
 

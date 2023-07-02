@@ -10,7 +10,7 @@
 #include <optional>
 #include "flox/util.hh"
 #include "flox/package-set.hh"
-#include "flox/drv-cache.hh"
+#include "flox/raw-package.hh"
 
 
 /* -------------------------------------------------------------------------- */
@@ -20,8 +20,8 @@ namespace flox {
 
 /* -------------------------------------------------------------------------- */
 
-using CachedPackageMap =
-  std::unordered_map<std::list<std::string_view>, nix::ref<CachedPackage>>;
+using RawPackageMap =
+  std::unordered_map<std::list<std::string_view>, nix::ref<RawPackage>>;
 
 
 /* -------------------------------------------------------------------------- */
@@ -29,7 +29,7 @@ using CachedPackageMap =
 class RawPackageSet : public PackageSet {
 
   protected:
-    CachedPackageMap _pkgs;
+    RawPackageMap _pkgs;
 
   private:
     subtree_type               _subtree;
@@ -40,7 +40,7 @@ class RawPackageSet : public PackageSet {
   public:
 
     RawPackageSet(
-      CachedPackageMap                pkgs
+      RawPackageMap                pkgs
     , subtree_type                    subtree
     , std::string_view                system
     , std::optional<std::string_view> stability
@@ -99,7 +99,7 @@ class RawPackageSet : public PackageSet {
     }
 
       void
-   addPackage( CachedPackage && p )
+   addPackage( RawPackage && p )
    {
      std::list<std::string_view> relPath;
      auto it = p._pathS.cbegin();
@@ -107,7 +107,7 @@ class RawPackageSet : public PackageSet {
      for ( ; it != p._pathS.cend(); ++it ) { relPath.push_back( * it ); }
      this->_pkgs.emplace(
        std::move( relPath )
-     , nix::make_ref<CachedPackage>( p )
+     , nix::make_ref<RawPackage>( p )
      );
    }
 
@@ -121,25 +121,25 @@ class RawPackageSet : public PackageSet {
     struct iterator_impl
     {
       using value_type =
-        std::conditional<IS_CONST, const CachedPackage, CachedPackage>::type;
+        std::conditional<IS_CONST, const RawPackage, RawPackage>::type;
       using reference  = value_type &;
       using pointer    = nix::ref<value_type>;
 
       using container_type =
-        std::conditional<IS_CONST, const CachedPackageMap
-                                 , CachedPackageMap
+        std::conditional<IS_CONST, const RawPackageMap
+                                 , RawPackageMap
                         >::type;
 
       using wrapped_iter_type =
-        std::conditional<IS_CONST, CachedPackageMap::const_iterator
-                                 , CachedPackageMap::iterator
+        std::conditional<IS_CONST, RawPackageMap::const_iterator
+                                 , RawPackageMap::iterator
                         >::type;
 
       private:
         container_type                 * _pkgs;
         wrapped_iter_type                _end;
         wrapped_iter_type                _it;
-        std::shared_ptr<CachedPackage>   _ptr;
+        std::shared_ptr<RawPackage>   _ptr;
 
       public:
 

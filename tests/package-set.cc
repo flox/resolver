@@ -30,9 +30,9 @@ static const std::string nixpkgsRef =
   bool
 test_RawPackageSet_iterator1()
 {
-  CachedPackageMap pkgs {
+  RawPackageMap pkgs {
     { { "hello" }
-    , nix::make_ref<CachedPackage>(
+    , nix::make_ref<RawPackage>(
         (std::vector<std::string_view>) {
           "legacyPackages", "x86_64-linux", "hello"
         }
@@ -79,7 +79,7 @@ test_RawPackageSet_iterator1()
   bool
 test_RawPackageSet_addPackage1()
 {
-  CachedPackage pkg(
+  RawPackage pkg(
     (std::vector<std::string_view>) {
       "legacyPackages", "x86_64-linux", "hello"
     }
