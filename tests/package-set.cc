@@ -24,6 +24,17 @@ using namespace nlohmann::literals;
 static const std::string nixpkgsRef =
   "github:NixOS/nixpkgs/e8039594435c68eb4f780f3e9bf3972a7399c4b1";
 
+/**
+ * These counts indicate the total number of derivations under
+ * `<nixpkgsRef>#legacyPackages.x86_64-linux.**' which we will use to sanity
+ * check calls to `size()'.
+ * Note that the legacy implementation used to populate `DbPackageSet' will
+ * fail to evaluate 3 packages which require `NIXPKGS_ALLOW_BROKEN', causing
+ * different sizes to be collected ( until migration is coompleted ).
+ */
+static const size_t unbrokenPkgCount = 64037;
+static const size_t fullPkgCount     = 64040;
+
 
 /* -------------------------------------------------------------------------- */
 
@@ -131,7 +142,8 @@ test_DbPackageSet_iterator1( std::shared_ptr<nix::flake::LockedFlake> flake )
   size_t c2 = 0;
   for ( auto it = ps.begin(); it != ps.end(); ++it, ++c1 ) {}
   for ( auto & p : ps ) { ++c2; }
-  return ( c1 == c2 ) && ( 0 < c1 );
+  // TODO: after DB is populated by new routines change to `fullPkgCount'
+  return ( c1 == c2 ) && ( c1 == unbrokenPkgCount );
 }
 
 
@@ -143,7 +155,8 @@ test_DbPackageSet_size1( std::shared_ptr<nix::flake::LockedFlake> flake )
   DbPackageSet ps( flake, ST_LEGACY, "x86_64-linux" );
   size_t c = 0;
   for ( auto & p : ps ) { ++c; }
-  return c == ps.size();
+  // TODO: after DB is populated by new routines change to `fullPkgCount'
+  return ( c == ps.size() ) && ( c == unbrokenPkgCount );
 }
 
 
@@ -156,12 +169,7 @@ test_FlakePackageSet_size1(
 )
 {
   FlakePackageSet ps( rs.getEvalState(), flake, ST_LEGACY, "x86_64-linux" );
-  size_t c = 0;
-  auto i = ps.begin(); // FIXME
-  i = ps.end();
-  for ( auto & p : ps ) { ++c; }
-  std::cerr << c << " " << ps.size() << std::endl;
-  return c == ps.size();
+  return ps.size() == fullPkgCount;
 }
 
 
@@ -243,9 +251,9 @@ main( int argc, char * argv[], char ** envp )
   RUN_TEST_WITH_FLAKE( flake, DbPackageSet_iterator1 );
   RUN_TEST_WITH_FLAKE( flake, DbPackageSet_size1 );
 
-  // FIXME
-  // RUN_TEST_WITH_STATE_FLAKE( rs, flake, FlakePackageSet_size1 );
-  // test_FlakePackageSet_size1( rs, flake );
+  RUN_TEST_WITH_STATE_FLAKE( rs, flake, FlakePackageSet_size1 );
+
+  // FIXME: `FlakePackageSet::begin()'
 
   return ec;
 }

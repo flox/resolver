@@ -46,16 +46,20 @@ FlakePackageSet::size()
 {
   MaybeCursor curr = this->openCursor();
   if ( curr == nullptr ) { return 0; }
+
+  /* We intentionally avoid a `try' block for `packages'. */
   if ( this->_subtree == ST_PACKAGES ) { return curr->getAttrs().size(); }
+
   std::size_t rsl = 0;
   todo_queue todos;
-  todos.push( (Cursor) std::move( curr ) );
+  todos.push( std::move( (Cursor) curr ) );
   while ( ! todos.empty() )
     {
-      for ( const nix::Symbol s : todos.front()->getAttrs() )
+      for ( const nix::Symbol & s : todos.front()->getAttrs() )
         {
           try
             {
+
               Cursor c = todos.front()->getAttr( s );
               if ( c->isDerivation() )
                 {
