@@ -28,6 +28,9 @@ FlakePackageSet::hasRelPath( const std::list<std::string_view> & path )
           curr = curr->maybeGetAttr( p );
           if ( curr == nullptr ) { return false; }
         }
+      /* NOTE: this doesn't guarantee eval will succeed when we try to get
+       * fields like `name'.
+       * This is the same category of issue we see in `size()' and iterator. */
       return curr->isDerivation();
     }
   catch( ... )
@@ -44,8 +47,26 @@ FlakePackageSet::hasRelPath( const std::list<std::string_view> & path )
   std::shared_ptr<Package>
 FlakePackageSet::maybeGetRelPath( const std::list<std::string_view> & path )
 {
-  // TODO
-  return nullptr;
+  MaybeCursor curr = this->openCursor();
+  if ( curr == nullptr ) { return nullptr; }
+  try
+    {
+      for ( auto & p : path )
+        {
+          curr = curr->maybeGetAttr( p );
+          if ( curr == nullptr ) { return nullptr; }
+        }
+      return std::make_shared<FlakePackage>(
+        (Cursor) curr
+      , & this->_state->symbols
+      , false
+      );
+    }
+  catch( ... )
+    {
+      //nix::ignoreException();
+      return nullptr;
+    }
 }
 
 

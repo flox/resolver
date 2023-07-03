@@ -189,6 +189,19 @@ test_FlakePackageSet_hasRelPath1(
 /* -------------------------------------------------------------------------- */
 
   bool
+test_FlakePackageSet_maybeGetRelPath1(
+  ResolverState                            & rs
+, std::shared_ptr<nix::flake::LockedFlake>   flake
+)
+{
+  FlakePackageSet ps( rs.getEvalState(), flake, ST_LEGACY, "x86_64-linux" );
+  return ps.maybeGetRelPath( { "hello" } ) != nullptr;
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+  bool
 test_FlakePackageSet_iterator1(
   ResolverState                            & rs
 , std::shared_ptr<nix::flake::LockedFlake>   flake
@@ -281,6 +294,7 @@ main( int argc, char * argv[], char ** envp )
   RUN_TEST_WITH_FLAKE( flake, DbPackageSet_iterator1 );
 
   RUN_TEST_WITH_STATE_FLAKE( rs, flake, FlakePackageSet_hasRelPath1 );
+  RUN_TEST_WITH_STATE_FLAKE( rs, flake, FlakePackageSet_maybeGetRelPath1 );
   RUN_TEST_WITH_STATE_FLAKE( rs, flake, FlakePackageSet_size1 );
   RUN_TEST_WITH_STATE_FLAKE( rs, flake, FlakePackageSet_iterator1 );
 
