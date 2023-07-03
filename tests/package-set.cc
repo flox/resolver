@@ -175,6 +175,34 @@ test_FlakePackageSet_size1(
 
 /* -------------------------------------------------------------------------- */
 
+  bool
+test_FlakePackageSet_hasRelPath1(
+  ResolverState                            & rs
+, std::shared_ptr<nix::flake::LockedFlake>   flake
+)
+{
+  FlakePackageSet ps( rs.getEvalState(), flake, ST_LEGACY, "x86_64-linux" );
+  return ps.hasRelPath( { "hello" } );
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+  bool
+test_FlakePackageSet_iterator1(
+  ResolverState                            & rs
+, std::shared_ptr<nix::flake::LockedFlake>   flake
+)
+{
+  FlakePackageSet ps( rs.getEvalState(), flake, ST_LEGACY, "x86_64-linux" );
+  size_t c = 0;
+  for ( auto & p : ps ) { ++c; }
+  return c == ps.size();
+}
+
+
+/* -------------------------------------------------------------------------- */
+
 #define RUN_TEST( _NAME )                                              \
   try                                                                  \
     {                                                                  \
@@ -248,12 +276,14 @@ main( int argc, char * argv[], char ** envp )
     flake = nixpkgs->getLockedFlake();
   }
 
-  RUN_TEST_WITH_FLAKE( flake, DbPackageSet_iterator1 );
   RUN_TEST_WITH_FLAKE( flake, DbPackageSet_size1 );
+  RUN_TEST_WITH_FLAKE( flake, DbPackageSet_iterator1 );
 
+  RUN_TEST_WITH_STATE_FLAKE( rs, flake, FlakePackageSet_hasRelPath1 );
   RUN_TEST_WITH_STATE_FLAKE( rs, flake, FlakePackageSet_size1 );
-
   // FIXME: `FlakePackageSet::begin()'
+  //RUN_TEST_WITH_STATE_FLAKE( rs, flake, FlakePackageSet_iterator1 );
+
 
   return ec;
 }

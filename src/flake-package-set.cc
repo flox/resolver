@@ -32,10 +32,20 @@ FlakePackageSet::hasRelPath( const std::list<std::string_view> & path )
     }
   catch( ... )
     {
-      nix::ignoreException();
+      //nix::ignoreException();
       return false;
     }
   return true;
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+  std::shared_ptr<Package>
+FlakePackageSet::maybeGetRelPath( const std::list<std::string_view> & path )
+{
+  // TODO
+  return nullptr;
 }
 
 
@@ -59,8 +69,8 @@ FlakePackageSet::size()
         {
           try
             {
-
-              Cursor c = todos.front()->getAttr( s );
+              MaybeCursor c = todos.front()->getAttr( s );
+              if ( c == nullptr ) { continue; }
               if ( c->isDerivation() )
                 {
                   ++rsl;
@@ -77,7 +87,7 @@ FlakePackageSet::size()
           catch( ... )
             {
               /* If eval fails ignore the package. */
-              nix::ignoreException();
+              //nix::ignoreException();
             }
         }
       todos.pop();
@@ -106,15 +116,16 @@ FlakePackageSet::begin()
   bool
 FlakePackageSet::const_iterator::evalPackage()
 {
-  if ( ( this->_todo.empty() ) || ( this->_it == this->_end ) )
+  if ( ( this->_todo.empty() ) || ( this->_syms.empty() ) )
     {
       this->_ptr = nullptr;
       return false;
     }
+
   Cursor c = this->_todo.front();
   try
     {
-      MaybeCursor m = c->maybeGetAttr( * this->_it );
+      MaybeCursor m = c->maybeGetAttr( this->_syms.front() );
       if ( m == nullptr )
         {
           this->_ptr = nullptr;
@@ -138,7 +149,7 @@ FlakePackageSet::const_iterator::evalPackage()
   catch( ... )
     {
       /* If eval fails ignore the package. */
-      nix::ignoreException();
+      // nix::ignoreException();
     }
   this->_ptr = nullptr;
   return false;
@@ -154,20 +165,19 @@ FlakePackageSet::const_iterator::operator++()
 {
   /* We are "seeking" for packages using a queue of child iterator that loops
    * over attributes.
-   * We use `goto' to jump back up to this point until we either hit the end
-   * of our iterator queue, or find a package. */
-  recur:
-    /* If we've reached the end of our search, mark a phony sentinel value.
-     * That is "we fill phony values" that are recognized as a marker. */
+   * If we've reached the end of our search, mark a phony sentinel value.
+   * That is "we fill phony values" that are recognized as a marker. */
     if ( this->_todo.empty() ) { return this->clear(); }
 
     /* Go to the next attribute in our current iterator. */
-    ++this->_it;
+    if ( ! this->_syms.empty() ) { this->_syms.pop(); }
 
     /* If we hit the end either start processing the next `todo' list member,
      * or bail if it's empty. */
-    if ( this->_it == this->_end )
+    if ( this->_syms.empty() )
       {
+        //std::cerr << "Reached end of: " << this->_todo.front()->getAttrPathStr()
+        //          << std::endl;
         this->_todo.pop();
         if ( this->_todo.empty() )
           {
@@ -176,53 +186,44 @@ FlakePackageSet::const_iterator::operator++()
           }
         else
           {
-            /* Start processing the next cursor. */
-            this->_end = this->_todo.front()->getAttrs().end();
-            this->_it  = this->_todo.front()->getAttrs().begin();
+            /* Start processing the next cursor by filling the symbol queue. */
+            for ( auto & s : this->_todo.front()->getAttrs() )
+              {
+                this->_syms.push( s );
+              }
+            /* In the unlikely event that we get an empty attrset,
+             * keep seeking. */
+            if ( this->_syms.empty() ) { return ++( * this ); }
           }
       }
+
+    /* If the cursor is at a package, we're done. */
+    if ( evalPackage() ) { assert( this->_ptr != nullptr ); return * this; }
 
     /* See if we have a package, or if we might need to recurse into a
      * sub-attribute for more packages ( this only occurs for some subtrees ) */
     try
       {
-        Cursor c = this->_todo.front()->getAttr( * this->_it );
-        if ( ( this->_subtree == ST_PACKAGES ) || ( c->isDerivation() ) )
+        MaybeCursor c =
+          this->_todo.front()->maybeGetAttr( this->_syms.front() );
+        if ( c != nullptr )
           {
-            evalPackage();  /* Load the package at cursor. */
-            return * this;
+            MaybeCursor m = c->maybeGetAttr( "recurseForDerivations" );
+            if ( ( m != nullptr ) && m->getBool() )
+              {
+                //std::cerr << "Pushing: " << c->getAttrPathStr() << std::endl;
+                this->_todo.push( std::move( (Cursor) c ) );
+              }
           }
-        MaybeCursor m = c->maybeGetAttr( "recurseForDerivations" );
-        if ( ( m != nullptr ) && m->getBool() )
-          {
-            this->_todo.push( (Cursor) c );
-          }
-        /* Keep searching. */
-        goto recur;
       }
     catch( ... )
       {
-        nix::ignoreException();
-        /* Keep searching. */
-        goto recur;
+        // NOTE: this causes messages to be printed to `stderr'.
+        // nix::ignoreException();
       }
-
-    throw ResolverException(
-      "FlakePackageSet::const_iterator::operator++(): "
-      "Readched ALLEGEDLY unreachable block."
-    );
-    return * this;
+    /* We didn't hit a package, we need to keep searching. */
+    return ++( * this );
 }  /* End `FlakePackageSet::const_iterator::operator++()' */
-
-
-/* -------------------------------------------------------------------------- */
-
-  std::shared_ptr<Package>
-FlakePackageSet::maybeGetRelPath( const std::list<std::string_view> & path )
-{
-  // TODO
-  return nullptr;
-}
 
 
 /* -------------------------------------------------------------------------- */

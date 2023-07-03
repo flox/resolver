@@ -161,13 +161,14 @@ class FlakePackageSet : public PackageSet {
       using reference  = value_type &;
       using pointer    = nix::ref<value_type>;
 
+      using symbol_queue = std::queue<nix::Symbol, std::list<nix::Symbol>>;
+
       private:
-        nix::SymbolTable                         * _symtab;
-        subtree_type                               _subtree;
-        todo_queue                                 _todo;
-        std::vector<nix::Symbol>::const_iterator   _end;
-        std::vector<nix::Symbol>::iterator         _it;
-        std::shared_ptr<FlakePackage>              _ptr;
+        nix::SymbolTable                   * _symtab;
+        subtree_type                         _subtree;
+        todo_queue                           _todo;
+        symbol_queue                         _syms;
+        std::shared_ptr<FlakePackage>        _ptr;
 
         /**
          * Evaluate a package at the current cursor position.
@@ -185,10 +186,9 @@ class FlakePackageSet : public PackageSet {
         {
           this->_subtree = ST_NONE;
           this->_symtab  = nullptr;
-          this->_end     = std::vector<nix::Symbol>().cend();
-          this->_it      = std::vector<nix::Symbol>().begin();
           this->_ptr     = nullptr;
           this->_todo    = {};
+          this->_syms    = {};
           return * this;
         }
 
@@ -205,23 +205,24 @@ class FlakePackageSet : public PackageSet {
             }
           else
             {
-              this->_end = this->_todo.front()->getAttrs().end();
-              this->_it  = this->_todo.front()->getAttrs().begin();
+              /* Fill our symbol queue */
+              for ( auto & s : this->_todo.front()->getAttrs() )
+                {
+                  this->_syms.push( s );
+                }
               /* Try loading a package from the current position.
                * On failure seek until we find a package attribute. */
               if ( ! this->evalPackage() ) { ++( * this ); }
             }
         }
 
-        const_iterator( subtree_type subtree = ST_NONE )
+        const_iterator()
           : _symtab( nullptr )
-          , _subtree( subtree )
-          , _todo( todo_queue() )
+          , _subtree( ST_NONE )
           , _ptr( nullptr )
-        {
-          _end = std::vector<nix::Symbol>().cend();
-          _it  = std::vector<nix::Symbol>().begin();
-        }
+          , _todo( todo_queue() )
+          , _syms( symbol_queue() )
+        {}
 
         std::string_view getType() const { return "flake"; }
 
@@ -238,13 +239,13 @@ class FlakePackageSet : public PackageSet {
           bool
         operator==( const const_iterator & other ) const
         {
-          return this->_it == other._it;
+          return this->_ptr == other._ptr;
         }
 
           bool
         operator!=( const const_iterator & other ) const
         {
-          return this->_it != other._it;
+          return this->_ptr != other._ptr;
         }
 
         reference operator*() { return * this->_ptr;                      }

@@ -447,7 +447,7 @@ DrvDb::endCommit()
 
 DrvDb::~DrvDb()
 {
-  try { endCommit(); } catch ( ... ) { nix::ignoreException(); }
+  try { endCommit(); } catch ( ... ) { /* nix::ignoreException(); */ }
 }
 
 
@@ -465,7 +465,7 @@ DrvDb::doSQLite( F && fun )
     }
   catch ( nix::SQLiteError & )
     {
-      nix::ignoreException();
+      /* nix::ignoreException(); */
       this->failed = true;
       return 0;
     }
