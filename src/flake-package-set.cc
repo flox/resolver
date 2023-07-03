@@ -73,7 +73,7 @@ FlakePackageSet::size()
               if ( c == nullptr ) { continue; }
               if ( c->isDerivation() )
                 {
-                  ++rsl;
+                  if ( ! c->getAttr( "name" )->getString().empty() ) { ++rsl; }
                 }
               else
                 {
