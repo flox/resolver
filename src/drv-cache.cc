@@ -380,18 +380,22 @@ DrvDb::DrvDb( const nix::flake::Fingerprint & fingerprint
     {
       if ( create )
         {
-          try
-            {
-              if ( sqlite3_close( state->db.db ) != SQLITE_OK )
-                {
-                  nix::SQLiteError::throw_( state->db.db, "closing database" );
-                }
-              state->db.db = nullptr;
-            }
-          catch( ... )
-            {
-              nix::ignoreException();
-            }
+          nix::retrySQLite<void>( [&]() {
+            try
+              {
+                if ( sqlite3_close( state->db.db ) != SQLITE_OK )
+                  {
+                    nix::SQLiteError::throw_( state->db.db
+                                            , "closing database"
+                                            );
+                  }
+                state->db.db = nullptr;
+              }
+            catch( ... )
+              {
+                nix::ignoreException();
+              }
+          } );
           createDb( true, trace, path );
           sqlite::SQLiteDb reopen( path, false, write, true, trace );
           state->db.db = reopen.db;

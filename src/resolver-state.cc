@@ -395,7 +395,8 @@ ResolverState::resolveInInput( std::string_view id, const Descriptor & desc )
   while ( ! goods.empty() )
     {
       results.push_back( Resolved(
-        flake->getFlakeRef()
+        id
+      , flake->getLockedFlakeRef()
       , AttrPathGlob::fromStrings( goods.front()->getPathStrs() )
       , goods.front()->getInfo()
       ) );

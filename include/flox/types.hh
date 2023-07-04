@@ -263,14 +263,20 @@ class FloxFlake : public std::enable_shared_from_this<FloxFlake> {
              , const std::list<std::string>   & systems = defaultSystems
              );
 
-    FloxFlakeRef getFlakeRef() const { return this->_flakeRef; }
+    std::shared_ptr<nix::flake::LockedFlake> getLockedFlake();
+    nix::ref<nix::eval_cache::EvalCache>     openEvalCache();
+
+    FloxFlakeRef getFlakeRef()  const { return this->_flakeRef; }
+
+      FloxFlakeRef
+    getLockedFlakeRef()
+    {
+      return this->getLockedFlake()->flake.lockedRef;
+    }
 
     std::list<std::string>            getSystems()                      const;
     std::list<std::list<std::string>> getDefaultFlakeAttrPathPrefixes() const;
     std::list<std::list<std::string>> getFlakeAttrPathPrefixes()        const;
-
-    std::shared_ptr<nix::flake::LockedFlake> getLockedFlake();
-    nix::ref<nix::eval_cache::EvalCache>     openEvalCache();
 
     /**
      * Like `findAttrAlongPath' but without suggestions.
@@ -350,38 +356,45 @@ class FloxFlake : public std::enable_shared_from_this<FloxFlake> {
 
 class Resolved {
   private:
-    FloxFlakeRef input;
+    FloxFlakeRef _input;
 
   public:
+    std::string    inputId;
     AttrPathGlob   path;
     nlohmann::json info;
 
     Resolved( const nlohmann::json & attrs )
-      : input( nix::FlakeRef::fromAttrs(
-                 nix::fetchers::jsonToAttrs( attrs.at( "input" ) )
-               ) )
+      : inputId( attrs.at( "input" ).at( "id" ) )
+      , _input( nix::FlakeRef::fromAttrs( nix::fetchers::jsonToAttrs(
+                  attrs.at( "input" ).at( "locked" )
+              ) ) )
       , path( AttrPathGlob::fromJSON( attrs.at( "path" ) ) )
       , info( attrs.at( "info" ) )
     {}
 
-    Resolved( const FloxFlakeRef   & input
-            , const AttrPathGlob   & path
-            , const nlohmann::json & info
+    Resolved(       std::string_view   inputId
+            , const FloxFlakeRef     & input
+            , const AttrPathGlob     & path
+            , const nlohmann::json   & info
             )
-      : input( input ), path( path ), info( info )
+      : inputId( inputId ), _input( input ), path( path ), info( info )
     {}
 
       std::string
     toString() const
     {
-      return this->input.to_string() + "#" + this->path.toString();
+      return this->_input.to_string() + "#" + this->path.toString();
     }
 
       nlohmann::json
     toJSON() const
     {
       return {
-        { "input", nix::fetchers::attrsToJSON( this->input.toAttrs() ) }
+        { "input", {
+            { "id",     this->inputId }
+          , { "locked", nix::fetchers::attrsToJSON( this->_input.toAttrs() ) }
+          }
+        }
       , { "uri",   this->toString() }
       , { "info",  this->info }
       , { "path",  this->path.toJSON() }

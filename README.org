@@ -86,16 +86,22 @@ $ ./bin/resolver -i '{"nixpkgs":"github:NixOS/nixpkgs"}' -d '{"name":"hello","ve
       }
     },
     "input": {
-      "owner": "NixOS",
-      "repo": "nixpkgs",
-      "type": "github"
+      "id": "nixpkgs",
+      "locked": {
+        "lastModified": 1688471249,
+        "narHash": "sha256-urwh856+C1LlYFICB+yYOkDI5/1TAnYnedvu/oWtAD4=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "ac66b27438a74b2ab2b16b5b9f429b3049398383",
+        "type": "github"
+      }
     },
     "path": [
       "legacyPackages",
       null,
       "hello"
     ],
-    "uri": "github:NixOS/nixpkgs#legacyPackages.{{system}}.hello"
+    "uri": "github:NixOS/nixpkgs/ac66b27438a74b2ab2b16b5b9f429b3049398383#legacyPackages.{{system}}.hello"
   }
 ]
 #+END_SRC

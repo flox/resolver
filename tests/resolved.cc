@@ -25,10 +25,13 @@ test_ResolvedFromJSON1()
   nlohmann::json resolved = R"(
     {
       "input": {
-        "type":  "github"
-      , "owner": "flox"
-      , "repo":  "nixpkgs-flox"
-      , "rev":   "d5b4fa110c4b546b7ed51a02d523973a8e075159"
+        "id": "nixpkgs-flox"
+      , "locked": {
+          "type":  "github"
+        , "owner": "flox"
+        , "repo":  "nixpkgs-flox"
+        , "rev":   "d5b4fa110c4b546b7ed51a02d523973a8e075159"
+        }
       }
     , "path": ["catalog", null, "stable", "hello", "2_12_1"]
     , "uri": "github:flox/nixpkgs-flox/d5b4fa110c4b546b7ed51a02d523973a8e075159#catalog.{{system}}.stable.hello.2_12_1"
@@ -55,10 +58,13 @@ test_ResolvedToJSON1()
   nlohmann::json resolved = R"(
     {
       "input": {
-        "type":  "github"
-      , "owner": "flox"
-      , "repo":  "nixpkgs-flox"
-      , "rev":   "d5b4fa110c4b546b7ed51a02d523973a8e075159"
+        "id": "nixpkgs-flox"
+      , "locked": {
+          "type":  "github"
+        , "owner": "flox"
+        , "repo":  "nixpkgs-flox"
+        , "rev":   "d5b4fa110c4b546b7ed51a02d523973a8e075159"
+        }
       }
     , "path": ["catalog", null, "stable", "hello", "2_12_1"]
     , "uri": "github:flox/nixpkgs-flox/d5b4fa110c4b546b7ed51a02d523973a8e075159#catalog.{{system}}.stable.hello.2_12_1"
@@ -87,7 +93,11 @@ test_ResolvedToJSON1()
 test_ResolvedToString()
 {
   FloxFlakeRef ref = nix::parseFlakeRef( "github:NixOS/nixpkgs" );
-  Resolved r( ref, AttrPathGlob( { "packages", nullptr, "hello" } ), {} );
+  Resolved r( "nixpkgs"
+            , ref
+            , AttrPathGlob( { "packages", nullptr, "hello" } )
+            , {}
+            );
   return r.toString() == "github:NixOS/nixpkgs#packages.{{system}}.hello";
 }
 
@@ -104,7 +114,8 @@ test_mergeResolvedByAttrPathGlob1()
   auto mkEnt = [&]( std::string && system, std::string && name, int v )
   {
     lst.emplace_back( Resolved(
-      ref
+      "nixpkgs"
+    , ref
     , AttrPathGlob::fromStrings( (std::vector<std::string>) {
         "packages", system, name
       } )

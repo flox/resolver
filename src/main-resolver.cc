@@ -57,7 +57,7 @@ readOrParseJSON( const std::string & i )
   int
 main( int argc, char * argv[], char ** envp )
 {
-  argparse::ArgumentParser prog( "resolver", "0.1.0" );
+  argparse::ArgumentParser prog( "resolver", LIBFLOX_RESOLVE_VERSION );
   prog.add_description( "Resolve nix package descriptors in flakes" );
 
   prog.add_argument( "-o", "--one" )
