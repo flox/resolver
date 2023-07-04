@@ -89,11 +89,7 @@ class CmdGetProgress : public virtual nix::Args
           this->_inputs = nullptr;
         }
       nix::ref<FloxFlake> flake = this->_rs->getInput( "target" ).value();
-      std::string dbName = nix::getCacheDir() + "/flox/drv-cache-v0/"
-        + flake->getLockedFlake()->getFingerprint().to_string( nix::Base16
-                                                             , false
-                                                             )
-        + ".sqlite";
+      std::string dbName = getDrvDbName( * flake->getLockedFlake() );
       if ( ! std::filesystem::exists( dbName) )
         {
           nix::logger->cout( "NO DB" );
