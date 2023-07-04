@@ -4,8 +4,7 @@
  *
  * -------------------------------------------------------------------------- */
 
-#include <cstddef>
-#include <iostream>
+#include "test.hh"
 #include <nlohmann/json.hpp>
 #include <vector>
 #include "flox/types.hh"
@@ -18,15 +17,6 @@
 /* -------------------------------------------------------------------------- */
 
 using namespace flox::resolve;
-
-/* -------------------------------------------------------------------------- */
-
-static const std::string nixpkgsRef =
-  "github:NixOS/nixpkgs/e8039594435c68eb4f780f3e9bf3972a7399c4b1";
-
-static const std::string flocoPkgsRef =
-  "github:aakropotkin/flocoPackages/2afd962bbd6745d4d101c2924de34c5326042928";
-
 
 /* -------------------------------------------------------------------------- */
 
@@ -139,28 +129,12 @@ test_coerceRelative1()
 
 /* -------------------------------------------------------------------------- */
 
-#define RUN_TEST( _NAME )                                              \
-  try                                                                  \
-    {                                                                  \
-      if ( ! test_ ## _NAME () )                                       \
-        {                                                              \
-          ec = EXIT_FAILURE;                                           \
-          std::cerr << "  fail: " # _NAME << std::endl;                \
-        }                                                              \
-    }                                                                  \
-  catch( std::exception & e )                                          \
-    {                                                                  \
-      ec = EXIT_FAILURE;                                               \
-      std::cerr << "  ERROR: " # _NAME ": " << e.what() << std::endl;  \
-    }
-
-
-/* -------------------------------------------------------------------------- */
-
   int
 main( int argc, char * argv[], char ** envp )
 {
   int ec = EXIT_SUCCESS;
+# define RUN_TEST( ... )  _RUN_TEST( ec, __VA_ARGS__ )
+
   RUN_TEST( fromStringView1 );
   RUN_TEST( hash1 );
   RUN_TEST( isAbsAttrPath1 );

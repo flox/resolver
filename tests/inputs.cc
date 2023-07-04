@@ -4,8 +4,7 @@
  *
  * -------------------------------------------------------------------------- */
 
-#include <cstddef>
-#include <iostream>
+#include "test.hh"
 #include <nlohmann/json.hpp>
 #include "resolve.hh"
 
@@ -55,29 +54,13 @@ test_InputsToJSON1()
 
 /* -------------------------------------------------------------------------- */
 
-#define RUN_TEST( _NAME )                                              \
-  try                                                                  \
-    {                                                                  \
-      if ( ! test_ ## _NAME () )                                       \
-        {                                                              \
-          ec = EXIT_FAILURE;                                           \
-          std::cerr << "  fail: " # _NAME << std::endl;                \
-        }                                                              \
-    }                                                                  \
-  catch( std::exception & e )                                          \
-    {                                                                  \
-      ec = EXIT_FAILURE;                                               \
-      std::cerr << "  ERROR: " # _NAME ": " << e.what() << std::endl;  \
-    }
-
-
   int
 main( int argc, char * argv[], char ** envp )
 {
   int ec = EXIT_SUCCESS;
+# define RUN_TEST( ... )  _RUN_TEST( ec, __VA_ARGS__ )
   RUN_TEST( InputsFromJSON1 );
   RUN_TEST( InputsToJSON1 );
-
   return ec;
 }
 

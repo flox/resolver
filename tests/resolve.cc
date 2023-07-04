@@ -4,8 +4,7 @@
  *
  * -------------------------------------------------------------------------- */
 
-#include <cstddef>
-#include <iostream>
+#include "test.hh"
 #include <nlohmann/json.hpp>
 #include <nix/flake/flake.hh>
 #include <nix/fetchers.hh>
@@ -16,12 +15,6 @@
 
 using namespace flox::resolve;
 using namespace nlohmann::literals;
-
-/* -------------------------------------------------------------------------- */
-
-static const std::string nixpkgsRef =
-  "github:NixOS/nixpkgs/e8039594435c68eb4f780f3e9bf3972a7399c4b1";
-
 
 /* -------------------------------------------------------------------------- */
 
@@ -105,28 +98,11 @@ test_resolve_V2_1()
 
 /* -------------------------------------------------------------------------- */
 
-#define RUN_TEST( _NAME )                                              \
-  try                                                                  \
-    {                                                                  \
-      if ( ! test_ ## _NAME () )                                       \
-        {                                                              \
-          ec = EXIT_FAILURE;                                           \
-          std::cerr << "  fail: " # _NAME << std::endl;                \
-        }                                                              \
-    }                                                                  \
-  catch( std::exception & e )                                          \
-    {                                                                  \
-      ec = EXIT_FAILURE;                                               \
-      std::cerr << "  ERROR: " # _NAME ": " << e.what() << std::endl;  \
-    }
-
-
-/* -------------------------------------------------------------------------- */
-
   int
 main( int argc, char * argv[], char ** envp )
 {
   int ec = EXIT_SUCCESS;
+# define RUN_TEST( ... )  _RUN_TEST( ec, __VA_ARGS__ )
 
   RUN_TEST( ResolverStateLocking1 );
   RUN_TEST( getActualFlakeAttrPathPrefixes );

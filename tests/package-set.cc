@@ -4,8 +4,7 @@
  *
  * -------------------------------------------------------------------------- */
 
-#include <cstddef>
-#include <iostream>
+#include "test.hh"
 #include <optional>
 #include "flox/raw-package-set.hh"
 #include "flox/types.hh"
@@ -18,23 +17,6 @@
 
 using namespace flox::resolve;
 using namespace nlohmann::literals;
-
-/* -------------------------------------------------------------------------- */
-
-static const std::string nixpkgsRef =
-  "github:NixOS/nixpkgs/e8039594435c68eb4f780f3e9bf3972a7399c4b1";
-
-/**
- * These counts indicate the total number of derivations under
- * `<nixpkgsRef>#legacyPackages.x86_64-linux.**' which we will use to sanity
- * check calls to `size()'.
- * Note that the legacy implementation used to populate `DbPackageSet' will
- * fail to evaluate 3 packages which require `NIXPKGS_ALLOW_BROKEN', causing
- * different sizes to be collected ( until migration is coompleted ).
- */
-static const size_t unbrokenPkgCount = 64037;
-static const size_t fullPkgCount     = 64040;
-
 
 /* -------------------------------------------------------------------------- */
 
@@ -217,58 +199,11 @@ test_FlakePackageSet_iterator1(
 
 /* -------------------------------------------------------------------------- */
 
-#define RUN_TEST( _NAME )                                              \
-  try                                                                  \
-    {                                                                  \
-      if ( ! test_ ## _NAME () )                                       \
-        {                                                              \
-          ec = EXIT_FAILURE;                                           \
-          std::cerr << "  fail: " # _NAME << std::endl;                \
-        }                                                              \
-    }                                                                  \
-  catch( std::exception & e )                                          \
-    {                                                                  \
-      ec = EXIT_FAILURE;                                               \
-      std::cerr << "  ERROR: " # _NAME ": " << e.what() << std::endl;  \
-    }
-
-#define RUN_TEST_WITH_FLAKE( _FLAKE, _NAME )                           \
-  try                                                                  \
-    {                                                                  \
-      if ( ! test_ ## _NAME ( _FLAKE ) )                               \
-        {                                                              \
-          ec = EXIT_FAILURE;                                           \
-          std::cerr << "  fail: " # _NAME << std::endl;                \
-        }                                                              \
-    }                                                                  \
-  catch( std::exception & e )                                          \
-    {                                                                  \
-      ec = EXIT_FAILURE;                                               \
-      std::cerr << "  ERROR: " # _NAME ": " << e.what() << std::endl;  \
-    }
-
-#define RUN_TEST_WITH_STATE_FLAKE( _STATE, _FLAKE, _NAME )             \
-  try                                                                  \
-    {                                                                  \
-      if ( ! test_ ## _NAME ( _STATE, _FLAKE ) )                       \
-        {                                                              \
-          ec = EXIT_FAILURE;                                           \
-          std::cerr << "  fail: " # _NAME << std::endl;                \
-        }                                                              \
-    }                                                                  \
-  catch( std::exception & e )                                          \
-    {                                                                  \
-      ec = EXIT_FAILURE;                                               \
-      std::cerr << "  ERROR: " # _NAME ": " << e.what() << std::endl;  \
-    }
-
-
-/* -------------------------------------------------------------------------- */
-
   int
 main( int argc, char * argv[], char ** envp )
 {
   int ec = EXIT_SUCCESS;
+# define RUN_TEST( ... )  _RUN_TEST( ec, __VA_ARGS__ )
 
   RUN_TEST( RawPackageSet_iterator1 );
   RUN_TEST( RawPackageSet_addPackage1 );
@@ -290,13 +225,13 @@ main( int argc, char * argv[], char ** envp )
     flake = nixpkgs->getLockedFlake();
   }
 
-  RUN_TEST_WITH_FLAKE( flake, DbPackageSet_size1 );
-  RUN_TEST_WITH_FLAKE( flake, DbPackageSet_iterator1 );
+  RUN_TEST( DbPackageSet_size1,     flake );
+  RUN_TEST( DbPackageSet_iterator1, flake );
 
-  RUN_TEST_WITH_STATE_FLAKE( rs, flake, FlakePackageSet_hasRelPath1 );
-  RUN_TEST_WITH_STATE_FLAKE( rs, flake, FlakePackageSet_maybeGetRelPath1 );
-  RUN_TEST_WITH_STATE_FLAKE( rs, flake, FlakePackageSet_size1 );
-  RUN_TEST_WITH_STATE_FLAKE( rs, flake, FlakePackageSet_iterator1 );
+  RUN_TEST( FlakePackageSet_hasRelPath1,      rs, flake );
+  RUN_TEST( FlakePackageSet_maybeGetRelPath1, rs, flake );
+  RUN_TEST( FlakePackageSet_size1,            rs, flake );
+  RUN_TEST( FlakePackageSet_iterator1,        rs, flake );
 
   return ec;
 }
