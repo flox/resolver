@@ -184,7 +184,7 @@ class CachedPackageSet : public PackageSet {
       using pointer    = nix::ref<value_type>;
 
       private:
-        std::shared_ptr<RawPackage>                      _ptr;
+        std::shared_ptr<value_type>                      _ptr;
         std::shared_ptr<FlakePackageSet::const_iterator> _fi;
         std::shared_ptr<FlakePackageSet::const_iterator> _fe;
         std::shared_ptr<DbPackageSet::const_iterator>    _di;

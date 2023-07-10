@@ -69,47 +69,50 @@ CachedPackageSet::begin() const
   CachedPackageSet::const_iterator &
 CachedPackageSet::const_iterator::operator++()
 {
-  const Package * p = nullptr;
   if ( this->_populateDb )
     {
       ++( * this->_fi );
-      p = this->_fi->operator->().get_ptr().get();
+
+      const Package * p = this->_fi->operator->().get_ptr().get();
+
+      this->_db->setDrvInfo( * p );
+
+      std::vector<std::string_view> pathS;
+      for ( const auto & s : p->getPathStrs() ) { pathS.push_back( s ); }
+
+      std::vector<std::string_view> outputs;
+      for ( const auto & s : p->getOutputs() ) { outputs.push_back( s ); }
+
+      std::vector<std::string_view> outputsToInstall;
+      for ( const auto & s : p->getOutputsToInstall() )
+        {
+          outputsToInstall.push_back( s );
+        }
+
+      this->_ptr = std::make_shared<value_type>(
+        pathS
+      , p->getFullName()
+      , p->getPname()
+      , p->getVersion()
+      , p->getSemver()
+      , p->getLicense()
+      , outputs
+      , outputsToInstall
+      , p->isBroken()
+      , p->isUnfree()
+      , p->hasMetaAttr()
+      , p->hasPnameAttr()
+      , p->hasVersionAttr()
+      );
+
     }
   else
     {
       ++( * this->_di );
-      p = this->_di->operator->().get_ptr().get();
+      this->_ptr = std::static_pointer_cast<value_type>(
+        this->_di->operator->().get_ptr()
+      );
     }
-
-  std::vector<std::string_view> pathS;
-  for ( const auto & s : p->getPathStrs() ) { pathS.push_back( s ); }
-
-  std::vector<std::string_view> outputs;
-  for ( const auto & s : p->getOutputs() ) { outputs.push_back( s ); }
-
-  std::vector<std::string_view> outputsToInstall;
-  for ( const auto & s : p->getOutputsToInstall() )
-    {
-      outputsToInstall.push_back( s );
-    }
-
-  this->_ptr = std::make_shared<RawPackage>(
-    pathS
-  , p->getFullName()
-  , p->getPname()
-  , p->getVersion()
-  , p->getSemver()
-  , p->getLicense()
-  , outputs
-  , outputsToInstall
-  , p->isBroken()
-  , p->isUnfree()
-  , p->hasMetaAttr()
-  , p->hasPnameAttr()
-  , p->hasVersionAttr()
-  );
-
-  if ( this->_populateDb ) { this->_db->setDrvInfo( * this->_ptr ); }
 
   return * this;
 }  /* End `CachedPackageSet::const_iterator::operator++()' */
