@@ -66,13 +66,13 @@ CachedPackageSet::begin() const
 
 /* -------------------------------------------------------------------------- */
 
-  CachedPackageSet::const_iterator &
-CachedPackageSet::const_iterator::operator++()
+  void
+CachedPackageSet::const_iterator::loadPkg()
 {
+  /* If we are populating the DB then evaluate the next package, cache the
+   * result in our DB, then return the result. */
   if ( this->_populateDb )
     {
-      ++( * this->_fi );
-
       const Package * p = this->_fi->operator->().get_ptr().get();
 
       this->_db->setDrvInfo( * p );
@@ -108,10 +108,29 @@ CachedPackageSet::const_iterator::operator++()
     }
   else
     {
-      ++( * this->_di );
       this->_ptr = std::static_pointer_cast<value_type>(
         this->_di->operator->().get_ptr()
       );
+    }
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+  CachedPackageSet::const_iterator &
+CachedPackageSet::const_iterator::operator++()
+{
+  /* If we are populating the DB then evaluate the next package, cache the
+   * result in our DB, then return the result. */
+  if ( this->_populateDb )
+    {
+      ++( * this->_fi );
+      if ( ( * this->_fi ) != ( * this->_fe ) ) { loadPkg(); }
+    }
+  else
+    {
+      ++( * this->_di );
+      if ( ( * this->_di ) != ( * this->_de ) ) { loadPkg(); }
     }
 
   return * this;
@@ -128,6 +147,7 @@ cachePackageSet( FlakePackageSet & ps )
   progress_status s = db->getProgress( subtreeTypeToString( ps.getSubtree() )
                                      , ps.getSystem()
                                      );
+
   if ( ! ( ( s == DBPS_INFO_DONE ) ||
            /* Check if stability is done by comparing sizes. */
            ( ( ps.getSubtree() == ST_CATALOG ) &&
@@ -145,6 +165,23 @@ cachePackageSet( FlakePackageSet & ps )
       for ( const FlakePackage & pkg : ps )
         {
           db->setDrvInfo( (const Package &) pkg );
+        }
+
+      /* Mark subtree/system as "done". */
+      // TODO: find a way to mark catalog stabilities.
+      if ( ps.getSubtree() != ST_CATALOG )
+        {
+          db->promoteProgress( subtreeTypeToString( ps.getSubtree() )
+                             , ps.getSystem()
+                             , DBPS_INFO_DONE
+                             );
+        }
+      else
+        {
+          db->promoteProgress( subtreeTypeToString( ps.getSubtree() )
+                             , ps.getSystem()
+                             , DBPS_PARTIAL
+                             );
         }
     }
 

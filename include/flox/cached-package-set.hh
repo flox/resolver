@@ -192,6 +192,8 @@ class CachedPackageSet : public PackageSet {
         std::shared_ptr<DrvDb>                           _db;
         bool                                             _populateDb;
 
+        void loadPkg();
+
       public:
         const_iterator() = default;
 
@@ -211,6 +213,7 @@ class CachedPackageSet : public PackageSet {
                 fps->end()
               );
               assert( db != nullptr );
+              if ( ( * this->_fi ) != ( * this->_fe ) ) { loadPkg(); }
             }
           else
             {
@@ -220,6 +223,7 @@ class CachedPackageSet : public PackageSet {
               this->_de = std::make_shared<DbPackageSet::const_iterator>(
                 dbps->end()
               );
+              if ( ( * this->_di ) != ( * this->_de ) ) { loadPkg(); }
             }
         }
 
@@ -268,8 +272,8 @@ class CachedPackageSet : public PackageSet {
 /* -------------------------------------------------------------------------- */
 
 /**
- * Convert a `FlakePackageSet' to a `DbPackageSet' by writing its contents
- * to a database.
+ * Convert a `FlakePackageSet' to a `DbPackageSet' by writing its contents to
+ * a database.
  */
 DbPackageSet cachePackageSet( FlakePackageSet & ps );
 
