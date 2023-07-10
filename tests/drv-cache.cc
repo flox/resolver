@@ -8,6 +8,7 @@
 #include "resolve.hh"
 #include "flox/drv-cache.hh"
 #include "flox/util.hh"
+#include "flox/cached-package-set.hh"
 
 
 /* -------------------------------------------------------------------------- */
@@ -16,33 +17,10 @@ using namespace flox::resolve;
 
 /* -------------------------------------------------------------------------- */
 
-/* Ensure name resolution works. */
   bool
-test_getProgress1()
+test_getDrvInfo1( DrvDb * cache )
 {
-  Inputs        inputs( (nlohmann::json) { { "nixpkgs", nixpkgsRef } } );
-  Preferences   prefs;
-  ResolverState rs( inputs, prefs );
-  std::optional<nix::ref<FloxFlake>> mf    = rs.getInput( "nixpkgs" );
-  nix::ref<FloxFlake>                flake = mf.value();
-  DrvDb cache( flake->getLockedFlake()->getFingerprint() );
-  // TODO: you need a phony temp DB.
-  return true;
-}
-
-
-/* -------------------------------------------------------------------------- */
-
-  bool
-test_getDrvInfo1()
-{
-  Inputs        inputs( (nlohmann::json) { { "nixpkgs", nixpkgsRef } } );
-  Preferences   prefs;
-  ResolverState rs( inputs, prefs );
-  std::optional<nix::ref<FloxFlake>> mf    = rs.getInput( "nixpkgs" );
-  nix::ref<FloxFlake>                flake = mf.value();
-  DrvDb cache( flake->getLockedFlake()->getFingerprint() );
-  std::optional<nlohmann::json> _info = cache.getDrvInfo(
+  std::optional<nlohmann::json> _info = cache->getDrvInfo(
     "legacyPackages", "x86_64-linux", { "hello" }
   );
   if ( ! _info.has_value() ) { return false; }
@@ -54,36 +32,24 @@ test_getDrvInfo1()
 /* -------------------------------------------------------------------------- */
 
   bool
-test_getDrvInfos1()
+test_getDrvInfos1( DrvDb * cache )
 {
-  Inputs        inputs( (nlohmann::json) { { "nixpkgs", nixpkgsRef } } );
-  Preferences   prefs;
-  ResolverState rs( inputs, prefs );
-  std::optional<nix::ref<FloxFlake>> mf    = rs.getInput( "nixpkgs" );
-  nix::ref<FloxFlake>                flake = mf.value();
-  DrvDb cache( flake->getLockedFlake()->getFingerprint() );
-  std::list<nlohmann::json> infos = cache.getDrvInfos(
+  std::list<nlohmann::json> infos = cache->getDrvInfos(
     "legacyPackages", "x86_64-linux"
   );
   /* While I don't like hard coding this, we explicitly want to ensure we aren't
    * off by one and dropping the "first" or "last" query result.
    * Because we are using a pinned flake this shouldn't be a real issue. */
-  return infos.size() == 64037;
+  return infos.size() == unbrokenPkgCount;
 }
 
 
 /* -------------------------------------------------------------------------- */
 
   bool
-test_CachedPackageFromDb1()
+test_CachedPackageFromDb1( DrvDb * cache )
 {
-  Inputs        inputs( (nlohmann::json) { { "nixpkgs", nixpkgsRef } } );
-  Preferences   prefs;
-  ResolverState rs( inputs, prefs );
-  std::optional<nix::ref<FloxFlake>> mf    = rs.getInput( "nixpkgs" );
-  nix::ref<FloxFlake>                flake = mf.value();
-  DrvDb cache( flake->getLockedFlake()->getFingerprint() );
-  CachedPackage p( cache, "legacyPackages", "x86_64-linux", { "hello" } );
+  CachedPackage p( * cache, "legacyPackages", "x86_64-linux", { "hello" } );
   return p.getPname() == "hello";
 }
 
@@ -91,15 +57,9 @@ test_CachedPackageFromDb1()
 /* -------------------------------------------------------------------------- */
 
   bool
-test_CachedPackageFromDb2()
+test_CachedPackageFromDb2( DrvDb * cache, Preferences & prefs )
 {
-  Inputs        inputs( (nlohmann::json) { { "nixpkgs", nixpkgsRef } } );
-  Preferences   prefs;
-  ResolverState rs( inputs, prefs );
-  std::optional<nix::ref<FloxFlake>> mf    = rs.getInput( "nixpkgs" );
-  nix::ref<FloxFlake>                flake = mf.value();
-  DrvDb cache( flake->getLockedFlake()->getFingerprint() );
-  CachedPackage p( cache, "legacyPackages", "x86_64-linux", { "hello" } );
+  CachedPackage p( * cache, "legacyPackages", "x86_64-linux", { "hello" } );
   Descriptor desc( (nlohmann::json) { { "name", "hello" } } );
   predicates::PkgPred pred = prefs.pred_V2();
   pred = pred && desc.pred( true );
@@ -110,18 +70,12 @@ test_CachedPackageFromDb2()
 /* -------------------------------------------------------------------------- */
 
   bool
-test_CachedPackageFromInfo1()
+test_CachedPackageFromInfo1( DrvDb * cache )
 {
-  Inputs        inputs( (nlohmann::json) { { "nixpkgs", nixpkgsRef } } );
-  Preferences   prefs;
-  ResolverState rs( inputs, prefs );
-  std::optional<nix::ref<FloxFlake>> mf    = rs.getInput( "nixpkgs" );
-  nix::ref<FloxFlake>                flake = mf.value();
-  DrvDb cache( flake->getLockedFlake()->getFingerprint() );
-  std::optional<nlohmann::json> _info = cache.getDrvInfo(
+  std::optional<nlohmann::json> _info = cache->getDrvInfo(
     "legacyPackages", "x86_64-linux", { "hello" }
   );
-  CachedPackage p0( cache, "legacyPackages", "x86_64-linux", { "hello" } );
+  CachedPackage p0( * cache, "legacyPackages", "x86_64-linux", { "hello" } );
   CachedPackage p1( _info.value() );
   bool rsl = true;
   rsl &= p0.getPathStrs() == p1.getPathStrs();
@@ -145,11 +99,8 @@ test_CachedPackageFromInfo1()
 
 /* -------------------------------------------------------------------------- */
   bool
-test_FloxFlake_getActualFlakeAttrPathPrefixes1()
+test_FloxFlake_getActualFlakeAttrPathPrefixes1( ResolverState & rs )
 {
-  Inputs        inputs( (nlohmann::json) { { "nixpkgs", nixpkgsRef } } );
-  Preferences   prefs;
-  ResolverState rs( inputs, prefs );
   std::optional<nix::ref<FloxFlake>>  mf       = rs.getInput( "nixpkgs" );
   nix::ref<FloxFlake>                 flake    = mf.value();
   std::list<std::vector<std::string>> prefixes =
@@ -167,25 +118,32 @@ main( int argc, char * argv[], char ** envp )
 # define RUN_TEST( ... )  _RUN_TEST( ec, __VA_ARGS__ )
 
   /* Ensure that database is initialized */
+  Inputs          inputs( (nlohmann::json) { { "nixpkgs", nixpkgsRef } } );
+  Preferences     prefs;
+  ResolverState   rs( inputs, prefs );
+  DrvDb         * cache = nullptr;
   {
-    Inputs        inputs( (nlohmann::json) { { "nixpkgs", nixpkgsRef } } );
-    Preferences   prefs;
-    ResolverState rs( inputs, prefs );
-    Descriptor    desc( (nlohmann::json) { { "name", "hello" } } );
-
-    rs.resolveInInput( "nixpkgs", desc );
-
+    std::shared_ptr<nix::flake::LockedFlake> flake  =
+      rs.getInput( "nixpkgs" ).value()->getLockedFlake();
+    {
+      FlakePackageSet fps( rs.getEvalState()
+                         , flake
+                         , ST_LEGACY
+                         , "x86_64-linux"
+                         );
+      cachePackageSet( fps );
+    }
+    cache = new DrvDb( flake->getFingerprint() );
   }
 
-  RUN_TEST( getProgress1 );
-  RUN_TEST( getDrvInfo1 );
-  RUN_TEST( getDrvInfos1 );
-  RUN_TEST( CachedPackageFromDb1 );
-  RUN_TEST( CachedPackageFromDb2 );
-  RUN_TEST( CachedPackageFromInfo1 );
-  RUN_TEST( FloxFlake_getActualFlakeAttrPathPrefixes1 );
+  RUN_TEST( getDrvInfo1, cache );
+  RUN_TEST( getDrvInfos1, cache );
+  RUN_TEST( CachedPackageFromDb1, cache );
+  RUN_TEST( CachedPackageFromDb2, cache, prefs );
+  RUN_TEST( CachedPackageFromInfo1, cache );
+  RUN_TEST( FloxFlake_getActualFlakeAttrPathPrefixes1, rs );
 
-  nix::verbosity = nix::lvlInfo;
+  delete cache;
 
   return ec;
 }

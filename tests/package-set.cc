@@ -22,6 +22,20 @@ using namespace nlohmann::literals;
 /* -------------------------------------------------------------------------- */
 
   bool
+test_cachePackageSet1(
+  ResolverState                            & rs
+, std::shared_ptr<nix::flake::LockedFlake>   flake
+)
+{
+  FlakePackageSet fps( rs.getEvalState(), flake, ST_LEGACY, "x86_64-linux" );
+  DbPackageSet    dps = cachePackageSet( fps );
+  return ( dps.size() == fps.size() ) && ( dps.size() == unbrokenPkgCount );
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+  bool
 test_RawPackageSet_iterator1()
 {
   RawPackageMap pkgs {
@@ -200,20 +214,6 @@ test_FlakePackageSet_iterator1(
 
 /* -------------------------------------------------------------------------- */
 
-  bool
-test_cachePackageSet1(
-  ResolverState                            & rs
-, std::shared_ptr<nix::flake::LockedFlake>   flake
-)
-{
-  FlakePackageSet fps( rs.getEvalState(), flake, ST_LEGACY, "x86_64-linux" );
-  DbPackageSet    dps = cachePackageSet( fps );
-  return ( dps.size() == fps.size() ) && ( dps.size() == unbrokenPkgCount );
-}
-
-
-/* -------------------------------------------------------------------------- */
-
   int
 main( int argc, char * argv[], char ** envp )
 {
@@ -223,7 +223,6 @@ main( int argc, char * argv[], char ** envp )
   RUN_TEST( RawPackageSet_iterator1 );
   RUN_TEST( RawPackageSet_addPackage1 );
 
-  std::shared_ptr<nix::flake::LockedFlake> flake  = nullptr;
   Inputs      inputs( (nlohmann::json) { { "nixpkgs", nixpkgsRef } } );
   Preferences prefs;
   ResolverState rs(
@@ -231,14 +230,13 @@ main( int argc, char * argv[], char ** envp )
   , prefs
   , (std::list<std::string>) { "x86_64-linux" }
   );
-  {
-    /* Initialize DB */
-    Descriptor d( (nlohmann::json) { { "name", "hello" } } );
-    rs.resolveInInput( "nixpkgs", d );
 
-    nix::ref<FloxFlake> nixpkgs = rs.getInput( "nixpkgs" ).value();
-    flake = nixpkgs->getLockedFlake();
-  }
+  std::shared_ptr<nix::flake::LockedFlake> flake  =
+    rs.getInput( "nixpkgs" ).value()->getLockedFlake();
+
+  /* XXX: This test must go first because it may initialize our DB. */
+  RUN_TEST( cachePackageSet1, rs, flake );
+  /* XXX: This test must go first because it may initialize our DB. */
 
   RUN_TEST( DbPackageSet_size1,     flake );
   RUN_TEST( DbPackageSet_iterator1, flake );
@@ -247,7 +245,6 @@ main( int argc, char * argv[], char ** envp )
   RUN_TEST( FlakePackageSet_maybeGetRelPath1, rs, flake );
   RUN_TEST( FlakePackageSet_size1,            rs, flake );
   RUN_TEST( FlakePackageSet_iterator1,        rs, flake );
-  RUN_TEST( cachePackageSet1,                 rs, flake );
 
   return ec;
 }
