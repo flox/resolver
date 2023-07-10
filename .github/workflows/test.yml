@@ -66,13 +66,27 @@ jobs:
                          -d '{"name":"semver"}'                     \
             |jq;
 
-      # This is largely performed to prime our cache and reduce overhead in tests later.
+      # This is performed to reduce cpu/memory overhead in tests later.
       - name: Run list-pkgs
         run: |
           set -eu;
           set -o pipefail;
           rev="e8039594435c68eb4f780f3e9bf3972a7399c4b1"
-          ./bin/list-pkgs -i "github:NixOS/nixpkgs/$rev" -j|jq length;
+          echo "Priming Eval Cache: nixpkgs/$rev (x86_64-linux)" >&2;
+          nix flake show --legacy "github:NixOS/nixpkgs/$rev"  \
+                         --system x86_64-linux >/dev/null;
+          sleep 1;
+          echo "Priming Eval Cache: nixpkgs/$rev (x86_64-darwin)" >&2;
+          nix flake show --legacy "github:NixOS/nixpkgs/$rev"  \
+                         --system x86_64-darwin >/dev/null;
+          sleep 1;
+          echo "Priming Eval Cache: nixpkgs/$rev (aarch64-linux)" >&2;
+          nix flake show --legacy "github:NixOS/nixpkgs/$rev"  \
+                         --system aarch64-linux >/dev/null;
+          sleep 1;
+          echo "Priming Eval Cache: nixpkgs/$rev (aarch64-darwin)" >&2;
+          nix flake show --legacy "github:NixOS/nixpkgs/$rev"  \
+                         --system aarch64-darwin >/dev/null;
 
       - name: Build Tests
         run: nix develop --no-update-lock-file --command make tests -j4
