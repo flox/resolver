@@ -267,6 +267,15 @@ class CachedPackageSet : public PackageSet {
 
 /* -------------------------------------------------------------------------- */
 
+/**
+ * Convert a `FlakePackageSet' to a `DbPackageSet' by writing its contents
+ * to a database.
+ */
+DbPackageSet cachePackageSet( FlakePackageSet & ps );
+
+
+/* -------------------------------------------------------------------------- */
+
   }  /* End Namespace `flox::resolve' */
 }  /* End Namespace `flox' */
 

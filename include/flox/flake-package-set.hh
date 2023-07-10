@@ -117,6 +117,13 @@ class FlakePackageSet : public PackageSet {
 
 /* -------------------------------------------------------------------------- */
 
+      std::shared_ptr<nix::flake::LockedFlake>
+    getFlake() const
+    {
+      return this->_flake;
+    }
+
+
       nix::flake::Fingerprint
     getFingerprint() const
     {

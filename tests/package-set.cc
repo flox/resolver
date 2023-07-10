@@ -11,6 +11,7 @@
 #include "descriptor.hh"
 #include "flox/db-package-set.hh"
 #include "flox/flake-package-set.hh"
+#include "flox/cached-package-set.hh"
 
 
 /* -------------------------------------------------------------------------- */
@@ -199,6 +200,20 @@ test_FlakePackageSet_iterator1(
 
 /* -------------------------------------------------------------------------- */
 
+  bool
+test_cachePackageSet1(
+  ResolverState                            & rs
+, std::shared_ptr<nix::flake::LockedFlake>   flake
+)
+{
+  FlakePackageSet fps( rs.getEvalState(), flake, ST_LEGACY, "x86_64-linux" );
+  DbPackageSet    dps = cachePackageSet( fps );
+  return ( dps.size() == fps.size() ) && ( dps.size() == unbrokenPkgCount );
+}
+
+
+/* -------------------------------------------------------------------------- */
+
   int
 main( int argc, char * argv[], char ** envp )
 {
@@ -232,6 +247,7 @@ main( int argc, char * argv[], char ** envp )
   RUN_TEST( FlakePackageSet_maybeGetRelPath1, rs, flake );
   RUN_TEST( FlakePackageSet_size1,            rs, flake );
   RUN_TEST( FlakePackageSet_iterator1,        rs, flake );
+  RUN_TEST( cachePackageSet1,                 rs, flake );
 
   return ec;
 }

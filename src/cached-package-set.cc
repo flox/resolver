@@ -117,6 +117,45 @@ CachedPackageSet::const_iterator::operator++()
 
 /* -------------------------------------------------------------------------- */
 
+  DbPackageSet
+cachePackageSet( FlakePackageSet & ps )
+{
+  std::shared_ptr<DrvDb> db = std::make_shared<DrvDb>( ps.getFingerprint() );
+  /* Check to see if this db already exists and is "done". */
+  progress_status s = db->getProgress( subtreeTypeToString( ps.getSubtree() )
+                                     , ps.getSystem()
+                                     );
+  if ( ! ( ( s == DBPS_INFO_DONE ) ||
+           /* Check if stability is done by comparing sizes. */
+           ( ( ps.getSubtree() == ST_CATALOG ) &&
+             ( s == DBPS_PARTIAL ) &&
+             ( db->countDrvInfosStability( ps.getSystem()
+                                         , ps.getStability().value()
+                                         )
+               == ps.size()
+             )
+           )
+         )
+     )
+    {
+      /* Populate the DB. */
+      for ( const FlakePackage & pkg : ps )
+        {
+          db->setDrvInfo( (const Package &) pkg );
+        }
+    }
+
+   return DbPackageSet( ps.getFlake()
+                      , db
+                      , ps.getSubtree()
+                      , ps.getSystem()
+                      , ps.getStability()
+                      );
+}
+
+
+/* -------------------------------------------------------------------------- */
+
   }  /* End Namespace `flox::resolve' */
 }  /* End Namespace `flox' */
 
