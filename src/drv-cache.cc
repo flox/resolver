@@ -72,25 +72,6 @@ CachedPackage::CachedPackage(       DrvDb                    & db
 
 /* -------------------------------------------------------------------------- */
 
-  std::string_view
-progressStatusToString( const progress_status & ps )
-{
-  switch( ps )
-    {
-      case DBPS_NONE:       return "NONE";       break;
-      case DBPS_PARTIAL:    return "PARTIAL";    break;
-      case DBPS_PATHS_DONE: return "PATHS_DONE"; break;
-      case DBPS_INFO_DONE:  return "INFO_DONE";  break;
-      case DBPS_EMPTY:      return "EMPTY";      break;
-      case DBPS_MISSING:    return "MISSING";    break;
-      case DBPS_FORCE:      return "FORCE";      break;
-      default:              return "ERROR";      break;
-    }
-}
-
-
-/* -------------------------------------------------------------------------- */
-
   std::string
 getDrvDbName( const nix::flake::Fingerprint & fingerprint )
 {

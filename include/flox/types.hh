@@ -71,6 +71,23 @@ std::string_view subtreeTypeToString( const subtree_type & st );
 /* -------------------------------------------------------------------------- */
 
 typedef enum {
+  SY_NONE     = 0
+, SY_STABLE   = 1
+, SY_STAGING  = 2
+, SY_UNSTABLE = 3
+} stability_type;
+
+NLOHMANN_JSON_SERIALIZE_ENUM( stability_type, {
+  { SY_NONE,     nullptr    }
+, { SY_STABLE,   "stable"   }
+, { SY_STAGING,  "staging"  }
+, { SY_UNSTABLE, "unstable" }
+} )
+
+
+/* -------------------------------------------------------------------------- */
+
+typedef enum {
   DBPS_NONE       = 0 /* Indicates that a DB is completely fresh. */
 , DBPS_PARTIAL    = 1 /* Indicates some partially populated state. */
 , DBPS_PATHS_DONE = 2 /* Indicates that we know all derivation paths. */
@@ -80,7 +97,6 @@ typedef enum {
 , DBPS_FORCE      = 6 /* This should always have highest value. */
 }  progress_status;
 
-std::string_view progressStatusToString( const progress_status & ps );
 
 /* -------------------------------------------------------------------------- */
 
