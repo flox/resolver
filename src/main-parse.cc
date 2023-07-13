@@ -24,13 +24,13 @@
 /* -------------------------------------------------------------------------- */
 
 namespace nix {
-  void
-to_json( nlohmann::json & j, const FlakeRef & ref )
-{
-  j = { { "string", ref.to_string() }
-      , { "attrs",  fetchers::attrsToJSON( ref.toAttrs() ) }
-      };
-}
+    void
+  to_json( nlohmann::json & j, const FlakeRef & ref )
+  {
+    j = { { "string", ref.to_string() }
+        , { "attrs",  fetchers::attrsToJSON( ref.toAttrs() ) }
+        };
+  }
 }  /* End namespace `nix' */
 
 
@@ -39,10 +39,8 @@ to_json( nlohmann::json & j, const FlakeRef & ref )
   static nlohmann::json
 parseURI( const char * arg )
 {
-
   try
     {
-
       nix::ParsedURL       url    = nix::parseURL( arg );
       nix::ParsedUrlScheme scheme = nix::parseUrlScheme( url.scheme );
 
@@ -70,7 +68,6 @@ parseURI( const char * arg )
         }
 
       return j;
-
     }
   catch( std::exception & e )
     {
@@ -81,7 +78,6 @@ parseURI( const char * arg )
   /* Unreachable */
   assert( false );
   return nlohmann::json();
-
 }
 
 
@@ -90,7 +86,6 @@ parseURI( const char * arg )
   static nlohmann::json
 parseAndResolveRef( nix::EvalState & state, const char * arg )
 {
-
   bool isJSONArg = strchr( arg, '{' ) != nullptr;
 
   nlohmann::json rawInput =
@@ -111,7 +106,6 @@ parseAndResolveRef( nix::EvalState & state, const char * arg )
       , { "originalRef", originalRef           }
       , { "resolvedRef", resolvedRef           }
       };
-
     }
   catch( std::exception & e )
     {
@@ -122,7 +116,6 @@ parseAndResolveRef( nix::EvalState & state, const char * arg )
   /* Unreachable */
   assert( false );
   return nlohmann::json();
-
 }
 
 
@@ -134,7 +127,6 @@ parseAndResolveRef( nix::EvalState & state, const char * arg )
   nlohmann::json
 lockFlake( nix::EvalState & state, const char * arg )
 {
-
   bool isJSONArg = strchr( arg, '{' ) != nullptr;
 
   nlohmann::json rawInput =
@@ -160,7 +152,6 @@ lockFlake( nix::EvalState & state, const char * arg )
       , { "resolvedRef", locked.flake.resolvedRef }
       , { "lockedRef",   locked.flake.lockedRef   }
       };
-
     }
   catch( std::exception & e )
     {
@@ -171,7 +162,6 @@ lockFlake( nix::EvalState & state, const char * arg )
   /* Unreachable */
   assert( false );
   return nlohmann::json();
-
 }
 
 
@@ -235,7 +225,6 @@ parseInstallable( nix::EvalState & state, const char * arg )
   /* Unreachable */
   assert( false );
   return nlohmann::json();
-
 }
 
 
