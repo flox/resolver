@@ -272,7 +272,6 @@ main( int argc, char * argv[], char ** envp )
     {
       std::cerr << "Unrecognized command flag: " << argv[1] << std::endl
                 << usageMsg << std::endl;
-
       return EXIT_FAILURE;
     }
 
