@@ -1,4 +1,4 @@
-#+TITLE: Parser
+#+TITLE: =parse= Utility
 
 This project provides a minimal executable which exposes various Nix parsers
 ( and related utilities ) with trivial string and JSON input/output.
@@ -63,6 +63,7 @@ interactive usage.
 ** Example Usage
 
 *** Resolved Reference
+
 #+BEGIN_SRC shell
 $ parse -r 'flake:nixpkgs/23.05?dir=lib'|jq;
 {
@@ -125,6 +126,7 @@ $ parse -r '{
 
 
 *** Locked Flake
+
 #+BEGIN_SRC shell
 $ parse -l 'flake:nixpkgs/23.05?dir=lib'|jq;
 {
@@ -165,6 +167,7 @@ $ parse -l 'flake:nixpkgs/23.05?dir=lib'|jq;
 
 
 *** Plain URIs
+
 #+BEGIN_SRC shell
 $ parse -u 'flake:nixpkgs/23.05?dir=lib'|jq;
 {
@@ -185,6 +188,7 @@ $ parse -u 'flake:nixpkgs/23.05?dir=lib'|jq;
 
 
 *** Installables
+
 #+BEGIN_SRC shell
 $ parse -i 'nixpkgs/23.05#sqlite^bin,dev,out,debug'|jq;
 {
