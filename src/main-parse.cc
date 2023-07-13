@@ -268,7 +268,7 @@ main( int argc, char * argv[], char ** envp )
       return EXIT_FAILURE;
     }
 
-  if ( std::string_view( argv[1] ).size() < 2 )
+  if ( ( argv[1][0] == '-' ) && ( std::string_view( argv[1] ).size() < 2 ) )
     {
       std::cerr << "Unrecognized command flag: " << argv[1] << std::endl
                 << usageMsg << std::endl;
