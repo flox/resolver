@@ -257,6 +257,11 @@ parseInstallable( nix::EvalState & state, const char * arg )
 
 /* -------------------------------------------------------------------------- */
 
+static const char usageMsg[] =
+    "Usage: parser [-r|-l|-i|-u] <URI|JSON-ATTRS>\n"
+    "Usage: parser <-h|--help|--usage>";
+
+
   int
 main( int argc, char * argv[], char ** envp )
 {
@@ -272,24 +277,53 @@ main( int argc, char * argv[], char ** envp )
 
   nlohmann::json j;
 
-  switch ( argc )
+  if ( argc < 2 )
     {
-      case 2:
-        arg = argv[1];
-        /* Guess between `parseAndResolveRef' vs. `parseInstallable' */
-        if ( strchr( argv[1], '#' ) != nullptr ) { cmd = 'i'; }
-        else                                     { cmd = 'r'; }
-        break;
+      std::cerr << "Too few arguments!" << std::endl
+                << usageMsg << std::endl;
+      return EXIT_FAILURE;
+    }
 
-      case 3:
-        cmd = argv[1][1];
-        arg = argv[2];
-        break;
+  if ( std::string_view( argv[1] ).size() < 2 )
+    {
+      std::cerr << "Unrecognized command flag: " << argv[1] << std::endl
+                << usageMsg << std::endl;
 
-      default:
-        std::cerr << "Too few arguments!" << std::endl;
-        return EXIT_FAILURE;
-        break;
+      return EXIT_FAILURE;
+    }
+
+  if ( std::string_view( argv[1] ) == "--usage"  )
+    {
+      std::cout << usageMsg << std::endl;
+      return EXIT_SUCCESS;
+    }
+
+  if ( ( std::string_view( argv[1] ) == "--help"  ) || ( argv[1][1] == 'h' ) )
+    {
+      cmd = 'h';
+    }
+  else
+    {
+      switch ( argc )
+        {
+          case 2:
+            arg = argv[1];
+            /* Guess between `parseAndResolveRef' vs. `parseInstallable' */
+            if ( strchr( argv[1], '#' ) != nullptr ) { cmd = 'i'; }
+            else                                     { cmd = 'r'; }
+            break;
+
+          case 3:
+            cmd = argv[1][1];
+            arg = argv[2];
+            break;
+
+          default:
+            std::cerr << "Too many arguments!" << std::endl
+                      << usageMsg << std::endl;
+            return EXIT_FAILURE;
+            break;
+        }
     }
 
   switch ( cmd )
@@ -298,8 +332,22 @@ main( int argc, char * argv[], char ** envp )
       case 'l': j = lockFlake(          state, arg ); break;
       case 'i': j = parseInstallable(   state, arg ); break;
       case 'u': j = parseURI(                  arg ); break;
+      case 'h':
+        std::cout << usageMsg << std::endl << std::endl
+                  << "Options:" << std::endl
+                  << "  -r <FLAKE-URI|JSON>  parseAndResolveRef" << std::endl
+                  << "  -l <FLAKE-URI|JSON>  lockFlake"          << std::endl
+                  << "  -i INSTALLABLE-URI   parseAndResolveRef" << std::endl
+                  << "  -u URI               parseURI"           << std::endl
+                  << "     --usage           show usage message" << std::endl
+                  << "  -h,--help            show this message"  << std::endl;
+        return EXIT_SUCCESS;
+        break;
+
       default:
-        std::cerr << "Unrecognized command flag: " << argv[1] << std::endl;
+        std::cerr << "Unrecognized command flag: " << argv[1] << std::endl
+                  << usageMsg << std::endl;
+
         return EXIT_FAILURE;
         break;
     }
