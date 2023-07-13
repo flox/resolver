@@ -23,6 +23,19 @@
 
 /* -------------------------------------------------------------------------- */
 
+namespace nix {
+  void
+to_json( nlohmann::json & j, const FlakeRef & ref )
+{
+  j = { { "string", ref.to_string() }
+      , { "attrs",  fetchers::attrsToJSON( ref.toAttrs() ) }
+      };
+}
+}  /* End namespace `nix' */
+
+
+/* -------------------------------------------------------------------------- */
+
   static nlohmann::json
 parseURI( const char * arg )
 {
@@ -94,15 +107,9 @@ parseAndResolveRef( nix::EvalState & state, const char * arg )
       nix::FlakeRef resolvedRef = originalRef.resolve( state.store );
 
       return {
-        { "input", std::move( rawInput ) }
-      , { "originalRef", {
-          { "string", originalRef.to_string() }
-        , { "attrs",  nix::fetchers::attrsToJSON( originalRef.toAttrs() ) }
-        } }
-      , { "resolvedRef", {
-          { "string", resolvedRef.to_string() }
-        , { "attrs",  nix::fetchers::attrsToJSON( resolvedRef.toAttrs() ) }
-        } }
+        { "input",       std::move( rawInput ) }
+      , { "originalRef", originalRef           }
+      , { "resolvedRef", resolvedRef           }
       };
 
     }
@@ -148,28 +155,10 @@ lockFlake( nix::EvalState & state, const char * arg )
       );
 
       return {
-        { "input", std::move( rawInput ) }
-      , { "originalRef", {
-          { "string", locked.flake.originalRef.to_string() }
-        , { "attrs",  nix::fetchers::attrsToJSON(
-                        locked.flake.originalRef.toAttrs()
-                      )
-          }
-        } }
-      , { "resolvedRef", {
-          { "string", locked.flake.resolvedRef.to_string() }
-        , { "attrs",  nix::fetchers::attrsToJSON(
-                        locked.flake.resolvedRef.toAttrs()
-                      )
-          }
-        } }
-      , { "lockedRef", {
-          { "string", locked.flake.lockedRef.to_string() }
-        , { "attrs",  nix::fetchers::attrsToJSON(
-                        locked.flake.lockedRef.toAttrs()
-                      )
-          }
-        } }
+        { "input",       std::move( rawInput )    }
+      , { "originalRef", locked.flake.originalRef }
+      , { "resolvedRef", locked.flake.resolvedRef }
+      , { "lockedRef",   locked.flake.lockedRef   }
       };
 
     }
@@ -230,10 +219,7 @@ parseInstallable( nix::EvalState & state, const char * arg )
 
       return {
         { "input", std::move( arg ) }
-      , { "ref", {
-          { "string", ref.to_string() }
-        , { "attrs",  nix::fetchers::attrsToJSON( ref.toAttrs() ) }
-        } }
+      , { "ref",   ref              }
       , { "attrPath",
           nix::tokenizeString<std::vector<std::string>>(
             std::get<1>( parsed )
