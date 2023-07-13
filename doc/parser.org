@@ -48,6 +48,7 @@ and may be either =null= or a =string=.
 
 #+BEGIN_SRC
 parser [-r|-l|-i|-u] <URI|JSON-ATTRS>
+parser [-h|--help|--usage]
 #+END_SRC
 
 The flags listed above may be given to indicate which parser should be used
