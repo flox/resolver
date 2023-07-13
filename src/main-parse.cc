@@ -182,10 +182,9 @@ parseInstallable( nix::EvalState & state, const char * arg )
 {
   try
     {
-      std::string url( arg );
       std::tuple<nix::FlakeRef, std::string, nix::ExtendedOutputsSpec> parsed =
         nix::parseFlakeRefWithFragmentAndExtendedOutputsSpec(
-          url
+          std::string( arg )
         , nix::absPath( "." )
         );
 
