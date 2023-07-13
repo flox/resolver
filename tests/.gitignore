@@ -9,3 +9,4 @@ semver
 predicates
 drv-cache
 package-set
+cursor-iter
