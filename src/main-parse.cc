@@ -28,11 +28,10 @@
  *
  * -------------------------------------------------------------------------- */
 
-#include <filesystem>
 #include <stddef.h>
-#include <fstream>
 #include <iostream>
 #include <string>
+#include <cstring>
 #include <nlohmann/json.hpp>
 #include <nix/shared.hh>
 #include <nix/eval.hh>
@@ -42,6 +41,58 @@
 #include <argparse/argparse.hpp>
 #include <cassert>
 #include <ranges>
+#include "flox/util.hh"
+
+
+/* -------------------------------------------------------------------------- */
+
+  static nlohmann::json
+parseURI( const char * arg )
+{
+
+  try
+    {
+
+      nix::ParsedURL       url    = nix::parseURL( arg );
+      nix::ParsedUrlScheme scheme = nix::parseUrlScheme( url.scheme );
+
+      nlohmann::json s = {
+        { "full",        url.scheme       }
+      , { "application", nlohmann::json() }
+      , { "transport",   scheme.transport }
+      };
+      if ( scheme.application.has_value() )
+        {
+          s["application"] = scheme.application.value();
+        }
+
+      nlohmann::json j = {
+        { "base",      std::move( url.base )     }
+      , { "scheme",    std::move( s )            }
+      , { "authority", nlohmann::json()          }
+      , { "path",      std::move( url.path )     }
+      , { "fragment",  std::move( url.fragment ) }
+      , { "query",     std::move( url.query )    }
+      };
+      if ( url.authority.has_value() )
+        {
+          j["authority"] = url.authority.value();
+        }
+
+      return j;
+
+    }
+  catch( std::exception & e )
+    {
+      std::cerr << e.what() << std::endl;
+      exit( EXIT_FAILURE );
+    }
+
+  /* Unreachable */
+  assert( false );
+  return nlohmann::json();
+
+}
 
 
 /* -------------------------------------------------------------------------- */
@@ -65,15 +116,82 @@ parseAndResolveRef( nix::EvalState & state, const char * arg )
 
       nix::FlakeRef resolvedRef = originalRef.resolve( state.store );
 
-      return nlohmann::json {
+      return {
         { "input", std::move( rawInput ) }
       , { "originalRef", {
           { "string", originalRef.to_string() }
         , { "attrs",  nix::fetchers::attrsToJSON( originalRef.toAttrs() ) }
         } }
-      , { "resolvedRef", nlohmann::json {
+      , { "resolvedRef", {
           { "string", resolvedRef.to_string() }
         , { "attrs",  nix::fetchers::attrsToJSON( resolvedRef.toAttrs() ) }
+        } }
+      };
+
+    }
+  catch( std::exception & e )
+    {
+      std::cerr << e.what() << std::endl;
+      exit( EXIT_FAILURE );
+    }
+
+  /* Unreachable */
+  assert( false );
+  return nlohmann::json();
+
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+/* Essentially similar to `parseAndResolveRef' but also emits `lockedRef'.
+ * The reason to have two separate functions is to avoid fetching in cases where
+ * the user strictly wants to parse/resolve. */
+  nlohmann::json
+lockFlake( nix::EvalState & state, const char * arg )
+{
+
+  bool isJSONArg = strchr( arg, '{' ) != nullptr;
+
+  nlohmann::json rawInput =
+    isJSONArg ? nlohmann::json::parse( arg ) : arg;
+
+  try
+    {
+      nix::FlakeRef originalRef =
+        isJSONArg ? nix::FlakeRef::fromAttrs(
+                      nix::fetchers::jsonToAttrs( rawInput )
+                    )
+                  : nix::parseFlakeRef( arg, nix::absPath( "." ) );
+
+      nix::flake::LockedFlake locked = nix::flake::lockFlake(
+        state
+      , originalRef
+      , flox::resolve::floxFlakeLockFlags
+      );
+
+      return {
+        { "input", std::move( rawInput ) }
+      , { "originalRef", {
+          { "string", locked.flake.originalRef.to_string() }
+        , { "attrs",  nix::fetchers::attrsToJSON(
+                        locked.flake.originalRef.toAttrs()
+                      )
+          }
+        } }
+      , { "resolvedRef", {
+          { "string", locked.flake.resolvedRef.to_string() }
+        , { "attrs",  nix::fetchers::attrsToJSON(
+                        locked.flake.resolvedRef.toAttrs()
+                      )
+          }
+        } }
+      , { "lockedRef", {
+          { "string", locked.flake.lockedRef.to_string() }
+        , { "attrs",  nix::fetchers::attrsToJSON(
+                        locked.flake.lockedRef.toAttrs()
+                      )
+          }
         } }
       };
 
@@ -133,7 +251,7 @@ parseInstallable( nix::EvalState & state, const char * arg )
         }
 
 
-      return nlohmann::json {
+      return {
         { "input", std::move( arg ) }
       , { "ref", {
           { "string", ref.to_string() }
@@ -180,8 +298,10 @@ main( int argc, char * argv[], char ** envp )
   switch ( argc )
     {
       case 2:
-        cmd = 'r';
         arg = argv[1];
+        /* Guess between `parseAndResolveRef' vs. `parseInstallable' */
+        if ( strchr( argv[1], '#' ) != nullptr ) { cmd = 'i'; }
+        else                                     { cmd = 'r'; }
         break;
 
       case 3:
@@ -197,8 +317,10 @@ main( int argc, char * argv[], char ** envp )
 
   switch ( cmd )
     {
-      case 'r': j = parseAndResolveRef( state, argv[2] ); break;
-      case 'i': j = parseInstallable(   state, argv[2] ); break;
+      case 'r': j = parseAndResolveRef( state, arg ); break;
+      case 'l': j = lockFlake(          state, arg ); break;
+      case 'i': j = parseInstallable(   state, arg ); break;
+      case 'u': j = parseURI(                  arg ); break;
       default:
         std::cerr << "Unrecognized command flag: " << argv[1] << std::endl;
         return EXIT_FAILURE;
