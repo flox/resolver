@@ -1,30 +1,7 @@
 /* ========================================================================== *
  *
  * Parse various URIs and junk using `nix' libraries and expose them in a
- * trivially simple way so that they can be used by any UNIX software.
- *
- * -------------------------------------------------------------------------- *
- *
- * Any `flox' team member who creates a PR which pushes this file beyone 500
- * lines or modifies this comment to raise the limit above 500 lines is
- * ethically, legally, and spiritually obliged to consume an entire shoe of
- * at least US mens size 9 or larger.
- *
- * Any team member who endures this hazing is guaranteed an unconditional
- * approval for any commit made to this file which will be preserved in
- * perpetuity until `flox' is defunct or acquired by a parent company -
- * because honestly you ate an adult sized shoe and you definitely shouldn't
- * have made this file more complicated than it strictly needed to be but I
- * guess you earned it and will assume you saved this trump card for a
- * sufficiently extreme circumstance that really justified it.
- * Also if you just copy the contents of this file into another executable to
- * make it longer and avoid eating a shoe you're a coward and you'll have to
- * live with that shame for the remainder of your natural life.
- *
- * - Alex Ameen <alex.ameen.tx@gmail.com>
- * Email me if anyone eventually eats a shoe one day, you gotta tell me their
- * rationale and obviously I'll NDA. <3
- *
+ * trivially simple way so that they can be used consumed by other software.
  *
  * -------------------------------------------------------------------------- */
 
