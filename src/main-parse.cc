@@ -188,8 +188,7 @@ parseInstallable( nix::EvalState & state, const char * arg )
         , nix::absPath( "." )
         );
 
-      nix::FlakeRef ref = std::get<0>( parsed );
-
+      nix::FlakeRef            ref     = std::get<0>( parsed );
       nix::ExtendedOutputsSpec exOuts  = std::get<2>( parsed );
       nlohmann::json           outputs;
 
