@@ -218,8 +218,8 @@ parseInstallable( nix::EvalState & state, const char * arg )
 
 
       return {
-        { "input", std::move( arg ) }
-      , { "ref",   ref              }
+        { "input",    std::move( arg ) }
+      , { "ref",      ref              }
       , { "attrPath",
           nix::tokenizeString<std::vector<std::string>>(
             std::get<1>( parsed )
