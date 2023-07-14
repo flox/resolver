@@ -127,6 +127,12 @@ shouldSearchSystem( std::string_view system )
 
 /* -------------------------------------------------------------------------- */
 
+bool isSubstitutable( std::string_view storePath );
+
+
+
+/* -------------------------------------------------------------------------- */
+
   }  /* End namespace `flox::resolve' */
 }    /* End namespace `flox' */
 

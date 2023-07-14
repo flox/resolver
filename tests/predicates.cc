@@ -106,6 +106,36 @@ test_Preferences_pred()
 
 /* -------------------------------------------------------------------------- */
 
+/* A store path that is cached should succeed.
+ * XXX: This is from `github:NixOS/nixpkgs/23.05' and may need an update in
+ * the future.
+ */
+  bool
+test_isSubstitutable1()
+{
+  return isSubstitutable(
+    "/nix/store/snxcrrlmxw0nd0na93xs8qgbdi0fsm6z-fzf-0.40.0"
+  );
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+/* Derivations should fail.
+ * XXX: This is from `github:NixOS/nixpkgs/23.05' and may need an update in
+ * the future.
+ */
+  bool
+test_isSubstitutable2()
+{
+  return ! isSubstitutable(
+    "/nix/store/1jxvsy1rpips2cwgjjnbd49gn8nrj4ik-fzf-0.40.0.drv"
+  );
+}
+
+
+/* -------------------------------------------------------------------------- */
+
   int
 main( int argc, char * argv[], char ** envp )
 {
@@ -119,6 +149,9 @@ main( int argc, char * argv[], char ** envp )
   RUN_TEST( predicates1 );
   RUN_TEST( predicates2 );
   RUN_TEST( Preferences_pred );
+
+  RUN_TEST( isSubstitutable1 );
+  RUN_TEST( isSubstitutable2 );
 
   return ec;
 }

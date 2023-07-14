@@ -8,6 +8,7 @@
 #include <nix/nixexpr.hh>
 #include "flox/util.hh"
 #include "flox/types.hh"
+#include <filesystem>
 
 
 /* -------------------------------------------------------------------------- */
@@ -72,6 +73,19 @@ parseSubtreeType( std::string_view subtree )
   throw ResolverException(
     "Failed to parse invalid subtree '" + std::string( subtree ) + "'."
   );
+}
+
+
+/* -------------------------------------------------------------------------- */
+
+  bool
+isSubstitutable( std::string_view storePath )
+{
+  for ( const nix::ref<nix::Store> & s : nix::getDefaultSubstituters() )
+    {
+      if ( s->isValidPath( s->parseStorePath( storePath ) ) ) { return true; }
+    }
+  return false;
 }
 
 
