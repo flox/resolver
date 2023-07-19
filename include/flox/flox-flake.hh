@@ -16,8 +16,16 @@ namespace flox {
 
 /* -------------------------------------------------------------------------- */
 
+/**
+ * A queue of cursors used to stash sub-attrsets that need to be searched
+ * recursively in various iterators.
+ */
 using todo_queue = std::queue<Cursor, std::list<Cursor>>;
 
+/**
+ * A function type that can be "mapped" ( applied to elements by an iterator )
+ * to attribute set cursors.
+ */
 using cursor_op = std::function<void(
         subtree_type               subtreeType
 ,       std::string_view           system
@@ -27,6 +35,10 @@ using cursor_op = std::function<void(
 ,       Cursor                     cur
 )>;
 
+/**
+ * A function type that can be "mapped" ( applied to elements by an iterator )
+ * to derivations in an attribute set.
+ */
 using derivation_op = std::function<void(
         DrvDb                    & db
 ,       subtree_type               subtreeType
@@ -37,6 +49,13 @@ using derivation_op = std::function<void(
 ,       Cursor                     cur
 )>;
 
+/**
+ * A simple `cursor_op' function that pushes cursor positions for attrsets which
+ * contain a `recurseIntoAttrs = true;' indicator.
+ *
+ * This is a sane default function for recursively traversing `legacyPackages'
+ * style subtrees.
+ */
   static const cursor_op
 handleRecurseForDerivations = [](
         subtree_type               subtreeType
@@ -57,6 +76,16 @@ handleRecurseForDerivations = [](
 
 /* -------------------------------------------------------------------------- */
 
+/**
+ * A convenience wrapper that provides various operations on a `flake'.
+ *
+ * Notably this class is responsible for owning both the `nix' `EvalState',
+ * `EvalCache' database, and our extended `DrvDb' database associated with
+ * a `flake'.
+ *
+ * It is recommended that only one `FloxFlake' be created for a unique `flake'
+ * to avoid synchronization slowdowns with its databases.
+ */
 class FloxFlake : public std::enable_shared_from_this<FloxFlake> {
   private:
     nix::ref<nix::EvalState> _state;
