@@ -76,15 +76,6 @@ FloxFlake::getLockedFlake()
 
 /* -------------------------------------------------------------------------- */
 
-  std::list<std::string>
-FloxFlake::getSystems() const
-{
-  return this->_systems;
-}
-
-
-/* -------------------------------------------------------------------------- */
-
   std::list<std::list<std::string>>
 FloxFlake::getFlakeAttrPathPrefixes() const
 {
@@ -415,7 +406,6 @@ FloxFlake::derivationsDo( std::string_view subtree
 
   return doneStatus;
 }
-
 
 
 /* -------------------------------------------------------------------------- */

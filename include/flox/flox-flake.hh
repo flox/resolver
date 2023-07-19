@@ -115,7 +115,8 @@ class FloxFlake : public std::enable_shared_from_this<FloxFlake> {
       return this->getLockedFlake()->flake.lockedRef;
     }
 
-    std::list<std::string>            getSystems()               const;
+    std::list<std::string> getSystems() const { return this->_systems; }
+
     std::list<std::list<std::string>> getFlakeAttrPathPrefixes() const;
 
     /**

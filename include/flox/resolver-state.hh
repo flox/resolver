@@ -35,6 +35,16 @@ namespace flox {
 
 /* -------------------------------------------------------------------------- */
 
+/**
+ * A state blob that holds a `nix' evaluator, an open handle to the `nix' store,
+ * open `FloxFlake' instances for the user's inputs, and relevant settings
+ * for customizing resolver behavior.
+ *
+ * Ideally you should only create a single instance of `ResolverState'.
+ * If you need to create multiple it is strongly recommended that you close
+ * all previously constructed `ResolverState' objects first.
+ * This is to avoid synchronization slowdowns in underlying databases.
+ */
 class ResolverState {
   private:
     std::shared_ptr<nix::Store>                       _store;
