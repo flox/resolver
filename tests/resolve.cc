@@ -30,19 +30,6 @@ test_ResolverStateLocking1()
 
 /* -------------------------------------------------------------------------- */
 
-  bool
-test_getActualFlakeAttrPathPrefixes()
-{
-  Inputs        inputs( (nlohmann::json) { { "nixpkgs", nixpkgsRef } } );
-  Preferences   prefs;
-  ResolverState rs( inputs, prefs );
-  auto ps = rs.getInputs().at( "nixpkgs" )->getActualFlakeAttrPathPrefixes();
-  return ps.size() == defaultSystems.size();
-}
-
-
-/* -------------------------------------------------------------------------- */
-
 /* Use relative path. */
   bool
 test_resolveInInput1()
@@ -105,7 +92,6 @@ main( int argc, char * argv[], char ** envp )
 # define RUN_TEST( ... )  _RUN_TEST( ec, __VA_ARGS__ )
 
   RUN_TEST( ResolverStateLocking1 );
-  RUN_TEST( getActualFlakeAttrPathPrefixes );
   RUN_TEST( resolveInInput1 );
   RUN_TEST( resolveInInput2 );
   RUN_TEST( resolve_V2_1 );

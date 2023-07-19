@@ -86,35 +86,6 @@ FloxFlake::getSystems() const
 /* -------------------------------------------------------------------------- */
 
   std::list<std::list<std::string>>
-FloxFlake::getDefaultFlakeAttrPathPrefixes() const
-{
-  std::string system = nix::settings.thisSystem.get();
-  if ( ! hasElement( this->_systems, system ) )
-    {
-      return {};
-    }
-  std::list<std::list<std::string>> rsl;
-  for ( auto & prefix : this->_prefsPrefixes )
-    {
-      if ( prefix == "catalog" )
-        {
-          for ( auto & stability : this->_prefsStabilities )
-            {
-              rsl.push_back( { "catalog", system, stability } );
-            }
-        }
-      else
-        {
-          rsl.push_back( { prefix, system } );
-        }
-    }
-  return rsl;
-}
-
-
-/* -------------------------------------------------------------------------- */
-
-  std::list<std::list<std::string>>
 FloxFlake::getFlakeAttrPathPrefixes() const
 {
   std::list<std::list<std::string>> rsl;
@@ -255,98 +226,6 @@ FloxFlake::getFlakePrefixCursors()
         }
       if ( cur != nullptr ) { rsl.push_back( Cursor( cur ) ); }
     }
-  return rsl;
-}
-
-
-/* -------------------------------------------------------------------------- */
-
-  std::list<std::vector<std::string>>
-FloxFlake::getActualFlakeAttrPathPrefixes()
-{
-  this->recordPrefixes();
-  DrvDb db( this->getLockedFlake()->getFingerprint() );
-  std::list<std::vector<std::string>> rsl;
-
-  for ( std::list<std::string> & prefix : this->getFlakeAttrPathPrefixes() )
-    {
-      std::string subtree = std::move( prefix.front() );
-      prefix.pop_front();
-      std::string system  = std::move( prefix.front() );
-      prefix.pop_front();
-      progress_status status = db.getProgress( subtree, system );
-      switch ( status )
-        {
-          case DBPS_EMPTY:   continue; break;
-          case DBPS_MISSING: continue; break;
-          case DBPS_NONE:
-            throw ResolverException(
-              "FloxFlake::getActualFlakeAttrPathPrefixes(): Failed to read "
-              "progress from DrvDb."
-            );
-            break;
-          case DBPS_INFO_DONE:
-          case DBPS_PATHS_DONE:
-            /* Handle stabilities */
-            if ( prefix.empty() )
-              {
-                std::vector<std::string> path = {
-                  std::move( subtree ), std::move( system )
-                };
-                rsl.push_back( std::move( path ) );
-              }
-            else
-              {
-                std::string stability = std::move( prefix.front() );
-                prefix.pop_front();
-                auto state = db.getDbState();
-                nix::SQLiteStmt stmt;
-                stmt.create( state->db
-                , "SELECT COUNT( subtree ) FROM Derivations WHERE "
-                  "( subtree = ? ) AND ( system = ? ) AND ( path LIKE ? )"
-                );
-                std::string like( "[\"" + stability + "\",%" );
-                nix::SQLiteStmt::Use query =
-                  stmt.use()( subtree )( system )( like );
-                assert( query.next() );
-                if ( query.getInt( 0 ) != 0 )
-                  {
-                    std::vector<std::string> path = {
-                      std::move( subtree )
-                    , std::move( system )
-                    , std::move( stability )
-                    };
-                    rsl.push_back( std::move( path ) );
-                  }
-              }
-            break;
-
-          default:
-            /* Handle stabilities */
-            if ( prefix.empty() )
-              {
-                std::vector<std::string> path = {
-                  std::move( subtree ), std::move( system )
-                };
-                rsl.push_back( std::move( path ) );
-              }
-            else
-              {
-                std::vector<std::string> path = {
-                  std::move( subtree )
-                , std::move( system )
-                , std::move( prefix.front() )
-                };
-                prefix.pop_front();
-                if ( this->maybeOpenCursor( path ) != nullptr )
-                  {
-                    rsl.push_back( std::move( path ) );
-                  }
-              }
-            break;
-        }
-    }
-
   return rsl;
 }
 
@@ -640,59 +519,6 @@ FloxFlake::packagesDo(
     op( aux, p );
   } );
   if ( allowCache ) { db.promoteProgress( subtree, system, DBPS_INFO_DONE ); }
-}
-
-
-/* -------------------------------------------------------------------------- */
-
-// TODO: Use DrvDb
-  std::list<Cursor>
-FloxFlake::openCursorsByAttrPathGlob( const AttrPathGlob & path )
-{
-
-  std::list<Cursor> rsl;
-
-  if ( path.isAbsolute() )
-    {
-      MaybeCursor prefix = this->openEvalCache()->getRoot()->maybeGetAttr(
-        std::get<std::string>( path.path[0] )
-      );
-      if ( prefix == nullptr ) { return {}; }
-      if ( ! path.hasGlob() )
-        {
-          MaybeCursor c = prefix;
-          for ( size_t i = 1; ( i < path.size() ) && ( c != nullptr ); ++i )
-            {
-              c = c->maybeGetAttr( std::get<std::string>( path.path[i] ) );
-            }
-          if ( c != nullptr ) { rsl.push_back( std::move( (Cursor) c ) ); }
-        }
-      else
-        {
-          for ( const auto & system : this->_systems )
-            {
-              MaybeCursor c = prefix->maybeGetAttr( system );
-              for ( size_t i = 2; ( i < path.size() ) && ( c != nullptr ); ++i )
-                {
-                  c = c->maybeGetAttr( std::get<std::string>( path.path[i] ) );
-                }
-              if ( c != nullptr ) { rsl.push_back( std::move( (Cursor) c ) ); }
-            }
-        }
-    }
-  else  /* Relative */
-    {
-      for ( const auto & prefix : this->getFlakePrefixCursors() )
-        {
-          MaybeCursor c = prefix;
-          for ( size_t i = 0; ( i < path.size() ) && ( c != nullptr ); ++i )
-            {
-              c = c->maybeGetAttr( std::get<std::string>( path.path[i] ) );
-            }
-          if ( c != nullptr ) { rsl.push_back( std::move( (Cursor) c ) ); }
-        }
-    }
-  return rsl;
 }
 
 

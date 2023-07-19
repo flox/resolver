@@ -107,7 +107,7 @@ class FloxFlake : public std::enable_shared_from_this<FloxFlake> {
     std::shared_ptr<nix::flake::LockedFlake> getLockedFlake();
     nix::ref<nix::eval_cache::EvalCache>     openEvalCache();
 
-    FloxFlakeRef getFlakeRef()  const { return this->_flakeRef; }
+    FloxFlakeRef getFlakeRef() const { return this->_flakeRef; }
 
       FloxFlakeRef
     getLockedFlakeRef()
@@ -115,9 +115,8 @@ class FloxFlake : public std::enable_shared_from_this<FloxFlake> {
       return this->getLockedFlake()->flake.lockedRef;
     }
 
-    std::list<std::string>            getSystems()                      const;
-    std::list<std::list<std::string>> getDefaultFlakeAttrPathPrefixes() const;
-    std::list<std::list<std::string>> getFlakeAttrPathPrefixes()        const;
+    std::list<std::string>            getSystems()               const;
+    std::list<std::list<std::string>> getFlakeAttrPathPrefixes() const;
 
     /**
      * Like `findAttrAlongPath' but without suggestions.
@@ -132,14 +131,6 @@ class FloxFlake : public std::enable_shared_from_this<FloxFlake> {
 
     /** Opens `EvalCache' once, staying open until all cursors die. */
     std::list<Cursor> getFlakePrefixCursors();
-
-    std::list<std::vector<std::string>> getActualFlakeAttrPathPrefixes();
-
-    /**
-     * Try opening cursors from an absolute or relative path with globs.
-     * Glob is only accepted for `system'.
-     */
-    std::list<Cursor> openCursorsByAttrPathGlob( const AttrPathGlob & path );
 
     /**
      * Determine which output prefixes exist in this flake, ignoring

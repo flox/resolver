@@ -98,18 +98,6 @@ test_CachedPackageFromInfo1( DrvDb * cache )
 
 
 /* -------------------------------------------------------------------------- */
-  bool
-test_FloxFlake_getActualFlakeAttrPathPrefixes1( ResolverState & rs )
-{
-  std::optional<nix::ref<FloxFlake>>  mf       = rs.getInput( "nixpkgs" );
-  nix::ref<FloxFlake>                 flake    = mf.value();
-  std::list<std::vector<std::string>> prefixes =
-    flake->getActualFlakeAttrPathPrefixes();
-  return prefixes.size() == defaultSystems.size();
-}
-
-
-/* -------------------------------------------------------------------------- */
 
   int
 main( int argc, char * argv[], char ** envp )
@@ -141,7 +129,6 @@ main( int argc, char * argv[], char ** envp )
   RUN_TEST( CachedPackageFromDb1, cache );
   RUN_TEST( CachedPackageFromDb2, cache, prefs );
   RUN_TEST( CachedPackageFromInfo1, cache );
-  RUN_TEST( FloxFlake_getActualFlakeAttrPathPrefixes1, rs );
 
   delete cache;
 
