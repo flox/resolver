@@ -393,15 +393,6 @@ DrvDb::DrvDb( const nix::flake::Fingerprint & fingerprint
 
 /* -------------------------------------------------------------------------- */
 
-  nix::Sync<DrvDb::State>::Lock
-DrvDb::getDbState()
-{
-  return this->_state->lock();
-}
-
-
-/* -------------------------------------------------------------------------- */
-
   void
 DrvDb::startCommit()
 {
@@ -425,14 +416,6 @@ DrvDb::endCommit()
       state->txn.reset();
       assert( state->txn == nullptr );
     }
-}
-
-
-/* -------------------------------------------------------------------------- */
-
-DrvDb::~DrvDb()
-{
-  try { endCommit(); } catch ( ... ) { /* nix::ignoreException(); */ }
 }
 
 

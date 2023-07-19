@@ -31,6 +31,7 @@ TEST       ?= test
 # ---------------------------------------------------------------------------- #
 
 OS ?= $(shell $(UNAME))
+OS := $(OS)
 ifndef libExt
 ifeq (Linux,$(OS))
 	libExt ?= .so
@@ -79,21 +80,42 @@ endif
 
 # ---------------------------------------------------------------------------- #
 
-nljson_CFLAGS   =  $(shell $(PKG_CONFIG) --cflags nlohmann_json)
-argparse_CFLAGS =  $(shell $(PKG_CONFIG) --cflags argparse)
+nljson_CFLAGS ?= $(shell $(PKG_CONFIG) --cflags nlohmann_json)
+nljson_CFLAGS := $(nljson_CFLAGS)
+
+argparse_CFLAGS ?= $(shell $(PKG_CONFIG) --cflags argparse)
+argparse_CFLAGS := $(argparse_CFLAGS)
+
 boost_CFLAGS    ?=                                                             \
   -I$(shell $(NIX) build --no-link --print-out-paths 'nixpkgs#boost')/include
+boost_CFLAGS := $(boost_CFLAGS)
 
-sqlite3_CFLAGS  = $(shell $(PKG_CONFIG) --cflags sqlite3)
-sqlite3_LDFLAGS =  $(shell $(PKG_CONFIG) --libs sqlite3)
+sqlite3_CFLAGS  ?= $(shell $(PKG_CONFIG) --cflags sqlite3)
+sqlite3_CFLAGS  := $(sqlite3_CFLAGS)
+sqlite3_LDFLAGS ?= $(shell $(PKG_CONFIG) --libs sqlite3)
+sqlite3_LDLAGS  := $(sqlite3_LDLAGS)
 
-nix_INCDIR  =  $(shell $(PKG_CONFIG) --variable=includedir nix-cmd)
-nix_CFLAGS  =  $(boost_CFLAGS)
-nix_CFLAGS  += $(shell $(PKG_CONFIG) --cflags nix-main nix-cmd nix-expr)
-nix_CFLAGS  += -isystem $(shell $(PKG_CONFIG) --variable=includedir nix-cmd)
-nix_CFLAGS  += -include $(nix_INCDIR)/nix/config.h
-nix_LDFLAGS =  $(shell $(PKG_CONFIG) --libs nix-main nix-cmd nix-expr nix-store)
-nix_LDFLAGS += -lnixfetchers
+sql_builder_CFLAGS ?=                                      \
+  -I$(shell $(NIX) build --no-link --print-out-paths       \
+                   '$(MAKEFILE_DIR)#sql-builder')/include
+sql_builder_CFLAGS := $(sql_builder_CFLAGS)
+
+nix_INCDIR  ?= $(shell $(PKG_CONFIG) --variable=includedir nix-cmd)
+nix_INCDIR  := $(nix_INCDIR)
+ifndef nix_CFLAGS
+  nix_CFLAGS  =  $(boost_CFLAGS)
+  nix_CFLAGS  += $(shell $(PKG_CONFIG) --cflags nix-main nix-cmd nix-expr)
+  nix_CFLAGS  += -isystem $(shell $(PKG_CONFIG) --variable=includedir nix-cmd)
+  nix_CFLAGS  += -include $(nix_INCDIR)/nix/config.h
+endif
+nix_CFLAGS := $(nix_CFLAGS)
+
+ifndef nix_LDFLAGS
+  nix_LDFLAGS =                                                        \
+	  $(shell $(PKG_CONFIG) --libs nix-main nix-cmd nix-expr nix-store)
+  nix_LDFLAGS += -lnixfetchers
+endif
+nix_LDFLAGS := $(nix_LDFLAGS)
 
 ifndef floxresolve_LDFLAGS
 	floxresolve_LDFLAGS =  '-L$(MAKEFILE_DIR)/lib' -lflox-resolve
@@ -103,7 +125,7 @@ endif
 
 # ---------------------------------------------------------------------------- #
 
-lib_CXXFLAGS += $(sqlite3_CFLAGS)
+lib_CXXFLAGS += $(sqlite3_CFLAGS) $(sql_builder_CFLAGS)
 bin_CXXFLAGS += $(argparse_CFLAGS)
 CXXFLAGS     += $(nix_CFLAGS) $(nljson_CFLAGS)
 
@@ -232,7 +254,7 @@ all: bin lib tests
 	    $(CAT) "$(NIX_CC)/nix-support/libcxx-cxxflags";                   \
 	  fi;                                                                 \
 	  echo $(CXXFLAGS) $(sqlite3_CFLAGS) $(nljson_CFLAGS) $(nix_CFLAGS);  \
-	  echo $(nljson_CFLAGS) $(argparse_CFLAGS);                           \
+	  echo $(nljson_CFLAGS) $(argparse_CFLAGS) $(sql_builder_CFLAGS);     \
 	}|$(TR) ' ' '\n'|$(SED) 's/-std=/%cpp -std=/' >> "$@";
 
 
