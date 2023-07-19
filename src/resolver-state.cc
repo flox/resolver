@@ -374,7 +374,7 @@ ResolverState::resolveInInput( std::string_view id, const Descriptor & desc )
             cache.setProgress( absPath[0], absPath[1], DBPS_INFO_DONE );
         }
     }
-  else  /* Handle case where we have relative/absolute path, so no waling. */
+  else  /* Handle case where we have relative/absolute path, so no walking. */
     {
       /* Run our predicate filters and collect satisfactory packages. */
       while( ! todos.empty() )
