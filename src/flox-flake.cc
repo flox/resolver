@@ -21,6 +21,7 @@
 #include "flox/drv-cache.hh"
 #include <queue>
 #include "flox/flake-package.hh"
+#include "flox/cached-package-set.hh"
 
 
 /* -------------------------------------------------------------------------- */
@@ -452,63 +453,48 @@ FloxFlake::packagesDo(
 , bool                                                     allowCache
 )
 {
-  DrvDb db( this->getLockedFlake()->getFingerprint() );
-  if ( allowCache )
+  subtree_type stt = parseSubtreeType( subtree );
+
+  /* Queue up stabilities ( if any ). */
+  std::vector<std::optional<std::string>> stabilities;
+  if ( stt == ST_CATALOG )
     {
-      progress_status old = db.getProgress( subtree, system );
-      if ( DBPS_INFO_DONE <= old )
+      /* TODO: process in priority order? */
+      for ( const auto & stability : defaultCatalogStabilities )
         {
-          for ( auto & dinfo : db.getDrvInfos( subtree, system ) )
-            {
-              op( aux, CachedPackage( dinfo ) );
-            }
+          stabilities.push_back( stability );
         }
-      else if ( DBPS_PATHS_DONE <= old )
+    }
+  else
+    {
+      stabilities = { std::nullopt };
+    }
+
+  /* Apply `op' foreach stability or to the raw prefix. */
+  for ( const auto & stability : stabilities )
+    {
+      if ( allowCache )
         {
-          const std::list<std::vector<std::string>> relPaths =
-            db.getDrvPaths( subtree, system ).value();
-          if ( relPaths.empty() )
-            {
-              db.promoteProgress( subtree, system, DBPS_EMPTY );
-              return;
-            }
-          std::vector<nix::Symbol> path = {
-            this->_state->symbols.create( subtree )
-          , this->_state->symbols.create( system )
-          };
-          Cursor prefix = this->openCursor( path );
-          for ( std::vector<std::string> rel : relPaths )
-            {
-              Cursor c = prefix;
-              for ( std::string a : rel ) { c = c->getAttr( a ); }
-              FlakePackage p( c, & this->_state->symbols, false );
-              /* Cache the result for next time. */
-              db.setDrvInfo( p );
-              /* Run our operation. */
-              op( aux, p );
-            }
-          db.promoteProgress( subtree, system, DBPS_INFO_DONE );
-          return;
+          CachedPackageSet ps(
+            this->_state, this->getLockedFlake(), stt, system, stability
+          );
+          for ( auto & pkg : ps ) { op( aux, pkg ); }
+        }
+      else
+        {
+          FlakePackageSet ps(
+            this->_state, this->getLockedFlake(), stt, system, stability
+          );
+          for ( auto & pkg : ps ) { op( aux, pkg ); }
         }
     }
 
-  nix::SymbolTable * st = & this->_state->symbols;
-  this->derivationsDo( subtree, system, DBPS_FORCE, [&](
-          DrvDb                    & db
-  ,       subtree_type               subtreeType
-  ,       std::string_view           subtree
-  ,       std::string_view           system
-  , const std::vector<std::string> & parentRelPath
-  ,       std::string_view           attrName
-  ,       Cursor                     cur
-  ) {
-    FlakePackage p( cur, st, false );
-    /* Cache the result for next time. */
-    if ( allowCache ) { db.setDrvInfo( p ); }
-    /* Run our operation. */
-    op( aux, p );
-  } );
-  if ( allowCache ) { db.promoteProgress( subtree, system, DBPS_INFO_DONE ); }
+  /* Mark the subtree as done. */
+  if ( allowCache )
+    {
+      DrvDb db( this->getLockedFlake()->getFingerprint() );
+      db.promoteProgress( subtree, system, DBPS_INFO_DONE );
+    }
 }
 
 
