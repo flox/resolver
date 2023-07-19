@@ -302,6 +302,7 @@ ResolverState::resolveInInput( std::string_view id, const Descriptor & desc )
           tops.push_back( std::move( strs ) );
         }
 
+      // TODO: Use `CachedPackageSet'.
       while ( ! todos.empty() )
         {
           std::vector<nix::Symbol> path = todos.front()->getAttrPath();

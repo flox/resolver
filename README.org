@@ -182,9 +182,13 @@ or short-name.
 
 ** TODOs
 - [ ] Allow preferences to limit systems list.
+- [ ] Implement =preferPreReleases=
 - [ ] Read Inputs from =flake.lock= and =registry.json=.
 - [ ] Parse descriptor strings.
 - [ ] Additional tests.
 - [ ] Multi-threading.
 - [ ] Disable =builtins.trace= warnings.
 - [ ] Consider how =packages.*.default= is handled.
+- [ ] Handle stabilities in =DrvDb= progress table.
+- [ ] Use =PackageSet= abstraction in =ResolverState::resolveInInput=.
+- [ ] Executable to populate databases explicitly ( daemon? ).
