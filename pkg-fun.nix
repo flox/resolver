@@ -12,6 +12,7 @@
 , boost
 , argparse
 , semver
+, sql-builder
 }: stdenv.mkDerivation {
   pname   = "flox-resolver";
   version = "0.2.0";
@@ -50,6 +51,7 @@
     "boost_CFLAGS=-I${boost}/include"
     "libExt=${stdenv.hostPlatform.extensions.sharedLibrary}"
     "SEMVER_PATH=${semver}/bin/semver"
+    "sql_builder_CFLAGS=-I${sql-builder}/include"
   ];
   configurePhase = ''
     runHook preConfigure;

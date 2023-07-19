@@ -10,11 +10,15 @@
 
   inputs.nixpkgs.url = "github:NixOS/nixpkgs";
   inputs.floco.url   = "github:aakropotkin/floco";
+  inputs.sql-builder = {
+    url   = "github:six-ddc/sql-builder";
+    flake = false;
+  };
 
 
 # ---------------------------------------------------------------------------- #
 
-  outputs = { nixpkgs, floco, ... }: let
+  outputs = { nixpkgs, floco, sql-builder, ... }: let
 
 # ---------------------------------------------------------------------------- #
 
@@ -32,6 +36,12 @@
     overlays.deps         = floco.overlays.default;
     overlays.flox-resolve = final: prev: {
       flox-resolve = final.callPackage ./pkg-fun.nix {};
+      sql-builder  = final.runCommandNoCC "sql-builder" {
+        src = sql-builder;
+      } ''
+        mkdir -p "$out/include/sql-builder";
+        cp "$src/sql.h" "$out/include/sql-builder/sql.hh";
+      '';
     };
     overlays.default = nixpkgs.lib.composeExtensions overlays.deps
                                                      overlays.flox-resolve;
@@ -43,7 +53,7 @@
       pkgsFor = ( builtins.getAttr system nixpkgs.legacyPackages ).extend
                   overlays.default;
     in {
-      inherit (pkgsFor) flox-resolve;
+      inherit (pkgsFor) flox-resolve sql-builder;
       default = pkgsFor.flox-resolve;
     } );
 

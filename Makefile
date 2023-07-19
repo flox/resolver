@@ -87,6 +87,10 @@ boost_CFLAGS    ?=                                                             \
 sqlite3_CFLAGS  = $(shell $(PKG_CONFIG) --cflags sqlite3)
 sqlite3_LDFLAGS =  $(shell $(PKG_CONFIG) --libs sqlite3)
 
+sql_builder_CFLAGS ?=                                      \
+  -I$(shell $(NIX) build --no-link --print-out-paths       \
+                   '$(MAKEFILE_DIR)#sql-builder')/include
+
 nix_INCDIR  =  $(shell $(PKG_CONFIG) --variable=includedir nix-cmd)
 nix_CFLAGS  =  $(boost_CFLAGS)
 nix_CFLAGS  += $(shell $(PKG_CONFIG) --cflags nix-main nix-cmd nix-expr)
@@ -103,7 +107,7 @@ endif
 
 # ---------------------------------------------------------------------------- #
 
-lib_CXXFLAGS += $(sqlite3_CFLAGS)
+lib_CXXFLAGS += $(sqlite3_CFLAGS) $(sql_builder_CFLAGS)
 bin_CXXFLAGS += $(argparse_CFLAGS)
 CXXFLAGS     += $(nix_CFLAGS) $(nljson_CFLAGS)
 
@@ -232,7 +236,7 @@ all: bin lib tests
 	    $(CAT) "$(NIX_CC)/nix-support/libcxx-cxxflags";                   \
 	  fi;                                                                 \
 	  echo $(CXXFLAGS) $(sqlite3_CFLAGS) $(nljson_CFLAGS) $(nix_CFLAGS);  \
-	  echo $(nljson_CFLAGS) $(argparse_CFLAGS);                           \
+	  echo $(nljson_CFLAGS) $(argparse_CFLAGS) $(sql_builder_CFLAGS);     \
 	}|$(TR) ' ' '\n'|$(SED) 's/-std=/%cpp -std=/' >> "$@";
 
 
