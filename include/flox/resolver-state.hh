@@ -6,23 +6,10 @@
 
 #pragma once
 
-#include <iterator>
-#include <cstddef>
-#include <string>
-#include <variant>
-#include <vector>
 #include <optional>
-#include <functional>
-#include <nlohmann/json.hpp>
-#include <nix/flake/flake.hh>
-#include <nix/fetchers.hh>
-#include <nix/eval-cache.hh>
 #include <unordered_map>
-#include <unordered_set>
 #include "flox/exceptions.hh"
 #include "flox/util.hh"
-#include <queue>
-#include <any>
 #include "flox/types.hh"
 #include "flox/flox-flake.hh"
 #include "flox/resolved.hh"
