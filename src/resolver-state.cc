@@ -128,14 +128,8 @@ ResolverState::getEvalState()
   nix::SymbolTable *
 ResolverState::getSymbolTable()
 {
-  if ( this->evalState == nullptr )
-    {
-      return & this->getEvalState()->symbols;
-    }
-  else
-    {
-      return & this->evalState->symbols;
-    }
+  if ( this->evalState == nullptr ) { return & this->getEvalState()->symbols; }
+  else                              { return & this->evalState->symbols;      }
 }
 
 
