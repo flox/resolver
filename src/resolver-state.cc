@@ -322,7 +322,7 @@ ResolverState::resolveInInput( std::string_view id, const Descriptor & desc )
                           cache.setDrvInfo( * p );
 
                           if ( pred( * p ) ) { goods.push( p ); }
-                          else               { delete p; }
+                          else               { delete p;        }
                         }
                       else if ( subtree != "packages" )
                         {
@@ -350,7 +350,7 @@ ResolverState::resolveInInput( std::string_view id, const Descriptor & desc )
                 {
                   CachedPackage * p = new CachedPackage( info );
                   if ( pred( * p ) ) { goods.push( p ); }
-                  else               { delete p; }
+                  else               { delete p;        }
                 }
             }
           /* Move on to the next one. */
@@ -359,7 +359,7 @@ ResolverState::resolveInInput( std::string_view id, const Descriptor & desc )
       /* Mark prefixes as complete in our cache. */
       for ( const std::vector<std::string> absPath : tops )
         {
-            cache.setProgress( absPath[0], absPath[1], DBPS_INFO_DONE );
+          cache.setProgress( absPath[0], absPath[1], DBPS_INFO_DONE );
         }
     }
   else  /* Handle case where we have relative/absolute path, so no walking. */
