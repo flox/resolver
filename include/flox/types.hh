@@ -43,6 +43,15 @@ using MaybeCursor = std::shared_ptr<nix::eval_cache::AttrCursor>;
 
 /* -------------------------------------------------------------------------- */
 
+/**
+ * A queue of cursors used to stash sub-attrsets that need to be searched
+ * recursively in various iterators.
+ */
+using todo_queue = std::queue<Cursor, std::list<Cursor>>;
+
+
+/* -------------------------------------------------------------------------- */
+
 class Descriptor;
 class Package;
 class DrvDb;

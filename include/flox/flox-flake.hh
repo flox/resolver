@@ -17,66 +17,6 @@ namespace flox {
 /* -------------------------------------------------------------------------- */
 
 /**
- * A queue of cursors used to stash sub-attrsets that need to be searched
- * recursively in various iterators.
- */
-using todo_queue = std::queue<Cursor, std::list<Cursor>>;
-
-/**
- * A function type that can be "mapped" ( applied to elements by an iterator )
- * to attribute set cursors.
- */
-using cursor_op = std::function<void(
-        subtree_type               subtreeType
-,       std::string_view           system
-,       todo_queue               & todos
-, const std::vector<std::string> & parentRelPath
-,       std::string_view           attrName
-,       Cursor                     cur
-)>;
-
-/**
- * A function type that can be "mapped" ( applied to elements by an iterator )
- * to derivations in an attribute set.
- */
-using derivation_op = std::function<void(
-        DrvDb                    & db
-,       subtree_type               subtreeType
-,       std::string_view           subtree
-,       std::string_view           system
-, const std::vector<std::string> & parentRelPath
-,       std::string_view           attrName
-,       Cursor                     cur
-)>;
-
-/**
- * A simple `cursor_op' function that pushes cursor positions for attrsets which
- * contain a `recurseIntoAttrs = true;' indicator.
- *
- * This is a sane default function for recursively traversing `legacyPackages'
- * style subtrees.
- */
-  static const cursor_op
-handleRecurseForDerivations = [](
-        subtree_type               subtreeType
-,       std::string_view           system
-,       todo_queue               & todos
-, const std::vector<std::string> & parentRelPath
-,       std::string_view           attrName
-,       Cursor                     cur
-)
-{
-  if ( subtreeType != ST_PACKAGES )
-    {
-      MaybeCursor m = cur->maybeGetAttr( "recurseForDerivations" );
-      if ( ( m != nullptr ) && m->getBool() ) { todos.push( (Cursor) cur ); }
-    }
-};
-
-
-/* -------------------------------------------------------------------------- */
-
-/**
  * A convenience wrapper that provides various operations on a `flake'.
  *
  * Notably this class is responsible for owning both the `nix' `EvalState',
