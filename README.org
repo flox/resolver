@@ -192,3 +192,4 @@ or short-name.
 - [ ] Handle stabilities in =DrvDb= progress table.
 - [ ] Use =PackageSet= abstraction in =ResolverState::resolveInInput=.
 - [ ] Executable to populate databases explicitly ( daemon? ).
+- [ ] Sort results by version. This may require change to output format.
