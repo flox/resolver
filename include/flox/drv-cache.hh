@@ -101,12 +101,20 @@ class DrvDb {
          ,       bool                      write       = true
          ,       bool                      trace       = false
          );
-    ~DrvDb();
+
+    ~DrvDb()
+    {
+      try { this->endCommit(); } catch( ... ) {}
+    }
 
     void startCommit();
     void endCommit();
 
-    nix::Sync<DrvDb::State>::Lock getDbState();
+      nix::Sync<DrvDb::State>::Lock
+    getDbState()
+    {
+      return this->_state->lock();
+    }
 
     bool isWritable() const { return this->_write; }
 
