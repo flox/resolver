@@ -4,18 +4,7 @@
  *
  * -------------------------------------------------------------------------- */
 
-#include <nix/eval-inline.hh>
-#include <nix/eval.hh>
-#include <nix/fetchers.hh>
-#include <nix/flake/flake.hh>
-#include <nix/shared.hh>
-#include <nix/store-api.hh>
-#include <nix/command.hh>
-#include <string>
-#include <nlohmann/json.hpp>
 #include "resolve.hh"
-#include "flox/util.hh"
-#include <functional>
 
 
 /* -------------------------------------------------------------------------- */

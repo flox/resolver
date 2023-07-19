@@ -63,7 +63,7 @@ BINS           = $(patsubst src/main-%.cc,%,$(bin_SRCS))
 
 # ---------------------------------------------------------------------------- #
 
-CXXFLAGS     ?= $(EXTRA_CFLAGS)
+CXXFLAGS     ?= $(EXTRA_CFLAGS) $(EXTRA_CXXFLAGS)
 CXXFLAGS     += '-I$(MAKEFILE_DIR)/include'
 LDFLAGS      ?= $(EXTRA_LDFLAGS)
 lib_CXXFLAGS ?= -shared -fPIC

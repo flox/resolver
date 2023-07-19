@@ -18,6 +18,7 @@
 #include "flox/exceptions.hh"
 #include "flox/types.hh"
 #include "flox/predicates.hh"
+#include "flox/resolver-state.hh"
 #include "descriptor.hh"
 
 

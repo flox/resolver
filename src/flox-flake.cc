@@ -17,6 +17,7 @@
 #include <memory>
 #include "flox/types.hh"
 #include "flox/util.hh"
+#include "flox/flox-flake.hh"
 #include "flox/drv-cache.hh"
 #include <queue>
 #include "flox/flake-package.hh"

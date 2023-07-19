@@ -5,10 +5,9 @@
  * -------------------------------------------------------------------------- */
 
 #include <algorithm>
-#include <nix/nixexpr.hh>
 #include "flox/util.hh"
 #include "flox/types.hh"
-#include <filesystem>
+#include "flox/resolved.hh"
 
 
 /* -------------------------------------------------------------------------- */

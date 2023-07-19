@@ -8,6 +8,7 @@
 
 #include <string>
 #include "flox/util.hh"
+#include "flox/flox-flake.hh"
 #include "flox/package-set.hh"
 #include "flox/flake-package.hh"
 

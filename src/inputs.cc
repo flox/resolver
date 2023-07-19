@@ -4,10 +4,6 @@
  *
  * -------------------------------------------------------------------------- */
 
-#include <nlohmann/json.hpp>
-#include <nix/flake/flake.hh>
-#include <nix/fetchers.hh>
-#include <unordered_map>
 #include "resolve.hh"
 
 

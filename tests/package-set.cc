@@ -12,6 +12,7 @@
 #include "flox/db-package-set.hh"
 #include "flox/flake-package-set.hh"
 #include "flox/cached-package-set.hh"
+#include "flox/resolver-state.hh"
 
 
 /* -------------------------------------------------------------------------- */

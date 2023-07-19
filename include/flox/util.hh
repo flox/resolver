@@ -117,18 +117,7 @@ hasElement( const C<T, std::allocator<T>> & container, const T & e )
 
 /* -------------------------------------------------------------------------- */
 
-  static inline bool
-shouldSearchSystem( std::string_view system )
-{
-  return std::find( defaultSystems.cbegin(), defaultSystems.cend(), system ) !=
-         defaultSystems.cend();
-}
-
-
-/* -------------------------------------------------------------------------- */
-
 bool isSubstitutable( std::string_view storePath );
-
 
 
 /* -------------------------------------------------------------------------- */

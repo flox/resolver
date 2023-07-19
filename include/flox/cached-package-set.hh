@@ -12,6 +12,7 @@
 #include <string>
 #include <filesystem>
 #include "flox/util.hh"
+#include "flox/flox-flake.hh"
 #include "flox/raw-package.hh"
 #include "flox/flake-package-set.hh"
 #include "flox/db-package-set.hh"
