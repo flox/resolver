@@ -75,10 +75,7 @@ ResolverState::ResolverState(
   nix::ref<nix::Store>
 ResolverState::getStore()
 {
-  if ( this->_store == nullptr )
-    {
-      this->_store = nix::openStore();
-    }
+  if ( this->_store == nullptr ) { this->_store = nix::openStore(); }
   return nix::ref<nix::Store>( this->_store );
 }
 
@@ -88,10 +85,7 @@ ResolverState::getStore()
   nix::ref<nix::Store>
 ResolverState::getEvalStore()
 {
-  if ( this->evalStore == nullptr )
-    {
-      this->evalStore = this->getStore();
-    }
+  if ( this->evalStore == nullptr ) { this->evalStore = this->getStore(); }
   return nix::ref<nix::Store>( this->evalStore );
 }
 
@@ -380,7 +374,7 @@ ResolverState::resolveInInput( std::string_view id, const Descriptor & desc )
                                                , false
                                                );
               if ( pred( * p ) ) { goods.push( p ); }
-              else               { delete p; }
+              else               { delete p;        }
             }
           todos.pop();
         }
