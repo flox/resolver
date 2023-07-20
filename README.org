@@ -182,7 +182,7 @@ or short-name.
 
 ** TODOs
 - [ ] Allow preferences to limit systems list.
-- [ ] Implement =preferPreReleases=
+- [ ] Implement =preferPreReleases=.
 - [ ] Read Inputs from =flake.lock= and =registry.json=.
 - [ ] Parse descriptor strings.
 - [ ] Additional tests.
