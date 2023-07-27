@@ -160,7 +160,6 @@ class AttrSetIterClosure {
         AttrSetIterClosure & _cl;
         todo_queue           _todo  = {};
         symbol_queue         _syms  = {};
-        key_type             _path  = {};
         nix::Symbol          _attr  = {};
         elem_type            _ptr   = nullptr;
         bool                 _recur = false;
@@ -174,10 +173,6 @@ class AttrSetIterClosure {
               this->_syms.push( key );
             }
           if ( this->_syms.empty() ) { return; }
-          for ( const auto & p : this->_cl._path )
-            {
-              this->_path.emplace_back( p );
-            }
           this->_attr = this->_syms.front();
           this->_syms.pop();
           this->_ptr = this->_cl._cur->getAttr( this->_attr );
@@ -234,9 +229,9 @@ class AttrSetIterClosure {
           reference
         operator*()
         {
-          std::list<std::string_view> key = this->_path;
+          std::list<std::string_view> key = this->_cl.getPath();
           key.emplace_back( this->_cl._state->symbols[this->_attr] );
-          return std::make_pair( key, this->_ptr );
+          return std::make_pair( std::move( key ), this->_ptr );
         }
 
     };  /* End struct `AttrsIterClosure::iterator' */

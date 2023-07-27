@@ -27,6 +27,7 @@ test_iter1(
   std::list<std::string> path = {};
   AttrSetIterClosure cl( rs.getEvalState(), flake, path );
   size_t c = 0;
+  for ( auto [path, cursor] : cl ) { ++c; }
   /**
    * checks
    * htmlDocs
