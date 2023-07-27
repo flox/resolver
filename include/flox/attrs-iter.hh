@@ -1,5 +1,14 @@
 /* ========================================================================== *
  *
+ * A generic iterator for `nix' attribute sets.
+ *
+ * This uses the list of symbols returned by
+ * `nix::eval_cache::Cursor::getAttrs()' to create a fancier iterator that lets
+ * the caller process a pair of `( ATTR-PATH, CURSOR )' pairs which is often
+ * more ergonomic and avoids ugly boilerplate normally required to convert
+ * symbols to attribute paths.
+ *
+ * TODO: traverse `recurseIntoAttrs'.
  *
  *
  * -------------------------------------------------------------------------- */
@@ -83,6 +92,25 @@ class AttrSetIterClosure {
 
 /* -------------------------------------------------------------------------- */
 
+    AttrSetIterClosure(
+            nix::ref<nix::EvalState>                   state
+    ,       std::shared_ptr<nix::flake::LockedFlake>   flake
+    , const std::list<std::string>                   & path
+    ) : _state( (std::shared_ptr<nix::EvalState>) state )
+      , _flake( flake )
+      , _path( path )
+    {
+      nix::ref<nix::eval_cache::EvalCache> cache = this->openEvalCache();
+      this->_cur = (MaybeCursor) cache->getRoot();
+      for ( const auto & p : this->_path )
+        {
+          this->_cur = this->_cur->getAttr( p );
+        }
+    }
+
+
+/* -------------------------------------------------------------------------- */
+
       std::shared_ptr<nix::flake::LockedFlake>
     getFlake() const
     {
@@ -132,7 +160,8 @@ class AttrSetIterClosure {
         AttrSetIterClosure & _cl;
         todo_queue           _todo  = {};
         symbol_queue         _syms  = {};
-        key_type             _key   = {};
+        key_type             _path  = {};
+        nix::Symbol          _attr  = {};
         elem_type            _ptr   = nullptr;
         bool                 _recur = false;
 
@@ -140,34 +169,32 @@ class AttrSetIterClosure {
         iterator( AttrSetIterClosure & cl, bool recur = false )
           : _cl( cl ), _recur( recur )
         {
-          for ( auto & p : this->_cl._path ) { this->_key.push_back( p ); }
           for ( auto & key : this->_cl._cur->getAttrs() )
             {
               this->_syms.push( key );
             }
           if ( this->_syms.empty() ) { return; }
-          nix::Symbol s = this->_syms.front();
+          for ( const auto & p : this->_cl._path )
+            {
+              this->_path.emplace_back( p );
+            }
+          this->_attr = this->_syms.front();
           this->_syms.pop();
-          this->_key.push_back( std::string( this->_cl._state->symbols[s] ) );
-          this->_ptr = this->_cl._cur->getAttr( s );
+          this->_ptr = this->_cl._cur->getAttr( this->_attr );
         }
 
           iterator &
         operator++()
         {
-          this->_key.pop_back();
           if ( this->_syms.empty() )
             {
               this->_ptr = nullptr;
             }
           else
             {
-              nix::Symbol s = this->_syms.front();
+              this->_attr = this->_syms.front();
               this->_syms.pop();
-              this->_key.push_back(
-                std::string( this->_cl._state->symbols[s] )
-              );
-              this->_ptr = this->_cl._cur->getAttr( s );
+              this->_ptr = this->_cl._cur->getAttr( this->_attr );
             }
           return * this;
         }
@@ -207,7 +234,9 @@ class AttrSetIterClosure {
           reference
         operator*()
         {
-          return std::make_pair( this->_key, this->_ptr );
+          std::list<std::string_view> key = this->_path;
+          key.emplace_back( this->_cl._state->symbols[this->_attr] );
+          return std::make_pair( key, this->_ptr );
         }
 
     };  /* End struct `AttrsIterClosure::iterator' */
