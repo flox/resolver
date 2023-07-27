@@ -7,7 +7,7 @@
 #pragma once
 
 #include <string>
-#include <nix/eval-eval-inline.hh>
+#include <nix/eval-inline.hh>
 #include "flox/types.hh"
 #include "flox/util.hh"
 
@@ -72,8 +72,14 @@ class AttrSetIterClosure {
     ) : _state( (std::shared_ptr<nix::EvalState>) state )
       , _flake( flake )
       , _cur( (MaybeCursor) cur )
-      , _path( this->_state->_symbols.resolve( cur->getAttrPath() ) )
-    {}
+    {
+      for ( const auto & str :
+              this->_state->symbols.resolve( cur->getAttrPath() )
+          )
+        {
+          this->_path.emplace_back( str );
+        }
+    }
 
 /* -------------------------------------------------------------------------- */
 
@@ -105,6 +111,11 @@ class AttrSetIterClosure {
 
 /* -------------------------------------------------------------------------- */
 
+    /* Empty struct to use as end of iterator marker. */
+    struct sentinel {};
+
+/* -------------------------------------------------------------------------- */
+
     struct iterator
     {
       using key_type  = std::list<std::string_view>;
@@ -119,18 +130,47 @@ class AttrSetIterClosure {
 
       private:
         AttrSetIterClosure & _cl;
-        todo_queue           _todo;
-        symbol_queue         _syms;
-        key_type             _key;
-        elem_type            _ptr;
+        todo_queue           _todo  = {};
+        symbol_queue         _syms  = {};
+        key_type             _key   = {};
+        elem_type            _ptr   = nullptr;
+        bool                 _recur = false;
 
       public:
-        // TODO
-        iterator( AttrSetIterClosure & cl )
-          : _cl( cl )
-        {}
+        iterator( AttrSetIterClosure & cl, bool recur = false )
+          : _cl( cl ), _recur( recur )
+        {
+          for ( auto & p : this->_cl._path ) { this->_key.push_back( p ); }
+          for ( auto & key : this->_cl._cur->getAttrs() )
+            {
+              this->_syms.push( key );
+            }
+          if ( this->_syms.empty() ) { return; }
+          nix::Symbol s = this->_syms.front();
+          this->_syms.pop();
+          this->_key.push_back( std::string( this->_cl._state->symbols[s] ) );
+          this->_ptr = this->_cl._cur->getAttr( s );
+        }
 
-        iterator & operator++();
+          iterator &
+        operator++()
+        {
+          this->_key.pop_back();
+          if ( this->_syms.empty() )
+            {
+              this->_ptr = nullptr;
+            }
+          else
+            {
+              nix::Symbol s = this->_syms.front();
+              this->_syms.pop();
+              this->_key.push_back(
+                std::string( this->_cl._state->symbols[s] )
+              );
+              this->_ptr = this->_cl._cur->getAttr( s );
+            }
+          return * this;
+        }
 
           iterator
         operator++( int )
@@ -152,17 +192,31 @@ class AttrSetIterClosure {
           return this->_ptr != other._ptr;
         }
 
-        reference operator*() { return * this->_ptr;                      }
+          bool
+        operator==( const sentinel & other ) const
+        {
+          return this->_ptr == nullptr;
+        }
 
-    };  /* End struct `FlakePackageSet::iterator' */
+          bool
+        operator!=( const sentinel & other ) const
+        {
+          return this->_ptr != nullptr;
+        }
+
+          reference
+        operator*()
+        {
+          return std::make_pair( this->_key, this->_ptr );
+        }
+
+    };  /* End struct `AttrsIterClosure::iterator' */
 
 
 /* -------------------------------------------------------------------------- */
 
-    iterator begin();
-    iterator end()   const { return const_iterator(); }
-
-    std::size_t size();
+    sentinel end()   const { return sentinel();         }
+    iterator begin()       { return iterator( * this ); }
 
 
 /* -------------------------------------------------------------------------- */
