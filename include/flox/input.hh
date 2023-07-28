@@ -52,7 +52,7 @@ class Input {
 /* -------------------------------------------------------------------------- */
 
     /**
-     * @return A unique hash fingerprint associated with the input's
+     * @return A unique _fingerprint_ hash associated with the input's
      *         locked flake.
      */
       nix::Hash
@@ -176,7 +176,7 @@ class Input {
      * @return A pointer to a package set if it is output by the input's flake,
      *         or `nullptr` if no such output exists.
      */
-    virtual std::shared_ptr<resolve::PackageSet>     getPackageSet(
+    virtual std::shared_ptr<resolve::PackageSet> getPackageSet(
       const resolve::subtree_type & subtree
     ,       std::string_view        system
     ) = 0;
