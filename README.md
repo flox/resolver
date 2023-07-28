@@ -131,7 +131,7 @@ describe packages.
 - catalog: whether to search `catalog` outputs.
 - stability: catalog stability channel match - implies catalog.
 
-*** Example Descriptors
+### Example Descriptors
 ```json
 { "name": "hello" }
 { "path": ["legacyPackages", null, "python3Packages", "pip"] }
