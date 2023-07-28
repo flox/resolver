@@ -40,6 +40,22 @@ test_iter1(
 
 /* -------------------------------------------------------------------------- */
 
+/* Test const refs */
+  bool
+test_iter2(
+  ResolverState                            & rs
+, std::shared_ptr<nix::flake::LockedFlake>   flake
+)
+{
+  std::list<std::string> path = {};
+  AttrSetIterClosure cl( rs.getEvalState(), flake, path );
+  size_t c = 0;
+  for ( const auto & [path, cursor] : cl ) { ++c; }
+  return c == 5;
+}
+
+/* -------------------------------------------------------------------------- */
+
   int
 main( int argc, char * argv[], char ** envp )
 {
@@ -58,6 +74,7 @@ main( int argc, char * argv[], char ** envp )
 
 # define RUN_TEST( ... )  _RUN_TEST( ec, __VA_ARGS__ )
   RUN_TEST( iter1, rs, flake );
+  RUN_TEST( iter2, rs, flake );
   return ec;
 }
 

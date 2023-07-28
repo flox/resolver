@@ -8,8 +8,6 @@
  * more ergonomic and avoids ugly boilerplate normally required to convert
  * symbols to attribute paths.
  *
- * TODO: traverse `recurseIntoAttrs'.
- *
  *
  * -------------------------------------------------------------------------- */
 
@@ -157,16 +155,14 @@ class AttrSetIterClosure {
       using symbol_queue = std::queue<nix::Symbol, std::list<nix::Symbol>>;
 
       private:
-        AttrSetIterClosure & _cl;
-        todo_queue           _todo  = {};
-        symbol_queue         _syms  = {};
-        nix::Symbol          _attr  = {};
-        elem_type            _ptr   = nullptr;
-        bool                 _recur = false;
+        const AttrSetIterClosure & _cl;
+        symbol_queue               _syms  = {};
+        nix::Symbol                _attr  = {};
+        elem_type                  _ptr   = nullptr;
 
       public:
-        iterator( AttrSetIterClosure & cl, bool recur = false )
-          : _cl( cl ), _recur( recur )
+        iterator( const AttrSetIterClosure & cl )
+          : _cl( cl )
         {
           for ( auto & key : this->_cl._cur->getAttrs() )
             {
@@ -239,8 +235,12 @@ class AttrSetIterClosure {
 
 /* -------------------------------------------------------------------------- */
 
-    sentinel end()   const { return sentinel();         }
-    iterator begin()       { return iterator( * this ); }
+    iterator begin()  const { return iterator( * this ); }
+    sentinel end()    const { return sentinel();         }
+    iterator cbegin() const { return this->begin();      }
+    sentinel cend()   const { return this->end();        }
+
+    std::size_t size() const { return this->_cur->getAttrs().size(); }
 
 
 /* -------------------------------------------------------------------------- */

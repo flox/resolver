@@ -87,7 +87,6 @@
           ( if pkgsFor.stdenv.cc.isGNU then pkgsFor.gdb else pkgsFor.lldb )
           # For doc
           pkgsFor.doxygen
-          pkgsFor.texlive.combined.scheme-medium  # pdflatex makeindex bibtex
         ];
         inherit (pkgsFor.flox-resolve)
           nix_INCDIR
