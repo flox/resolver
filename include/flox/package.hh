@@ -1,5 +1,8 @@
 /* ========================================================================== *
  *
+ * @file flox/package.hh
+ *
+ * @brief Abstract representation of a package.
  *
  *
  * -------------------------------------------------------------------------- */
@@ -18,6 +21,7 @@
 #include <nix/names.hh>
 #include <unordered_map>
 #include <unordered_set>
+
 #include "flox/types.hh"
 #include "semver.hh"
 
@@ -35,9 +39,9 @@ namespace flox {
  * evaluate, and communicate package definitions.
  *
  * Notable Implementation of this interface include:
- * - RawPackage    : Comprised of raw C++ values, often used for testing.
- * - CachedPackage : A package definition stored in a SQL database.
- * - FlakePackage  : A package definition evaluated from a Nix `flake'.
+ * - @a RawPackage    : Comprised of raw C++ values, often used for testing.
+ * - @a CachedPackage : A package definition stored in a SQL database.
+ * - @a FlakePackage  : A package definition evaluated from a Nix `flake'.
  */
 class Package {
   public:
