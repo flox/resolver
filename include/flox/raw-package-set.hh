@@ -44,15 +44,15 @@ class RawPackageSet : public PackageSet {
     subtree_type               _subtree;
     std::string                _system;
     std::optional<std::string> _stability;
-    FloxFlakeRef               _ref;  /** indicates package set's "source" */
+    FloxFlakeRef               _ref;  /** Indicates package set's "source" */
 
   public:
 
     /**
      * Constructs an package set associated a flake and attr-path prefix.
      * @param pkgs attr-path -> package data.
-     * @param subtree flake output "subtree" the package set comes from.
-     * @param system architecture/platform the package set comes from.
+     * @param subtree Flake output "subtree" the package set comes from.
+     * @param system Architecture/Platform the package set comes from.
      * @param stability `flox` _stability_ category the package set comes from.
      *                  ( optional: `catalog` @a subtree only )
      */
@@ -72,30 +72,14 @@ class RawPackageSet : public PackageSet {
       , _ref( ref )
     {}
 
-    /**
-     * PackageSet "type" represented as a simple string.
-     * This is used for error messages and working with abstract @a PackageSet
-     * references in generic utility functions.
-     */
     std::string_view getType() const override { return "raw"; }
 
-    /** @return the flake output "subtree" associated with the package set. */
     subtree_type getSubtree() const override { return this->_subtree; }
 
-    /** @return the architecture/platform associated with the package set. */
     std::string_view getSystem() const override { return this->_system; }
 
-    /**
-     * @return the flake reference assocaited with the package set indicating
-     *         its source.
-     */
     FloxFlakeRef getRef() const override { return this->_ref; }
 
-    /**
-     * @return For package sets in a `catalog` @a subtree, returns the
-     *         associated `flox` _stability_ associated with the package set.
-     *         For non-catalog package sets, returns @a std::nullopt.
-     */
       std::optional<std::string_view>
     getStability() const override
     {
@@ -103,36 +87,17 @@ class RawPackageSet : public PackageSet {
       else                                { return std::nullopt;     }
     }
 
-    /** @return the number of packages in the package set. */
-    std::size_t size() override { return this->_pkgs.size(); }
-    /** @return the number of packages in the package set. */
-    std::size_t size() const { return this->_pkgs.size(); }
-    /** @return true iff the package set has no packages. */
-    bool empty() override { return this->_pkgs.empty(); }
-    /** @return true iff the package set has no packages. */
-    bool empty() const { return this->_pkgs.empty(); }
+    std::size_t size()  override { return this->_pkgs.size();  }
+    std::size_t size()  const    { return this->_pkgs.size();  }
+    bool        empty() override { return this->_pkgs.empty(); }
+    bool        empty() const    { return this->_pkgs.empty(); }
 
-    /**
-     * Predicate which checks to see if the package set has a package at the
-     * relative path @a path.
-     * @param path a relative attribute path ( with no subtree, system,
-     *             or stability components ) to search for.
-     * @return true iff the package set has a package at @a path.
-     */
       bool
     hasRelPath( const std::list<std::string_view> & path ) override
     {
       return this->_pkgs.find( path ) != this->_pkgs.cend();
     }
 
-    /**
-     * Attempts to get package metadata associated with the relative path
-     * @a path if it exists.
-     * @param path a relative attribute path ( with no subtree, system,
-     *             or stability components ) to search for.
-     * @return nullptr if the package set does not contain a package at @a path,
-     *         otherwise a pointer to the requested package metadata.
-     */
       std::shared_ptr<Package>
     maybeGetRelPath( const std::list<std::string_view> & path ) override
     {
@@ -147,13 +112,6 @@ class RawPackageSet : public PackageSet {
         }
     }
 
-    /**
-     * Gets package metadata associated with the relative path @a path.
-     * Throws an error if the package set is missing the requested metadata.
-     * @param path a relative attribute path ( with no subtree, system,
-     *             or stability components ) to search for.
-     * @return a non-null pointer to the requested package metadata.
-     */
       nix::ref<Package>
     getRelPath( const std::list<std::string_view> & path ) override
     {
@@ -164,7 +122,7 @@ class RawPackageSet : public PackageSet {
      * Adds package metadata to the package set.
      * @a p is assumed to have an attribute path which is consistent
      * with @a this package set.
-     * @param p package metadata to be added.
+     * @param p Package metadata to be added.
      */
       void
    addPackage( RawPackage && p )
@@ -231,7 +189,7 @@ class RawPackageSet : public PackageSet {
 
         /**
          * Increment the iterator one position forward.
-         * @return the incremented iterator.
+         * @return The incremented iterator.
          */
           iterator_impl &
         operator++()
@@ -245,7 +203,7 @@ class RawPackageSet : public PackageSet {
 
         /**
          * Increment the iterator one position forward.
-         * @return the orginal iterator.
+         * @return The orginal iterator.
          */
           iterator_impl
         operator++( int )
@@ -276,9 +234,9 @@ class RawPackageSet : public PackageSet {
           return this->_ptr != other._ptr;
         }
 
-        /** @return a reference to the @a RawPackage at the current position. */
+        /** @return A reference to the @a RawPackage at the current position. */
         reference operator*()  const { return * this->_ptr; }
-        /** @return a pointer to the @a RawPackage at the current position. */
+        /** @return A pointer to the @a RawPackage at the current position. */
         pointer   operator->()       { return this->_ptr; }
 
         friend iterator;
@@ -289,24 +247,24 @@ class RawPackageSet : public PackageSet {
 
 /* -------------------------------------------------------------------------- */
 
-    /** @return read/write iterator at the beginning of the container. */
+    /** @return Read/Write iterator at the beginning of the container. */
     iterator begin() { return iterator( & this->_pkgs ); }
-    /** @return sentinel value used to represent the "end" of the container. */
+    /** @return Sentinel value used to represent the "end" of the container. */
     iterator end() { return iterator( & this->_pkgs, this->_pkgs.end() ); }
 
-    /** @return read-only iterator at the beginning of the container. */
+    /** @return Read-only iterator at the beginning of the container. */
     const_iterator begin() const { return const_iterator( & this->_pkgs ); }
 
-    /** @return sentinel value used to represent the "end" of the container. */
+    /** @return Sentinel value used to represent the "end" of the container. */
       const_iterator
     end() const
     {
       return const_iterator( & this->_pkgs, this->_pkgs.cend() );
     }
 
-    /** @return read-only iterator at the beginning of the container. */
+    /** @return Read-only iterator at the beginning of the container. */
     const_iterator cbegin() const { return this->begin(); }
-    /** @return sentinel value used to represent the "end" of the container. */
+    /** @return Sentinel value used to represent the "end" of the container. */
     const_iterator cend()   const { return this->end();   }
 
 
