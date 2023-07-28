@@ -1,5 +1,8 @@
 /* ========================================================================== *
  *
+ * @file flox/util.hh
+ *
+ * @brief Miscellaneous helper functions.
  *
  *
  * -------------------------------------------------------------------------- */
@@ -8,16 +11,16 @@
 
 #include <cstdio>
 #include <functional>
+#include <optional>
+#include <vector>
+#include <map>
+#include <algorithm>
 #include <nix/eval-inline.hh>
 #include <nix/eval.hh>
 #include <nix/eval-cache.hh>
 #include <nix/flake/flake.hh>
 #include <nix/shared.hh>
 #include <nix/store-api.hh>
-#include <optional>
-#include <vector>
-#include <map>
-#include <algorithm>
 
 
 /* -------------------------------------------------------------------------- */
