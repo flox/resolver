@@ -22,10 +22,15 @@
 
 /* -------------------------------------------------------------------------- */
 
-/* Required for `RawPackageSet' */
   template<>
 struct std::hash<std::list<std::string_view>>
 {
+  /**
+   * Generate a unique hash for a list of strings.
+   * @see flox::resolve::RawPackageMap
+   * @param lst a list of strings.
+   * @return a unique hash based on the contents of `lst` members.
+   */
     std::size_t
   operator()( const std::list<std::string_view> & lst ) const noexcept
   {
@@ -71,14 +76,17 @@ namespace flox {
 
 /* -------------------------------------------------------------------------- */
 
+/** Systems to resolve/search in. */
 static const std::list<std::string> defaultSystems = {
  "x86_64-linux", "aarch64-linux", "x86_64-darwin", "aarch64-darwin"
 };
 
+/** `flake' subtrees to resolve/search in. */
 static const std::vector<std::string> defaultSubtrees = {
   "catalog", "packages", "legacyPackages"
 };
 
+/** Catalog stabilities to resolve/search in. */
 static const std::vector<std::string> defaultCatalogStabilities = {
   "stable", "staging", "unstable"
 };
@@ -86,6 +94,11 @@ static const std::vector<std::string> defaultCatalogStabilities = {
 
 /* -------------------------------------------------------------------------- */
 
+/**
+ * Predicate which checks to see if a string is a `flake' "subtree" name.
+ * @return true iff `attrName` is one of "legacyPackages", "packages",
+ *         or "catalog".
+ */
   static inline bool
 isPkgsSubtree( std::string_view attrName )
 {
@@ -97,6 +110,7 @@ isPkgsSubtree( std::string_view attrName )
 
 /* -------------------------------------------------------------------------- */
 
+/** `nix' configuration options used when locking flakes. */
 static nix::flake::LockFlags floxFlakeLockFlags = {
   .updateLockFile = false
 , .writeLockFile  = false
@@ -106,17 +120,13 @@ static nix::flake::LockFlags floxFlakeLockFlags = {
 
 /* -------------------------------------------------------------------------- */
 
-template <typename T, template <typename, typename> class C>
-  static inline bool
-hasElement( const C<T, std::allocator<T>> & container, const T & e )
-{
-  return std::find( container.cbegin(), container.cend(), e ) !=
-         container.cend();
-}
-
-
-/* -------------------------------------------------------------------------- */
-
+/**
+ * Predicate which indicates whether a `storePath' is "substitutable".
+ * @param storePath an absolute path in the `/nix/store'.
+ *        This should be an `outPath' and NOT a `drvPath' in most cases.
+ * @return true iff `storePath' is cached in a remote `nix' store and can be
+ *              copied without being "rebuilt" from scratch.
+ */
 bool isSubstitutable( std::string_view storePath );
 
 
