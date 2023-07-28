@@ -31,6 +31,9 @@ class RawPackageSet;
 
 /* -------------------------------------------------------------------------- */
 
+/**
+ * Package metadata loaded from a `DrvDb' cache.
+ */
 class CachedPackage : public RawPackage {
   public:
     CachedPackage() : RawPackage() {}
@@ -46,8 +49,10 @@ class CachedPackage : public RawPackage {
 
 /* -------------------------------------------------------------------------- */
 
+/** Get an absolute path to the `DrvDb' for a given fingerprint hash. */
 std::string getDrvDbName( const nix::flake::Fingerprint & fingerprint );
 
+/** Get an absolute path to the `DrvDb' for a locked flake. */
   static inline std::string
 getDrvDbName( const nix::flake::LockedFlake & flake )
 {
@@ -57,6 +62,10 @@ getDrvDbName( const nix::flake::LockedFlake & flake )
 
 /* -------------------------------------------------------------------------- */
 
+/**
+ * A SQLite3 database used to cache derivation/package information about a
+ * single locked flake.
+ */
 class DrvDb {
 
   public:

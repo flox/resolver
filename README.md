@@ -1,10 +1,10 @@
-#+TITLE: Flox Resolver
+# Flox Resolver
 
 Resolve Nix packages from flakes and catalogs from a set of requirements.
 
-** Quick Start
+## Quick Start
 
-#+BEGIN_SRC
+```
 Usage: resolver [-h] [--one] [--quiet] [--inputs INPUTS] [--preferences PREFERENCES] --descriptor DESCRIPTOR
 
 Resolve nix package descriptors in flakes
@@ -17,9 +17,10 @@ Optional arguments:
   -i, --inputs INPUTS           inline JSON or path to JSON file containing flake references [default: "{"nixpkgs":"github:NixOS/nixpkgs","nixpkgs-flox":"github:flox/nixpkgs-flox","floxpkgs":"github:flox/floxpkgs"}"]
   -p, --preferences PREFERENCES inline JSON or path to JSON file containing resolver preferences [default: "{}"]
   -d, --descriptor DESCRIPTOR   inline JSON or path to JSON file containing a package descriptor [required]
-#+END_SRC
+```
 
-#+BEGIN_SRC shell
+### Example Usage
+``` shell
 $ ./bin/resolver -i '{"nixpkgs":"github:NixOS/nixpkgs"}' -d '{"name":"hello","version":"2.12.1"}'|jq;
 [
   {
@@ -104,12 +105,12 @@ $ ./bin/resolver -i '{"nixpkgs":"github:NixOS/nixpkgs"}' -d '{"name":"hello","ve
     "uri": "github:NixOS/nixpkgs/ac66b27438a74b2ab2b16b5b9f429b3049398383#legacyPackages.{{system}}.hello"
   }
 ]
-#+END_SRC
+```
 
 
-** Descriptors
+## Descriptors
 
-A /descriptor/ is a set of requirements written by the user describing a
+A _descriptor_ is a set of requirements written by the user describing a
 dependency that they need.
 This is similar to a search query and is used to filter a larger set of
 packages down to a satisfactory set.
@@ -119,19 +120,19 @@ path to a package.
 This resolver features a number of additional filters which may be used to
 describe packages.
 
-*** Fields
+### Fields
 
-- input :: restricts resolution to the named input.
-- name :: matches package =pname=, parsed =name=, or attribute name.
-- path :: relative or absolute attribute path to derivation.
-- version :: exact match on package =version= or parsed =name=.
-- semver :: semantic version range filter.
-- flake :: whether to search =packages= and =legacyPackages= outputs.
-- catalog :: whether to search =catalog= outputs.
-- stability :: catalog stability channel match - implies catalog.
+- input: restricts resolution to the named input.
+- name: matches package `pname`, parsed `name`, or attribute name.
+- path: relative or absolute attribute path to derivation.
+- version: exact match on package `version` or parsed `name`.
+- semver: semantic version range filter.
+- flake: whether to search `packages` and `legacyPackages` outputs.
+- catalog: whether to search `catalog` outputs.
+- stability: catalog stability channel match - implies catalog.
 
 *** Example Descriptors
-#+BEGIN_SRC json
+```json
 { "name": "hello" }
 { "path": ["legacyPackages", null, "python3Packages", "pip"] }
 { "name": "hello", "version": "2.10.1" }
@@ -140,10 +141,10 @@ describe packages.
 { "name": "hello", "input": "nixpkgs" }
 { "name": "hello", "catalog": true }
 { "name": "flox", "flake": false, "stability": "unstable" }
-#+END_SRC
+```
 
 
-** Preferences
+## Preferences
 
 These settings control resolution behaviors, particularly priority ordering for
 inputs and attribute-set prefixes to search under.
@@ -156,9 +157,9 @@ In our preferences we may refer to those inputs using their "alias"
 or short-name.
 
 
-** Example Settings
+## Example Settings
 
-#+BEGIN_SRC json
+```json
 {
   "inputs": ["nixpkgs", "nixpkgs-flox"],
   "allow": {
@@ -177,19 +178,19 @@ or short-name.
     "nixpkgs-flox": ["unstable", "staging", "unstable"]
   }
 }
-#+END_SRC
+```
 
 
-** TODOs
+## TODOs
 - [ ] Allow preferences to limit systems list.
-- [ ] Implement =preferPreReleases=.
-- [ ] Read Inputs from =flake.lock= and =registry.json=.
+- [ ] Implement `preferPreReleases`.
+- [ ] Read Inputs from `flake.lock` and `registry.json`.
 - [ ] Parse descriptor strings.
 - [ ] Additional tests.
 - [ ] Multi-threading.
-- [ ] Disable =builtins.trace= warnings.
-- [ ] Consider how =packages.*.default= is handled.
-- [ ] Handle stabilities in =DrvDb= progress table.
-- [ ] Use =PackageSet= abstraction in =ResolverState::resolveInInput=.
+- [ ] Disable `builtins.trace` warnings.
+- [ ] Consider how `packages.*.default` is handled.
+- [ ] Handle stabilities in `DrvDb` progress table.
+- [ ] Use `PackageSet` abstraction in `ResolverState::resolveInInput`.
 - [ ] Executable to populate databases explicitly ( daemon? ).
 - [ ] Sort results by version. This may require change to output format.
