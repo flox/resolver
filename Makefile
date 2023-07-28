@@ -26,6 +26,7 @@ CP         ?= cp
 TR         ?= tr
 SED        ?= sed
 TEST       ?= test
+DOXYGEN    ?= doxygen
 
 
 # ---------------------------------------------------------------------------- #
@@ -162,6 +163,7 @@ clean: FORCE
 	-$(RM) src/*.o tests/*.o
 	-$(RM) result
 	-$(RM) -r $(PREFIX)
+	-$(RM) -r doc/html
 	-$(RM) $(TESTS:.cc=)
 	-$(RM) gmon.out *.log
 
@@ -256,6 +258,16 @@ all: bin lib tests
 	  echo $(CXXFLAGS) $(sqlite3_CFLAGS) $(nljson_CFLAGS) $(nix_CFLAGS);  \
 	  echo $(nljson_CFLAGS) $(argparse_CFLAGS) $(sql_builder_CFLAGS);     \
 	}|$(TR) ' ' '\n'|$(SED) 's/-std=/%cpp -std=/' >> "$@";
+
+
+# ---------------------------------------------------------------------------- #
+
+.PHONY: doc
+
+doc: doc/html/index.html
+
+doc/html/index.html: FORCE
+	$(DOXYGEN) ./Doxyfile
 
 
 # ---------------------------------------------------------------------------- #

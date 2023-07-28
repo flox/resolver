@@ -41,19 +41,17 @@
       ( ( dirOf name ) == "tests" ) -> isSrc
     );
   };
-  libExt            = stdenv.hostPlatform.extensions.sharedLibrary;
   nativeBuildInputs = [pkg-config];
   buildInputs       = [
     sqlite.dev nlohmann_json nix.dev boost argparse
   ];
   propagatedBuildInputs = [semver];
-  makeFlags = [
-    "boost_CFLAGS=-I${boost}/include"
-    "libExt=${stdenv.hostPlatform.extensions.sharedLibrary}"
-    "SEMVER_PATH=${semver}/bin/semver"
-    "sql_builder_CFLAGS=-I${sql-builder}/include"
-  ];
-  configurePhase = ''
+  nix_INCDIR            = nix.dev.outPath + "/include";
+  boost_CFLAGS          = "-I" + boost.outPath + "/include";
+  libExt                = stdenv.hostPlatform.extensions.sharedLibrary;
+  SEMVER_PATH           = semver.outPath + "/bin/semver";
+  sql_builder_CFLAGS    = "-I" + sql-builder.outPath + "/include";
+  configurePhase        = ''
     runHook preConfigure;
     export PREFIX="$out";
     if [[ "''${enableParallelBuilding:-1}" = 1 ]]; then

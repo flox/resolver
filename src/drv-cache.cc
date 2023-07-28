@@ -12,6 +12,7 @@
 #include <nix/sqlite.hh>
 #include <nix/store-api.hh>
 #include <nix/sync.hh>
+
 #include "flox/package.hh"
 #include "flox/drv-cache.hh"
 #include "resolve.hh"

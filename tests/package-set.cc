@@ -4,8 +4,8 @@
  *
  * -------------------------------------------------------------------------- */
 
-#include "test.hh"
 #include <optional>
+#include "test.hh"
 #include "flox/raw-package-set.hh"
 #include "flox/types.hh"
 #include "descriptor.hh"
