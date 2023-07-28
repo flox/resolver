@@ -90,7 +90,7 @@ satisfiesSemver( const std::string & range )
     if ( ! p.getSemver().has_value() ) { return false; }
     std::list<std::string> vs;
     vs.push_back( p.getSemver().value() );
-    return ! semverSat( range, vs ).empty();
+    return ! versions::semverSat( range, vs ).empty();
   };
 }
 

@@ -11,6 +11,11 @@
 
 /* -------------------------------------------------------------------------- */
 
+/** Interfaces for analyzing version numbers */
+namespace versions {
+
+/* -------------------------------------------------------------------------- */
+
 /* Matches Semantic Version strings, e.g. `4.2.0-pre' */
 #define _re_vp "(0|[1-9][0-9]*)"
 static const std::regex semverRE(
@@ -190,6 +195,10 @@ semverSat( const std::string & range, const std::list<std::string> & versions )
   return rsl;
 }
 
+
+/* -------------------------------------------------------------------------- */
+
+}  /* End namespace `versions' */
 
 /* -------------------------------------------------------------------------- *
  *

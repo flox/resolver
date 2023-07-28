@@ -99,7 +99,7 @@ class Package {
     {
       std::optional<std::string> version = this->getVersion();
       if ( ! version.has_value() ) { return std::nullopt; }
-      return coerceSemver( version.value() );
+      return versions::coerceSemver( version.value() );
     }
 
       virtual std::string

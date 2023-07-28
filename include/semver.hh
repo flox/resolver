@@ -19,6 +19,11 @@
 
 /* -------------------------------------------------------------------------- */
 
+/** Interfaces for analyzing version numbers */
+namespace versions {
+
+/* -------------------------------------------------------------------------- */
+
 /** @return `true` iff @a version is a valid _semantic version_ string. */
 bool isSemver( const std::string & version );
 /** @return `true` iff @a version is a valid _semantic version_ string. */
@@ -65,6 +70,11 @@ std::pair<int, std::string> runSemver( const std::list<std::string> & args );
 std::list<std::string> semverSat( const std::string            &  range
                                 , const std::list<std::string> & versions
                                 );
+
+
+/* -------------------------------------------------------------------------- */
+
+}  /* End namespace `versions' */
 
 
 /* -------------------------------------------------------------------------- *

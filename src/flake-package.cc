@@ -88,7 +88,7 @@ FlakePackage::init( bool checkDrv )
 
   if ( ! this->_version.empty() )
     {
-      this->_semver = coerceSemver( this->_version );
+      this->_semver = versions::coerceSemver( this->_version );
     }
 }
 
