@@ -1,5 +1,8 @@
 /* ========================================================================== *
  *
+ * @file flox/package-set.hh
+ *
+ * @brief Abstract declaration of a package set.
  *
  *
  * -------------------------------------------------------------------------- */
@@ -16,17 +19,6 @@
 
 namespace flox {
   namespace resolve {
-
-/* -------------------------------------------------------------------------- */
-
-struct FlakeRefWithPath {
-  FloxFlakeRef           ref;
-  std::list<std::string> path;
-  std::string            toString() const;
-};
-
-std::string to_string( const FlakeRefWithPath & rp );
-
 
 /* -------------------------------------------------------------------------- */
 
@@ -66,14 +58,6 @@ class PackageSet {
         }
     }
 
-      virtual FlakeRefWithPath
-    getRefWithPath() const
-    {
-      FlakeRefWithPath rp = { this->getRef(), {} };
-      for ( auto & p : this->getPrefix() ) { rp.path.emplace_back( p ); }
-      return rp;
-    }
-
     virtual std::shared_ptr<Package> maybeGetRelPath(
       const std::list<std::string_view> & path
     ) = 0;
@@ -85,7 +69,28 @@ class PackageSet {
       if ( p == nullptr )
         {
           std::string msg( "PackageSet::getRelPath(): No such path '" );
-          msg += this->getRefWithPath().toString();
+          msg += this->getRef().to_string();
+          msg += "#";
+          bool fst = true;
+          for ( const auto & p : this->getPrefix() )
+            {
+              if ( fst ) { msg += p; fst = false; }
+              else       { msg += p; msg += ".";  }
+            }
+          for ( const auto & p : path )
+            {
+              if ( p.find( '.' ) == p.npos )
+                {
+                  msg += '.';
+                  msg += p;
+                }
+              else
+                {
+                  msg += ".\"";
+                  msg += p;
+                  msg += '"';
+                }
+            }
           msg += "'.";
           throw ResolverException( msg.c_str() );
         }

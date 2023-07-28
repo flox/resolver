@@ -122,14 +122,14 @@ describe packages.
 
 ### Fields
 
-- input: restricts resolution to the named input.
-- name: matches package `pname`, parsed `name`, or attribute name.
-- path: relative or absolute attribute path to derivation.
-- version: exact match on package `version` or parsed `name`.
-- semver: semantic version range filter.
-- flake: whether to search `packages` and `legacyPackages` outputs.
-- catalog: whether to search `catalog` outputs.
-- stability: catalog stability channel match - implies catalog.
+- `input`: restricts resolution to the named input.
+- `name`: matches package `pname`, parsed `name`, or attribute name.
+- `path`: relative or absolute attribute path to derivation.
+- `version`: exact match on package `version` or parsed `name`.
+- `semver`: semantic version range filter.
+- `flake`: whether to search `packages` and `legacyPackages` outputs.
+- `catalog`: whether to search `catalog` outputs.
+- `stability`: catalog stability channel match - implies catalog.
 
 ### Example Descriptors
 ```json
