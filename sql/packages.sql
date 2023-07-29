@@ -5,13 +5,16 @@
 -- -------------------------------------------------------------------------- --
 
 CREATE TABLE IF NOT EXISTS PackageSets (
-  path  JSON  NOT NULL PRIMARY KEY
+  pathId  INTEGER PRIMARY KEY
+, path    JSON    NOT NULL UNIQUE
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_PackageSets ON PackageSets ( path );
 
 
 -- -------------------------------------------------------------------------- --
 
-INSERT OR REPLACE INTO PackageSets VALUES
+INSERT OR IGNORE INTO PackageSets ( path ) VALUES
 -- Standard
   ( '["packages","x86_64-linux"]'   )
 , ( '["packages","x86_64-darwin"]'  )
@@ -40,36 +43,20 @@ INSERT OR REPLACE INTO PackageSets VALUES
 
 -- -------------------------------------------------------------------------- --
 
-CREATE VIEW IF NOT EXISTS v_PackageSets_RowNums AS
-  SELECT path, row_number() OVER ( ORDER BY path ) AS row_number
-  FROM PackageSets;
-
-
--- -------------------------------------------------------------------------- --
-
 CREATE VIEW IF NOT EXISTS v_PackageSets_PathParts AS SELECT
-    row_number
+    pathId
   , subtree
   , system
   , iif( subtree = 'catalog', json_extract( rest, '$[0]' ), NULL )
     AS stability
   , iif( subtree = 'catalog', json_remove( rest, '$[0]' ), rest ) AS rest
   FROM (
-    SELECT   row_number
+    SELECT   pathId
            , json_extract( path, '$[0]' )        AS subtree
            , json_extract( path, '$[1]' )        AS system
            , json_remove( path, '$[0]', '$[0]' ) AS rest
-    FROM v_PackageSets_RowNums
+    FROM PackageSets
   );
-
-
--- -------------------------------------------------------------------------- --
-
-.load ./libsqlexts
-
-CREATE VIEW IF NOT EXISTS v_PackageSets_Hashes AS
-  SELECT hash_str( path ) AS hash, path FROM PackageSets;
-
 
 
 -- -------------------------------------------------------------------------- --
