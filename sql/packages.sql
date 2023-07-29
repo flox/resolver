@@ -4,14 +4,14 @@
 --
 -- -------------------------------------------------------------------------- --
 
-CREATE TABLE PackageSets (
+CREATE TABLE IF NOT EXISTS PackageSets (
   path  JSON  NOT NULL PRIMARY KEY
 );
 
 
 -- -------------------------------------------------------------------------- --
 
-INSERT INTO PackageSets VALUES
+INSERT OR REPLACE INTO PackageSets VALUES
 -- Standard
   ('["packages","x86_64-linux"]')
 , ('["packages","x86_64-darwin"]')
@@ -40,14 +40,14 @@ INSERT INTO PackageSets VALUES
 
 -- -------------------------------------------------------------------------- --
 
-CREATE VIEW v_PackageSets_RowNums AS
+CREATE VIEW IF NOT EXISTS v_PackageSets_RowNums AS
   SELECT path, row_number() OVER ( ORDER BY path ) AS row_number
   FROM PackageSets;
 
 
 -- -------------------------------------------------------------------------- --
 
-CREATE VIEW v_PackageSets_PathParts AS SELECT
+CREATE VIEW IF NOT EXISTS v_PackageSets_PathParts AS SELECT
     row_number
   , subtree
   , system
@@ -61,6 +61,15 @@ CREATE VIEW v_PackageSets_PathParts AS SELECT
            , json_remove( path, '$[0]', '$[0]' ) AS rest
     FROM v_PackageSets_RowNums
   );
+
+
+-- -------------------------------------------------------------------------- --
+
+.load ./libsqlexts
+
+CREATE VIEW IF NOT EXISTS v_PackageSets_Hashes AS
+  SELECT hash_str( path ) AS hash, path FROM PackageSets;
+
 
 
 -- -------------------------------------------------------------------------- --
