@@ -9,3 +9,5 @@ resolver
 *.so
 gmon.out
 callgrint.out.*
+.ccls
+.ccls-cache
