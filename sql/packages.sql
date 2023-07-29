@@ -53,6 +53,29 @@ CREATE VIEW IF NOT EXISTS v_Packages_Paths AS SELECT
 
 
 -- -------------------------------------------------------------------------- --
+
+-- A view intended for performing searches with package metadata.
+CREATE VIEW IF NOT EXISTS v_Packages_SearchBasic AS SELECT
+    Packages.id
+  , subtree
+  , system
+  , stability
+  , json_insert( rest, '$[#]', attrName ) as RelPath
+  , name
+  , pname
+  , version
+  , semver
+  , license
+  , broken
+  , unfree
+  , description
+  FROM Packages
+    INNER JOIN v_PackageSets_PathParts
+      ON Packages.parentId = v_PackageSets_PathParts.pathId
+    INNER JOIN Descriptions ON Packages.descriptionId = Descriptions.id;
+
+
+-- -------------------------------------------------------------------------- --
 --
 --
 --
