@@ -13,28 +13,28 @@ CREATE TABLE IF NOT EXISTS PackageSets (
 
 INSERT OR REPLACE INTO PackageSets VALUES
 -- Standard
-  ('["packages","x86_64-linux"]')
-, ('["packages","x86_64-darwin"]')
-, ('["packages","aarch64-linux"]')
-, ('["packages","aarch64-darwin"]')
+  ( '["packages","x86_64-linux"]'   )
+, ( '["packages","x86_64-darwin"]'  )
+, ( '["packages","aarch64-linux"]'  )
+, ( '["packages","aarch64-darwin"]' )
 -- Legacy
-, ('["legacyPackages","x86_64-linux"]')
-, ('["legacyPackages","x86_64-darwin"]')
-, ('["legacyPackages","aarch64-linux"]')
-, ('["legacyPackages","aarch64-darwin"]')
+, ( '["legacyPackages","x86_64-linux"]'   )
+, ( '["legacyPackages","x86_64-darwin"]'  )
+, ( '["legacyPackages","aarch64-linux"]'  )
+, ( '["legacyPackages","aarch64-darwin"]' )
 -- Catalogs
-, ('["catalog","x86_64-linux","stable"]')
-, ('["catalog","x86_64-linux","staging"]')
-, ('["catalog","x86_64-linux","unstable"]')
-, ('["catalog","x86_64-darwin","stable"]')
-, ('["catalog","x86_64-darwin","staging"]')
-, ('["catalog","x86_64-darwin","unstable"]')
-, ('["catalog","aarch64-linux","stable"]')
-, ('["catalog","aarch64-linux","staging"]')
-, ('["catalog","aarch64-linux","unstable"]')
-, ('["catalog","aarch64-darwin","stable"]')
-, ('["catalog","aarch64-darwin","staging"]')
-, ('["catalog","aarch64-darwin","unstable"]')
+, ( '["catalog","x86_64-linux","stable"]'     )
+, ( '["catalog","x86_64-linux","staging"]'    )
+, ( '["catalog","x86_64-linux","unstable"]'   )
+, ( '["catalog","x86_64-darwin","stable"]'    )
+, ( '["catalog","x86_64-darwin","staging"]'   )
+, ( '["catalog","x86_64-darwin","unstable"]'  )
+, ( '["catalog","aarch64-linux","stable"]'    )
+, ( '["catalog","aarch64-linux","staging"]'   )
+, ( '["catalog","aarch64-linux","unstable"]'  )
+, ( '["catalog","aarch64-darwin","stable"]'   )
+, ( '["catalog","aarch64-darwin","staging"]'  )
+, ( '["catalog","aarch64-darwin","unstable"]' )
 ;
 
 
