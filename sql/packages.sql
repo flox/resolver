@@ -4,59 +4,52 @@
 --
 -- -------------------------------------------------------------------------- --
 
-CREATE TABLE IF NOT EXISTS PackageSets (
-  pathId  INTEGER PRIMARY KEY
-, path    JSON    NOT NULL UNIQUE
+.read ./package-sets.sql
+
+-- -------------------------------------------------------------------------- --
+
+CREATE TABLE IF NOT EXISTS Descriptions (
+  id           INTEGER PRIMARY KEY
+, description  TEXT    NOT NULL UNIQUE
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS idx_PackageSets ON PackageSets ( path );
+CREATE UNIQUE INDEX IF NOT EXISTS idx_Descriptions
+  ON Descriptions ( description );
 
 
 -- -------------------------------------------------------------------------- --
 
-INSERT OR IGNORE INTO PackageSets ( path ) VALUES
--- Standard
-  ( '["packages","x86_64-linux"]'   )
-, ( '["packages","x86_64-darwin"]'  )
-, ( '["packages","aarch64-linux"]'  )
-, ( '["packages","aarch64-darwin"]' )
--- Legacy
-, ( '["legacyPackages","x86_64-linux"]'   )
-, ( '["legacyPackages","x86_64-darwin"]'  )
-, ( '["legacyPackages","aarch64-linux"]'  )
-, ( '["legacyPackages","aarch64-darwin"]' )
--- Catalogs
-, ( '["catalog","x86_64-linux","stable"]'     )
-, ( '["catalog","x86_64-linux","staging"]'    )
-, ( '["catalog","x86_64-linux","unstable"]'   )
-, ( '["catalog","x86_64-darwin","stable"]'    )
-, ( '["catalog","x86_64-darwin","staging"]'   )
-, ( '["catalog","x86_64-darwin","unstable"]'  )
-, ( '["catalog","aarch64-linux","stable"]'    )
-, ( '["catalog","aarch64-linux","staging"]'   )
-, ( '["catalog","aarch64-linux","unstable"]'  )
-, ( '["catalog","aarch64-darwin","stable"]'   )
-, ( '["catalog","aarch64-darwin","staging"]'  )
-, ( '["catalog","aarch64-darwin","unstable"]' )
-;
+CREATE TABLE IF NOT EXISTS Packages (
+  id                INTEGER PRIMARY KEY
+, parentId          INTEGER        NOT NULL
+, attrName          VARCHAR( 255 ) NOT NULL
+, name              VARCHAR( 255 ) NOT NULL
+, pname             VARCHAR( 255 )
+, version           VARCHAR( 127 )
+, semver            VARCHAR( 127 )
+, license           VARCHAR( 255 )
+, outputs           JSON           NOT NULL
+, outputsToInstall  JSON
+, broken            BOOL
+, unfree            BOOL
+, descriptionId     INTEGER
+
+, FOREIGN KEY ( parentId      ) REFERENCES PackageSets  ( pathId )
+, FOREIGN KEY ( descriptionId ) REFERENCES Descriptions ( id     )
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_Packages
+  ON Packages ( parentId, attrName );
 
 
 -- -------------------------------------------------------------------------- --
 
-CREATE VIEW IF NOT EXISTS v_PackageSets_PathParts AS SELECT
-    pathId
-  , subtree
-  , system
-  , iif( subtree = 'catalog', json_extract( rest, '$[0]' ), NULL )
-    AS stability
-  , iif( subtree = 'catalog', json_remove( rest, '$[0]' ), rest ) AS rest
-  FROM (
-    SELECT   pathId
-           , json_extract( path, '$[0]' )        AS subtree
-           , json_extract( path, '$[1]' )        AS system
-           , json_remove( path, '$[0]', '$[0]' ) AS rest
-    FROM PackageSets
-  );
+-- A list of all attribute paths to packages with their `id'.
+CREATE VIEW IF NOT EXISTS v_Packages_Paths AS SELECT 
+    id
+  , json_insert( path, '$[#]', Packages.attrName ) AS path
+  FROM Packages
+    INNER JOIN PackageSets ON Packages.parentId = PackageSets.pathId;
 
 
 -- -------------------------------------------------------------------------- --
