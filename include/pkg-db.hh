@@ -17,7 +17,7 @@
 #include <nix/flake/flake.hh>
 #include <nix/eval-cache.hh>
 
-#include "sqlite3pp/sqlite3pp.hh"
+#include "sqlite3pp.hh"
 #include "flox/raw-package.hh"
 
 
@@ -104,6 +104,7 @@ class PkgDb {
   /* Constructors */
 
   public:
+    PkgDb() : fingerprint( nix::htSHA256 ) {}
 
     /** Opens a DB associated with a locked flake. */
     PkgDb( const nix::flake::LockedFlake & flake );
@@ -161,6 +162,10 @@ class PkgDb {
      *             `legacyPackages.aarch64-darwin.python3Packages`.
      * @return An iterator of `Package` objects.
      */
+    // std::ranges::transform_view<
+    //   std::ranges::ref_view<sqlite3pp::query>
+    // , flox::resolve::RawPackage (*)(sqlite3pp::query::rows)
+    // >
       auto
     getPackages( const AttrPath & path )
     {
@@ -178,8 +183,7 @@ class PkgDb {
             , nlohmann::json( path ).dump().c_str()
             , sqlite3pp::nocopy
             );
-      std::list<Package> out;
-      std::ranges::transform( q, std::back_inserter( out ), packageFromRow );
+      return std::ranges::views::transform( q, packageFromRow );
     }
 
 

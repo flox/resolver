@@ -13,6 +13,7 @@
 , argparse
 , semver
 , sql-builder
+, sqlite3pp
 }: stdenv.mkDerivation {
   pname   = "flox-resolver";
   version = "0.2.0";
@@ -43,7 +44,7 @@
   };
   nativeBuildInputs = [pkg-config];
   buildInputs       = [
-    sqlite.dev nlohmann_json nix.dev boost argparse
+    sqlite.dev nlohmann_json nix.dev boost argparse sqlite3pp
   ];
   propagatedBuildInputs = [semver];
   nix_INCDIR            = nix.dev.outPath + "/include";

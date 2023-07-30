@@ -6,6 +6,7 @@
 
 { nixpkgs         ? builtins.getFlake "nixpkgs"
 , floco           ? builtins.getFlake "github:aakropotkin/floco"
+, sqlite3pp-flake ? builtins.getFlake "github:aakropotkin/sqlite3pp"
 , sql-builder-src ? builtins.fetchTree {
                     type = "github"; owner = "six-ddc"; repo = "sql-builder";
                   }
@@ -18,7 +19,8 @@
 , nix           ? pkgsFor.nix
 , boost         ? pkgsFor.boost
 , argparse      ? pkgsFor.argparse
-, semver        ? floco.legacyPackages.${system}.semver
+, semver        ? floco.packages.${system}.semver
+, sqlite3pp     ? sqlite3pp-flake.packages.${system}.sqlite3pp
 , sql-builder   ? pkgsFor.runCommandNoCC "sql-builder" {
                     src = sql-builder-src;
                   } ''
@@ -27,7 +29,8 @@
                   ''
 }: import ./pkg-fun.nix {
   inherit
-    stdenv sqlite pkg-config nlohmann_json nix boost argparse semver sql-builder
+    stdenv pkg-config nlohmann_json nix boost argparse semver
+    sqlite sqlite3pp sql-builder
   ;
 }
 

@@ -101,6 +101,9 @@ sql_builder_CFLAGS ?=                                      \
                    '$(MAKEFILE_DIR)#sql-builder')/include
 sql_builder_CFLAGS := $(sql_builder_CFLAGS)
 
+sqlite3pp_CFLAGS ?= $(shell $(PKG_CONFIG) --cflags sqlite3pp)
+sqlite3pp_CFLAGS := $(sqlite3pp_CFLAGS)
+
 nix_INCDIR  ?= $(shell $(PKG_CONFIG) --variable=includedir nix-cmd)
 nix_INCDIR  := $(nix_INCDIR)
 ifndef nix_CFLAGS
@@ -126,7 +129,7 @@ endif
 
 # ---------------------------------------------------------------------------- #
 
-lib_CXXFLAGS += $(sqlite3_CFLAGS) $(sql_builder_CFLAGS)
+lib_CXXFLAGS += $(sqlite3_CFLAGS) $(sql_builder_CFLAGS) $(sqlite3pp_CFLAGS)
 bin_CXXFLAGS += $(argparse_CFLAGS)
 CXXFLAGS     += $(nix_CFLAGS) $(nljson_CFLAGS)
 
@@ -260,6 +263,7 @@ ccls: .ccls
 	  fi;                                                                 \
 	  echo $(CXXFLAGS) $(sqlite3_CFLAGS) $(nljson_CFLAGS) $(nix_CFLAGS);  \
 	  echo $(nljson_CFLAGS) $(argparse_CFLAGS) $(sql_builder_CFLAGS);     \
+	  echo $(sqlite3pp_CFLAGS);                                           \
 	}|$(TR) ' ' '\n'|$(SED) 's/-std=/%cpp -std=/' >> "$@";
 
 
