@@ -4,6 +4,10 @@
  *
  * @brief Interfaces for operating on a SQLite3 package set database.
  *
+ * TODO: Description field
+ * TODO: Optimize filtering by `parent' by reading `pathId's into a
+ *       `std::map<long, std::vector<std::string>>'.
+ *
  *
  * -------------------------------------------------------------------------- */
 
@@ -61,8 +65,8 @@ getPkgDbName( const nix::flake::LockedFlake & flake )
  * Construct a new `resolve::RawPackage' from a SQLite row.
  *
  * The following columns are required:
- *   `parent`, `attrName`, `name`, `pname`, `version`, `semver`, `license`,
- *   `outputs, `outputsToInstall`, `broken`, and `unfree`.
+ *   `id', `parent`, `attrName`, `name`, `pname`, `version`, `semver`,
+ *   `license`, `outputs, `outputsToInstall`, `broken`, and `unfree`.
  *
  * @param row A single SQLite row from the `Packages' table.
  * @return A `resolve::RawPackage` object filled with @a row data.
@@ -165,6 +169,7 @@ class PkgDb {
 
       sql::SelectModel qm;
 
+      // TODO: Description
       PackagesQuery()
       {
         using namespace sql;
@@ -181,15 +186,16 @@ class PkgDb {
         , "outputsToInstall"
         , "broken"
         , "unfree"
-        , "Descriptions.description as description"
+        //, "Descriptions.description as description"
         ).distinct().from( "Packages" ).join( "PackageSets" ).on(
           column( "Packages.parentId" ) == column( "PackageSets.pathId" )
-        ).join( "Descriptions" ).on(
-          column( "Packages.descriptionId" ) == column( "Descriptions.id" )
         );
+        //  .join( "Descriptions" ).on(
+        //  column( "Packages.descriptionId" ) == column( "Descriptions.id" )
+        //);
       }
 
-      inline operator std::string_view() { return this->qm.limit( 1 ).str(); }
+      inline operator std::string_view() { return this->qm.str(); }
 
       /* Forward a few functions to perform additional filtering. */
 
@@ -245,8 +251,9 @@ class PkgDb {
       sqlite3pp::query q(
         this->db
       , R"SQL(
-          SELECT ( :parent AS parent, attrName, name, pname, version, semver
-                 , license, outputs, outputsToInstall, broken, unfree
+          SELECT ( Packages.id as id, :parent AS parent, attrName, name, pname
+                 , version, semver, license, outputs, outputsToInstall
+                 , broken, unfree
                  )
           FROM Packages INNER JOIN Packages.parentId = PackageSets.pathId
           WHERE path = :parent
@@ -259,8 +266,30 @@ class PkgDb {
       return std::ranges::views::transform( q, packageFromRow );
     }
 
-
-    std::unique_ptr<resolve::RawPackage> getPackage( const AttrPath & path );
+      std::unique_ptr<resolve::RawPackage>
+    getPackage( const AttrPath & path )
+    {
+      std::string attrName( path.back() );
+      std::string parent( "[" );
+      for ( size_t i = 0; i < path.size() - 2; ++i )
+        {
+          parent += i == 0 ? "\"" : ",\"";
+          parent += path[i];
+          parent += '"';
+        }
+      parent += ']';
+      PackagesQuery qb;
+      qb.where(
+        ( sql::column( "attrName" ) == ":attrName" ) and
+        ( sql::column( "parent" ) == ":parent" )
+      );
+      sqlite3pp::query q( this->db, qb.qm.str().c_str() );
+      q.bind( ":attrName", attrName, sqlite3pp::copy );
+      q.bind( ":parent",   parent,   sqlite3pp::copy );
+      auto b = q.begin();
+      if ( b == q.end() ) { return nullptr; }
+      return std::make_unique<resolve::RawPackage>( packageFromRow( * b ) );
+    }
 
 
 /* -------------------------------------------------------------------------- */
