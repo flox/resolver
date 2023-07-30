@@ -16,8 +16,9 @@
 #include <nlohmann/json.hpp>
 #include <nix/flake/flake.hh>
 #include <nix/eval-cache.hh>
+#include <sqlite3pp.hh>
+#include <sql-builder/sql.hh>
 
-#include "sqlite3pp.hh"
 #include "flox/raw-package.hh"
 
 
@@ -157,6 +158,76 @@ class PkgDb {
      */
     bool hasPackage( const AttrPath & path );
 
+
+/* -------------------------------------------------------------------------- */
+
+    struct PackagesQuery {
+
+      sql::SelectModel qm;
+
+      PackagesQuery()
+      {
+        using namespace sql;
+        qm.select(
+          "Package.id       as id"
+        , "PackageSets.path as parent"
+        , "attrName"
+        , "name"
+        , "pname"
+        , "version"
+        , "semver"
+        , "license"
+        , "outputs"
+        , "outputsToInstall"
+        , "broken"
+        , "unfree"
+        , "Descriptions.description as description"
+        ).distinct().from( "Packages" ).join( "PackageSets" ).on(
+          column( "Packages.parentId" ) == column( "PackageSets.pathId" )
+        ).join( "Descriptions" ).on(
+          column( "Packages.descriptionId" ) == column( "Descriptions.id" )
+        );
+      }
+
+      inline operator std::string_view() { return this->qm.limit( 1 ).str(); }
+
+      /* Forward a few functions to perform additional filtering. */
+
+        PackagesQuery &
+      where( const sql::column & condition )
+      {
+        this->qm.where( condition );
+        return * this;
+      }
+
+        template<typename... Args> PackagesQuery &
+      group_by( const std::string & str, Args && ... columns )
+      {
+        this->qm.group_by(
+          str
+        , std::forward<decltype( columns )>( columns )...
+        );
+        return * this;
+      }
+
+        PackagesQuery &
+      having( const sql::column & condition )
+      {
+        this->qm.having( condition );
+        return * this;
+      }
+
+        PackagesQuery &
+      order_by( const std::string & order_by )
+      {
+        this->qm.order_by( order_by );
+        return * this;
+      }
+
+    };  /* End struct `PackagesQuery' */
+
+
+/* -------------------------------------------------------------------------- */
 
     /**
      * Iterate over a package set.
