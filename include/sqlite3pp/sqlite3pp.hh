@@ -106,7 +106,7 @@ namespace sqlite3pp
 
     database( database && db );
 
-    database & operator=(d atabase && db );
+    database & operator=( database && db );
 
     ~database();
 
@@ -317,7 +317,7 @@ namespace sqlite3pp
       const void * get( int idx, const void * ) const;
 
      private:
-      sqlite3_stmt* stmt_;
+      sqlite3_stmt * stmt_;
     };
 
     class query_iterator
