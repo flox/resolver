@@ -29,14 +29,16 @@
 /* -------------------------------------------------------------------------- */
 
 namespace flox {
+
+  /** Interfaces for caching package metadata in SQLite3 databases. */
   namespace pkgdb {
 
 /* -------------------------------------------------------------------------- */
 
-using Package     = resolve::RawPackage;
 using Fingerprint = nix::flake::Fingerprint;
 using SQLiteDb    = sqlite3pp::database;
 using AttrPath    = std::vector<std::string_view>;
+using pkg_id      = int;
 
 
 /* -------------------------------------------------------------------------- */
@@ -55,17 +57,17 @@ getPkgDbName( const nix::flake::LockedFlake & flake )
 /* -------------------------------------------------------------------------- */
 
 /**
- * Construct a new `Package' from a SQLite row.
+ * Construct a new `resolve::RawPackage' from a SQLite row.
  *
  * The following columns are required:
  *   `parent`, `attrName`, `name`, `pname`, `version`, `semver`, `license`,
  *   `outputs, `outputsToInstall`, `broken`, and `unfree`.
  *
  * @param row A single SQLite row from the `Packages' table.
- * @return A `Package` object filled with @a row data.
+ * @return A `resolve::RawPackage` object filled with @a row data.
  * @see PkgDb::getPackages( const AttrPath & path )
  */
-Package packageFromRow( sqlite3pp::query::rows row );
+resolve::RawPackage packageFromRow( sqlite3pp::query::rows row );
 
 
 /* -------------------------------------------------------------------------- */
@@ -187,7 +189,22 @@ class PkgDb {
     }
 
 
-    std::unique_ptr<Package> getPackage( const AttrPath & path );
+    std::unique_ptr<resolve::RawPackage> getPackage( const AttrPath & path );
+
+
+/* -------------------------------------------------------------------------- */
+
+  /* Insert */
+
+  public:
+    /**
+     * Adds a package to the database.
+     * @param pkg The package to be added.
+     * @param replace Whether to replace/ignore existing rows.
+     * @return The `Packages.id` value for the added package.
+     */
+    pkg_id addPackage( resolve::Package & pkg, bool replace = false );
+
 
 
 /* -------------------------------------------------------------------------- */
