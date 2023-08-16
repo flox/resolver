@@ -40,15 +40,15 @@ FloxFlake::FloxFlake(       nix::ref<nix::EvalState>   state
   : _state( state )
   , _flakeRef( nix::FlakeRef::fromAttrs( ref.toAttrs() ) )
   , _systems( systems )
-  , _prefsStabilities(
-      ( prefs.stabilities.find( std::string( id ) ) != prefs.stabilities.end() )
-      ? prefs.stabilities.at( std::string( id ) )
-      : defaultCatalogStabilities
-    )
   , _prefsPrefixes(
       ( prefs.prefixes.find( std::string( id ) ) != prefs.prefixes.end() )
       ? prefs.prefixes.at( std::string( id ) )
       : defaultSubtrees
+    )
+  , _prefsStabilities(
+      ( prefs.stabilities.find( std::string( id ) ) != prefs.stabilities.end() )
+      ? prefs.stabilities.at( std::string( id ) )
+      : defaultCatalogStabilities
     )
 {
 }

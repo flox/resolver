@@ -51,6 +51,16 @@ struct std::hash<std::list<std::string_view>>
 
 /* -------------------------------------------------------------------------- */
 
+#ifdef __clang__
+#  pragma clang diagnostic push
+#  pragma clang diagnostic ignored "-Wunused-function"
+#endif  /* ifdef __clang__ */
+
+#ifdef __GNUG__
+#  pragma GCC diagnostic push
+#  pragma GCC diagnostic ignored "-Wunused-function"
+#endif  /* ifdef __GNUG__ */
+
   static bool
 operator==( const std::list<std::string>      & lhs
           , const std::list<std::string_view> & rhs
@@ -70,6 +80,15 @@ operator==( const std::list<std::string_view> & lhs
     lhs.cbegin(), lhs.cend(), rhs.cbegin()
   );
 }
+
+
+#ifdef __clang__
+#  pragma clang diagnostic pop
+#endif  /* ifdef __clang__ */
+
+#ifdef __GNUG__
+#  pragma GCC diagnostic pop
+#endif  /* ifdef __GNUG__ */
 
 
 /* -------------------------------------------------------------------------- */
@@ -113,11 +132,24 @@ isPkgsSubtree( std::string_view attrName )
 
 /* -------------------------------------------------------------------------- */
 
-/** `nix' configuration options used when locking flakes. */
-static nix::flake::LockFlags floxFlakeLockFlags = {
-  .updateLockFile = false
-, .writeLockFile  = false
-, .applyNixConfig = false
+/**
+ * Default flags used when locking flakes.
+ * - Disable `updateLockFile` and read existing lockfiles directly.
+ * - Disable `writeLockFile` to avoid writing generated lockfiles to the
+ *   filesystem; this will only occur if there is no existing lockfile.
+ */
+static const nix::flake::LockFlags floxFlakeLockFlags = {
+  .recreateLockFile      = false         /* default */
+, .updateLockFile        = false
+, .writeLockFile         = false
+, .useRegistries         = std::nullopt  /* default */
+, .applyNixConfig        = false         /* default */
+, .allowUnlocked         = true          /* default */
+, .commitLockFile        = false         /* default */
+, .referenceLockFilePath = std::nullopt  /* default */
+, .outputLockFilePath    = std::nullopt  /* default */
+, .inputOverrides        = {}            /* default */
+, .inputUpdates          = {}            /* default */
 };
 
 

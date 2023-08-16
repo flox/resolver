@@ -54,35 +54,33 @@ class RawPackage : public Package {
     RawPackage( const nlohmann::json &  drvInfo );
     RawPackage(       nlohmann::json && drvInfo );
     RawPackage(
-      const std::vector<std::string_view>   & pathS            = {}
-    ,       std::string_view                  fullname         = {}
-    ,       std::string_view                  pname            = {}
-    ,       std::optional<std::string_view>   version          = std::nullopt
-    ,       std::optional<std::string_view>   semver           = std::nullopt
-    ,       std::optional<std::string_view>   license          = std::nullopt
-    , const std::vector<std::string_view>   & outputs          = { "out" }
-    , const std::vector<std::string_view>   & outputsToInstall = { "out" }
-    ,       std::optional<bool>               broken           = std::nullopt
-    ,       std::optional<bool>               unfree           = std::nullopt
-    ,       bool                              hasMetaAttr      = false
-    ,       bool                              hasPnameAttr     = false
-    ,       bool                              hasVersionAttr   = false
-    ) : _pname( pname )
+      const std::vector<std::string>   & pathS            = {}
+    ,       std::string_view             fullname         = {}
+    ,       std::string_view             pname            = {}
+    ,       std::optional<std::string>   version          = std::nullopt
+    ,       std::optional<std::string>   semver           = std::nullopt
+    ,       std::optional<std::string>   license          = std::nullopt
+    , const std::vector<std::string>   & outputs          = { "out" }
+    , const std::vector<std::string>   & outputsToInstall = { "out" }
+    ,       std::optional<bool>          broken           = std::nullopt
+    ,       std::optional<bool>          unfree           = std::nullopt
+    ,       bool                         hasMetaAttr      = false
+    ,       bool                         hasPnameAttr     = false
+    ,       bool                         hasVersionAttr   = false
+    ) : _pathS( pathS )
+      , _fullname( fullname )
+      , _pname( pname )
       , _version( version )
       , _semver( semver )
       , _license( license )
+      , _outputs( outputs )
+      , _outputsToInstall( outputsToInstall )
       , _broken( broken )
       , _unfree( unfree )
       , _hasMetaAttr( hasMetaAttr )
       , _hasPnameAttr( hasPnameAttr )
       , _hasVersionAttr( hasVersionAttr )
     {
-      for ( auto & s : pathS ) { this->_pathS.emplace_back( s ); }
-      for ( auto & s : outputs ) { this->_outputs.emplace_back( s ); }
-      for ( auto & s : outputsToInstall )
-        {
-          this->_outputsToInstall.emplace_back( s );
-        }
     }
 
 

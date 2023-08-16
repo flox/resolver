@@ -16,7 +16,7 @@ namespace flox {
 /* -------------------------------------------------------------------------- */
 
   static void
-traceSQL( void * x, const char * sql )
+traceSQL( void *, const char * sql )
 {
   /* Unrolled from of `nix::notice()'. */
   if ( nix::lvlNotice <= nix::verbosity )

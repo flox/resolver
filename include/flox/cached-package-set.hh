@@ -83,11 +83,11 @@ class CachedPackageSet : public PackageSet {
     , const subtree_type                             & subtree
     ,       std::string_view                           system
     , const std::optional<std::string_view>          & stability = std::nullopt
-    ) : _state( state )
-      , _subtree( subtree )
+    ) : _subtree( subtree )
       , _system( system )
       , _stability( stability )
       , _flake( flake )
+      , _state( state )
     {
       /* Determine the Db status.
        * We may be creating from scratch, or filling a missing package set. */
@@ -124,7 +124,6 @@ class CachedPackageSet : public PackageSet {
     , const subtree_type                    & subtree
     ,       std::string_view                  system
     , const std::optional<std::string_view> & stability = std::nullopt
-    ,       bool                              trace     = false
     ) : CachedPackageSet(
           state
         , std::make_shared<nix::flake::LockedFlake>(
@@ -202,7 +201,7 @@ class CachedPackageSet : public PackageSet {
                                , std::shared_ptr<DbPackageSet>    dbps
                                , std::shared_ptr<DrvDb>           db
                                )
-          : _populateDb( populateDb ), _db( db )
+          : _db( db ), _populateDb( populateDb )
         {
           if ( _populateDb )
             {

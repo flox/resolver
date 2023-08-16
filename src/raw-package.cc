@@ -19,8 +19,6 @@ RawPackage::RawPackage( const nlohmann::json & drvInfo )
   : _pathS()
   , _fullname( drvInfo.at( "name" ) )
   , _pname( drvInfo.at( "pname" ) )
-  , _outputs( drvInfo.at( "outputs" ) )
-  , _outputsToInstall( drvInfo.at( "outputsToInstall" ) )
   , _version( drvInfo.at( "version" ).is_null()
               ? std::nullopt
               : std::make_optional( drvInfo.at( "version" ).get<std::string>() )
@@ -33,6 +31,8 @@ RawPackage::RawPackage( const nlohmann::json & drvInfo )
               ? std::nullopt
               : std::make_optional( drvInfo.at( "license" ).get<std::string>() )
             )
+  , _outputs( drvInfo.at( "outputs" ) )
+  , _outputsToInstall( drvInfo.at( "outputsToInstall" ) )
   , _broken( drvInfo.at( "broken" ).is_null()
               ? std::nullopt
               : std::make_optional( drvInfo.at( "broken" ).get<bool>() )
@@ -57,8 +57,6 @@ RawPackage::RawPackage( nlohmann::json && drvInfo )
   : _pathS()
   , _fullname( std::move( drvInfo.at( "name" ) ) )
   , _pname( std::move( drvInfo.at( "pname" ) ) )
-  , _outputs( std::move( drvInfo.at( "outputs" ) ) )
-  , _outputsToInstall( std::move( drvInfo.at( "outputsToInstall" ) ) )
   , _version( drvInfo.at( "version" ).is_null()
               ? std::nullopt
               : std::make_optional(
@@ -77,6 +75,8 @@ RawPackage::RawPackage( nlohmann::json && drvInfo )
                   std::move( drvInfo.at( "license" ).get<std::string>() )
                 )
             )
+  , _outputs( std::move( drvInfo.at( "outputs" ) ) )
+  , _outputsToInstall( std::move( drvInfo.at( "outputsToInstall" ) ) )
   , _broken( drvInfo.at( "broken" ).is_null()
               ? std::nullopt
               : std::make_optional(

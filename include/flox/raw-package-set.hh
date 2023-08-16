@@ -171,16 +171,16 @@ class RawPackageSet : public PackageSet {
       public:
 
         iterator_impl( container_type * pkgs )
-          : _end( pkgs->end() )
+          : _pkgs( pkgs )
+          , _end( pkgs->end() )
           , _it( pkgs->begin() )
-          , _pkgs( pkgs )
           , _ptr( nullptr )
         {
           if ( this->_it != this->_end ) { this->_ptr = this->_it->second; }
         }
 
         iterator_impl( container_type * pkgs, wrapped_iter_type it )
-          : _end( pkgs->end() ), _it( it ), _pkgs( pkgs ), _ptr( nullptr )
+          : _pkgs( pkgs ), _end( pkgs->end() ), _it( it ), _ptr( nullptr )
         {
           if ( this->_it != this->_end ) { this->_ptr = this->_it->second; }
         }

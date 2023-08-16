@@ -19,7 +19,7 @@ using namespace nlohmann::literals;
   bool
 test_DescriptorFromJSON1()
 {
-  Descriptor d( (nlohmann::json) {
+  Descriptor d( nlohmann::json {
     { "name",    "hello" }
   , { "flake",   true    }
   , { "catalog", false   }
@@ -35,9 +35,7 @@ test_DescriptorFromJSON1()
 test_DescriptorFromJSON2() {
   try
     {
-      Descriptor d(
-        (nlohmann::json) { { "path", { "foo", "bar", nullptr } } }
-      );
+      Descriptor d( nlohmann::json { { "path", { "foo", "bar", nullptr } } } );
     }
   catch( ... )
     {
@@ -56,7 +54,7 @@ test_DescriptorFromJSON3()
   try
     {
       Descriptor d(
-        (nlohmann::json) { { "flake", false }, { "catalog", false } }
+        nlohmann::json { { "flake", false }, { "catalog", false } }
       );
     }
   catch( ... )
@@ -75,7 +73,7 @@ test_DescriptorFromJSON4()
 {
   try
     {
-      Descriptor d( (nlohmann::json) {
+      Descriptor d( nlohmann::json {
         { "flake", true }, { "catalog", { { "stability", "stable" } } }
       } );
     }
@@ -92,7 +90,7 @@ test_DescriptorFromJSON4()
   bool
 test_DescriptorToJSON1()
 {
-  Descriptor d( (nlohmann::json) {
+  Descriptor d( nlohmann::json {
     { "name", "hello" }, { "flake", true }, { "catalog", false }
   } );
   nlohmann::json j = d.toJSON();
@@ -108,7 +106,7 @@ test_DescriptorToJSON1()
   bool
 test_DescriptorToJSON2()
 {
-  Descriptor d( (nlohmann::json) {
+  Descriptor d( nlohmann::json {
     { "name",    "hello" }
   , { "flake",   true    }
   , { "catalog", true    }
@@ -127,7 +125,7 @@ test_DescriptorToJSON2()
   bool
 test_DescriptorToString1()
 {
-  Descriptor d( (nlohmann::json) {
+  Descriptor d( nlohmann::json {
     { "name",  "hello" }
   , { "input", "foo"   }
   } );
@@ -141,7 +139,7 @@ test_DescriptorToString1()
   bool
 test_DescriptorToString2()
 {
-  Descriptor d( (nlohmann::json) {
+  Descriptor d( nlohmann::json {
     { "path",    { "legacyPackages", nullptr, "hello" } }
   , { "input",   "foo"                                  }
   , { "catalog", false                                  }
@@ -154,7 +152,7 @@ test_DescriptorToString2()
 /* -------------------------------------------------------------------------- */
 
   int
-main( int argc, char * argv[], char ** envp )
+main()
 {
   int ec = EXIT_SUCCESS;
 # define RUN_TEST( ... )  _RUN_TEST( ec, __VA_ARGS__ )

@@ -150,7 +150,7 @@ class DbPackageSet : public PackageSet {
         std::shared_ptr<CachedPackage>        _ptr;
 
       public:
-        const_iterator() : _ptr( nullptr ), _query( nullptr ) {}
+        const_iterator() : _query( nullptr ), _ptr( nullptr ) {}
 
         explicit const_iterator(
           std::shared_ptr<nix::SQLiteStmt::Use> query

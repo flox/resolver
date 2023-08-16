@@ -28,10 +28,10 @@ class Resolved {
     nlohmann::json info;
 
     Resolved( const nlohmann::json & attrs )
-      : inputId( attrs.at( "input" ).at( "id" ) )
-      , _input( nix::FlakeRef::fromAttrs( nix::fetchers::jsonToAttrs(
+      : _input( nix::FlakeRef::fromAttrs( nix::fetchers::jsonToAttrs(
                   attrs.at( "input" ).at( "locked" )
               ) ) )
+      , inputId( attrs.at( "input" ).at( "id" ) )
       , path( AttrPathGlob::fromJSON( attrs.at( "path" ) ) )
       , info( attrs.at( "info" ) )
     {}
@@ -41,7 +41,7 @@ class Resolved {
             , const AttrPathGlob     & path
             , const nlohmann::json   & info
             )
-      : inputId( inputId ), _input( input ), path( path ), info( info )
+      : _input( input ), inputId( inputId ), path( path ), info( info )
     {}
 
       std::string

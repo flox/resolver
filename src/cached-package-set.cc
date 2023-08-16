@@ -77,27 +77,15 @@ CachedPackageSet::const_iterator::loadPkg()
 
       this->_db->setDrvInfo( * p );
 
-      std::vector<std::string_view> pathS;
-      for ( const auto & s : p->getPathStrs() ) { pathS.push_back( s ); }
-
-      std::vector<std::string_view> outputs;
-      for ( const auto & s : p->getOutputs() ) { outputs.push_back( s ); }
-
-      std::vector<std::string_view> outputsToInstall;
-      for ( const auto & s : p->getOutputsToInstall() )
-        {
-          outputsToInstall.push_back( s );
-        }
-
       this->_ptr = std::make_shared<value_type>(
-        pathS
+        p->getPathStrs()
       , p->getFullName()
       , p->getPname()
       , p->getVersion()
       , p->getSemver()
       , p->getLicense()
-      , outputs
-      , outputsToInstall
+      , p->getOutputs()
+      , p->getOutputsToInstall()
       , p->isBroken()
       , p->isUnfree()
       , p->hasMetaAttr()

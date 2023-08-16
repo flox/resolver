@@ -45,6 +45,7 @@ namespace flox {
  */
 class Package {
   public:
+    virtual ~Package() {}
     virtual std::vector<std::string>    getPathStrs()         const = 0;
     virtual std::string                 getFullName()         const = 0;
     virtual std::string                 getPname()            const = 0;
