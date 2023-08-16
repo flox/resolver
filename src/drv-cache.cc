@@ -138,7 +138,7 @@ CREATE TABLE IF NOT EXISTS VersionInfo (
 
 static const char * setVersionInfo =
   "INSERT OR IGNORE INTO VersionInfo ( id, version ) VALUES"
-  "  ( 'resolver', '" LIBFLOX_RESOLVE_VERSION "' )"
+  "  ( 'resolver', '" FLOX_RESOLVER_VERSION "' )"
   ", ( 'drvCacheSchema', '" FLOX_DRVDB_SCHEMA_VERSION "' )"
 ;
 
@@ -276,11 +276,11 @@ auditVersions( nix::Sync<DrvDb::State>::Lock & state )
         "DrvDb(): Failed to read resolver version from from database"
       );
     }
-  if ( query1.getStr( 0 ) != LIBFLOX_RESOLVE_VERSION )
+  if ( query1.getStr( 0 ) != FLOX_RESOLVER_VERSION )
     {
       throw CacheException(
         "DrvDb(): Resolver version mismatch. have: " + query1.getStr( 0 ) +
-        ", want: " LIBFLOX_RESOLVE_VERSION
+        ", want: " FLOX_RESOLVER_VERSION
       );
     }
 
