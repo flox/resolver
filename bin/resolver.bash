@@ -19,7 +19,7 @@ _version="0.1.0";
 _usage_msg="Usage: $_as_me [OPTIONS...] \
 [--inputs INPUTS] [--preferences PREFERENCES] --descriptor DESCRIPTOR
 
-Resolve nix package descriptors in flakes
+Resolve nix package descriptors in flakes.
 ";
 
 _help_msg="$_usage_msg
@@ -32,7 +32,7 @@ Optional arguments:
   -i, --inputs INPUTS           inline JSON or path to JSON file containing \
 flake references
   -p, --preferences PREFERENCES inline JSON or path to JSON file containing \
-resolver preferences [default: "{}"]
+resolver preferences [default: {}]
   -d, --descriptor DESCRIPTOR   inline JSON or path to JSON file containing a \
 package descriptor [required]
 
@@ -74,34 +74,6 @@ usage() {
 : "${SEMVER:=semver}";
 : "${JQ:=jq}";
 : "${NIX:=nix}";
-
-
-# ---------------------------------------------------------------------------- #
-
-declare -a tmp_files tmp_dirs;
-tmp_files=();
-tmp_dirs=();
-
-mktmp_auto() {
-  local _f;
-  _f="$( $MKTEMP "$@"; )";
-  case " $* " in
-    *\ -d\ *|*\ --directory\ *) tmp_dirs+=( "$_f" ); ;;
-    *)                          tmp_files+=( "$_f" ); ;;
-  esac
-  echo "$_f";
-}
-
-
-# ---------------------------------------------------------------------------- #
-
-cleanup() {
-  rm -f "${tmp_files[@]}";
-  rm -rf "${tmp_dirs[@]}";
-}
-
-_es=0;
-trap '_es="$?"; cleanup; exit "$_es";' HUP TERM INT QUIT EXIT;
 
 
 # ---------------------------------------------------------------------------- #
@@ -153,11 +125,11 @@ while [[ "$#" -gt 0 ]]; do
     -h|--help)        usage -f; exit 0; ;;
     -v|--version)     echo "$_version"; exit 0; ;;
     --)               shift; break; ;;
-    -?|--*)
-      echo "$_as_me: Unrecognized option: '$1'" >&2;
-      usage -f >&2;
-      exit 1;
-    ;;
+    #-?|--*)
+    #  echo "$_as_me: Unrecognized option: '$1'" >&2;
+    #  usage -f >&2;
+    #  exit 1;
+    #;;
     *)
       echo "$_as_me: Unexpected argument(s) '$*'" >&2;
       usage -f >&2;
@@ -189,9 +161,7 @@ read -r -a systems <<< "${SYSTEMS:-$NIX_SYSTEM}";
 
 
 # Load inputs
-
 declare -A inputRefs inputRefsLocked inputDBs inputPrefixes inputStabilities;
-
 read -r -a inputs < <( echo "$_INPUTS"|$JQ -r 'keys[]'; );
 
 
@@ -298,6 +268,7 @@ if [[ -n "${VERBOSE:-}" ]]; then echo "$_QUERY" >&2; fi
 # Query SQL databases and print satisfactory packages as JSON.
 # If `--one' was given, print a single JSON object, otherwise print an array.
 runQuery() {
+  # If an input was explicitly indicated we only have to search one database.
   _qinput="$( echo "$_DESC"|$JQ -r '.input // ""'; )";
   if [[ -n "$_qinput" ]]; then
     read -r -a matches < <( $SQLITE3 "${inputDBs["$_qinput"]}" "$_QUERY"; );
@@ -320,10 +291,10 @@ runQuery() {
       else
         for p in "${matches[@]}"; do
           if [[ -z "$first" ]]; then
-            echo ", $( show "$i" "$p"; )";
+            printf ', ';
+            show "$i" "$p";
           else
-            echo "[ ";
-            printf '  ';
+            printf '[\n  ';
             show "$i" "$p";
             first=;
           fi
