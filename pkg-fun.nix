@@ -27,15 +27,16 @@
       notResult = ( builtins.match "result(-*)?" bname ) == null;
     in notIgnored && notResult;
   };
+
+  propagatedBuildInputs = flox-pkgdb.propagatedBuildInputs ++ [flox-pkgdb];
+  buildInputs           = flox-pkgdb.buildInputs ++ [sql-builder];
   inherit (flox-pkgdb)
     nativeBuildInputs
-    propagatedBuildInputs
     nix_INCDIR
     boost_CFLAGS
     libExt
     SEMVER_PATH
   ;
-  buildInputs        = flox-pkgdb.buildInputs ++ [flox-pkgdb sql-builder];
   sql_builder_CFLAGS = "-I" + sql-builder.outPath + "/include";
   configurePhase     = ''
     runHook preConfigure;

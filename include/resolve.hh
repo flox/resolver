@@ -15,8 +15,8 @@
 #include <nix/eval.hh>
 #include <unordered_map>
 #include <unordered_set>
-#include "flox/exceptions.hh"
-#include "flox/types.hh"
+#include "flox/resolver/exceptions.hh"
+#include "flox/resolver/types.hh"
 #include "flox/predicates.hh"
 #include "flox/resolver-state.hh"
 #include "descriptor.hh"

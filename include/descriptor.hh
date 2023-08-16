@@ -13,8 +13,8 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <nix/eval-cache.hh>
-#include "flox/exceptions.hh"
-#include "flox/types.hh"
+#include "flox/resolver/exceptions.hh"
+#include "flox/resolver/types.hh"
 #include "flox/predicates.hh"
 
 

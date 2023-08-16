@@ -9,21 +9,52 @@
 
 #pragma once
 
-#include <list>
+#include <string>
+#include <unordered_map>
 #include <unordered_set>
+#include <list>
+#include <memory>
+
 #include <nlohmann/json.hpp>
 #include <nix/flake/flake.hh>
 #include <nix/fetchers.hh>
 #include <nix/eval-cache.hh>
-#include "flox/types.hh"
-#include "flox/exceptions.hh"
-#include "flox/package-set.hh"
+
 #include "flox/util.hh"
+#include "flox/resolver/types.hh"
+#include "flox/resolver/exceptions.hh"
+#include "flox/package-set.hh"
+#include "flox/resolver/util.hh"
 
 
 /* -------------------------------------------------------------------------- */
 
 namespace flox {
+
+/* -------------------------------------------------------------------------- */
+
+class Inputs {
+  private:
+    std::unordered_map<std::string, nix::FlakeRef> inputs;
+
+    void init( const nlohmann::json & j );
+
+  public:
+
+    Inputs() = default;
+    Inputs( const nlohmann::json & j ) { this->init( j ); }
+
+    bool           has( std::string_view id ) const;
+    nix::FlakeRef  get( std::string_view id ) const;
+    nlohmann::json toJSON()                   const;
+
+    std::list<std::string_view> getInputNames() const;
+};
+
+
+void from_json( const nlohmann::json & j,       Inputs & i );
+void to_json(         nlohmann::json & j, const Inputs & i );
+
 
 /* -------------------------------------------------------------------------- */
 
@@ -46,7 +77,7 @@ class Input {
     /** Constructs an @a Input from a _flake reference_ URI string. */
     Input( std::string_view refURI );
     /** Constructs an @a Input from a parsed _flake reference_ object. */
-    Input( const resolve::FloxFlakeRef & ref );
+    Input( const nix::FlakeRef & ref );
 
 
 /* -------------------------------------------------------------------------- */
@@ -199,7 +230,9 @@ class Input {
                  , std::string_view systemOrCatalog
                  )
     {
-      if ( resolve::isPkgsSubtree( subtreeOrSystem ) )
+      if ( defaultSubtrees.find( std::string( subtreeOrSystem ) )
+           != defaultSubtrees.end()
+         )
         {
           return this->getPackageSet(
             resolve::parseSubtreeType( subtreeOrSystem )

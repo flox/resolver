@@ -241,12 +241,12 @@ ccls: .ccls
 
 .ccls: FORCE
 	echo 'clang' > "$@";
-	{                                                         \
-	  if [[ -n "$(NIX_CC)" ]]; then                           \
-	    $(CAT) "$(NIX_CC)/nix-support/libc-cflags";           \
-	    $(CAT) "$(NIX_CC)/nix-support/libcxx-cxxflags";       \
-	  fi;                                                     \
-	  echo $(CXXFLAGS) $(pkgdb_CFLAGS) $(sql_builder_CFLAGS)  \
+	{                                                          \
+	  if [[ -n "$(NIX_CC)" ]]; then                            \
+	    $(CAT) "$(NIX_CC)/nix-support/libc-cflags";            \
+	    $(CAT) "$(NIX_CC)/nix-support/libcxx-cxxflags";        \
+	  fi;                                                      \
+	  echo $(CXXFLAGS) $(pkgdb_CFLAGS) $(sql_builder_CFLAGS);  \
 	}|$(TR) ' ' '\n'|$(SED) 's/-std=/%cpp -std=/' >> "$@";
 
 

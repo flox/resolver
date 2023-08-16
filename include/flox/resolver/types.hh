@@ -19,8 +19,8 @@
 #include <nix/eval-cache.hh>
 #include <unordered_map>
 #include <unordered_set>
-#include "flox/exceptions.hh"
-#include "flox/util.hh"
+#include "flox/resolver/exceptions.hh"
+#include "flox/resolver/util.hh"
 #include <queue>
 #include <any>
 
@@ -33,8 +33,6 @@ namespace flox {
 /* -------------------------------------------------------------------------- */
 
 using FloxFlakeRef = nix::FlakeRef;
-using input_pair   =
-  std::pair<std::string, std::shared_ptr<nix::flake::LockedFlake>>;
 
 using Cursor      = nix::ref<nix::eval_cache::AttrCursor>;
 using CursorPos   = std::pair<Cursor, std::vector<nix::Symbol>>;
@@ -96,19 +94,6 @@ NLOHMANN_JSON_SERIALIZE_ENUM( stability_type, {
 
 /* -------------------------------------------------------------------------- */
 
-typedef enum {
-  DBPS_NONE       = 0 /* Indicates that a DB is completely fresh. */
-, DBPS_PARTIAL    = 1 /* Indicates some partially populated state. */
-, DBPS_PATHS_DONE = 2 /* Indicates that we know all derivation paths. */
-, DBPS_INFO_DONE  = 3 /* Indicates that we have collected info metadata. */
-, DBPS_EMPTY      = 4 /* Indicates that a prefix has no values. */
-, DBPS_MISSING    = 5 /* Indicates that a DB is completely fresh. */
-, DBPS_FORCE      = 6 /* This should always have highest value. */
-}  progress_status;
-
-
-/* -------------------------------------------------------------------------- */
-
 using attr_part  = std::variant<std::nullptr_t, std::string>;
 using attr_parts = std::vector<attr_part>;
 
@@ -147,84 +132,6 @@ struct AttrPathGlob {
 
 void from_json( const nlohmann::json & j,       AttrPathGlob & path );
 void to_json(         nlohmann::json & j, const AttrPathGlob & path );
-
-
-/* -------------------------------------------------------------------------- */
-
-class Inputs {
-  private:
-    std::unordered_map<std::string, FloxFlakeRef> inputs;
-
-    void init( const nlohmann::json & j );
-
-  public:
-
-    Inputs() = default;
-    Inputs( const nlohmann::json & j ) { this->init( j ); }
-
-    bool           has( std::string_view id ) const;
-    FloxFlakeRef   get( std::string_view id ) const;
-    nlohmann::json toJSON()                   const;
-
-    std::list<std::string_view> getInputNames() const;
-};
-
-
-void from_json( const nlohmann::json & j,       Inputs & i );
-void to_json(         nlohmann::json & j, const Inputs & i );
-
-
-/* -------------------------------------------------------------------------- */
-
-namespace predicates { struct PkgPred; };
-
-struct Preferences {
-  std::vector<std::string> inputs;
-
-  std::unordered_map<std::string, std::vector<std::string>> stabilities;
-  std::unordered_map<std::string, std::vector<std::string>> prefixes;
-
-  bool semverPreferPreReleases = false;
-  bool allowUnfree             = true;
-  bool allowBroken             = false;
-
-  std::optional<std::unordered_set<std::string>> allowedLicenses;
-
-  Preferences() = default;
-  Preferences( const nlohmann::json & j );
-
-  nlohmann::json toJSON() const;
-
-  flox::resolve::predicates::PkgPred pred_V2() const;
-
-  int compareInputs(
-        const std::string_view idA, const FloxFlakeRef & a
-      , const std::string_view idB, const FloxFlakeRef & b
-      ) const;
-
-    inline int
-  compareInputs( const input_pair & a, const input_pair & b ) const
-  {
-    return this->compareInputs( a.first
-                              , a.second->flake.lockedRef
-                              , b.first
-                              , b.second->flake.lockedRef
-                              );
-  }
-
-    std::function<bool( const input_pair &, const input_pair & )>
-  inputLessThan() const
-  {
-    return [&]( const input_pair & a, const input_pair & b )
-    {
-      return this->compareInputs( a, b ) < 0;
-    };
-  }
-};
-
-
-void from_json( const nlohmann::json & j,       Preferences & p );
-void to_json(         nlohmann::json & j, const Preferences & p );
 
 
 /* -------------------------------------------------------------------------- */

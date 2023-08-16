@@ -8,9 +8,9 @@
 
 #include <optional>
 #include <unordered_map>
-#include "flox/exceptions.hh"
+#include "flox/resolver/exceptions.hh"
 #include "flox/util.hh"
-#include "flox/types.hh"
+#include "flox/resolver/types.hh"
 #include "flox/flox-flake.hh"
 #include "flox/resolved.hh"
 
