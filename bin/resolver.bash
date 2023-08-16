@@ -162,7 +162,7 @@ read -r -a systems <<< "${SYSTEMS:-$NIX_SYSTEM}";
 
 # Load inputs
 declare -A inputRefs inputRefsLocked inputDBs inputPrefixes inputStabilities;
-read -r -a inputs < <( echo "$_INPUTS"|$JQ -r 'keys[]'; );
+mapfile -t inputs < <( echo "$_INPUTS"|$JQ -r 'keys[]'; );
 
 
 # ---------------------------------------------------------------------------- #
@@ -171,8 +171,9 @@ read -r -a inputs < <( echo "$_INPUTS"|$JQ -r 'keys[]'; );
 # --------------------
 scrapeFlake() {
   local _ref="${inputRefsLocked["$1"]}";
-  read -r -a _subtrees <<< "${inputPrefixes["$1"]}";
+  read -r -a _subtrees    <<< "${inputPrefixes["$1"]}";
   read -r -a _stabilities <<< "${inputStabilities["$1"]}";
+  if [[ -n "${VERBOSE:-}" ]]; then echo "Scraping input '$i'" >&2; fi
   for subtree in "${_subtrees[@]}"; do
     for system in "${systems[@]}"; do
       if [[ "$subtree" = 'catalog' ]]; then
@@ -192,11 +193,8 @@ scrapeFlake() {
 # show INPUT-ID PACKAGE-ID
 # ------------------------
 show() {
-  {
-    echo "{\"input\":\"$1\",\"path\":";
-    $PKGDB get path --pkg "${inputDBs["$1"]}" "$2";
-    echo '}';
-  }|$JQ -c;
+  local _jsonPre="{\"input\":\"$1\",\"path\":";
+  echo "$_jsonPre$( $PKGDB get path --pkg "${inputDBs["$1"]}" "$2"; )}";
 }
 
 
@@ -207,17 +205,31 @@ show() {
 for i in "${inputs[@]}"; do
   inputRefs["$i"]="$( echo "$_INPUTS"|$JQ -r ".[\"$i\"]"; )";
   inputRefsLocked["$i"]="$(
-    $NIX flake metadata --json "${inputRefs["$i"]}"|$JQ -r .resolvedUrl;
+    $NIX flake metadata --json "${inputRefs["$i"]}"|$JQ -r .url;
   )";
   inputDBs["$i"]="$( $PKGDB get db "${inputRefsLocked["$i"]}"; )";
-  inputPrefixes["$i"]="$( echo "$_PREFS"|$JQ -r "\
-    ( .prefixes[\"$i\"] // [\"packages\",\"legacyPackages\",\"catalog\"] )
-      |join( \" \" )
-  "; )";
-  inputStabilities["$i"]="$( echo "$_PREFS"|$JQ -r "\
-    ( .stabilities[\"$i\"] // [\"stable\",\"staging\",\"unstable\"] )
-      |join( \" \" )
-  "; )"
+
+  # Determing which prefixes ( subtrees ) to search under.
+  inputPrefixes["$i"]="$(
+    echo "$_PREFS"|$JQ -r "( .prefixes[\"$i\"] // [] )|join( \" \" )";
+  )";
+  if [[ -z "${inputPrefixes["$i"]}" ]]; then
+    if $NIX eval --expr "let
+         flake = builtins.getFlake \"${inputRefsLocked["$i"]}\";
+       in assert ( flake ? catalog ); true
+       " >/dev/null 2>&1;
+    then
+      inputPrefixes["$i"]=catalog;
+    else
+      inputPrefixes["$i"]='packages legacyPackages';
+    fi
+  fi
+
+  # Determine which stabilities to search under.
+  inputStabilities["$i"]="$(
+    echo "$_PREFS"  \
+      |$JQ -r "( .stabilities[\"$i\"] // [\"stable\"] )|join( \" \" )";
+    )"
   scrapeFlake "$i";
 done
 
@@ -227,15 +239,16 @@ done
 _QUERY='SELECT id FROM PACKAGES WHERE TRUE';
 
 if echo "$_PREFS"|$JQ -e '( .allow.unfree // true )|not' >/dev/null; then
-  _QUERY+=' AND ( NOT unfree )';
+  _QUERY+=' AND ( ( unfree IS NULL ) OR ( NOT unfree ) )';
 fi
 
 if echo "$_PREFS"|$JQ -e '( .allow.broken // false )|not' >/dev/null; then
-  _QUERY+=' AND ( NOT broken )';
+  _QUERY+=' AND ( ( broken IS NULL ) OR ( NOT broken ) )';
 fi
 
 if echo "$_PREFS"|$JQ -e '( .allow.licenses // null ) != null' >/dev/null; then
-  _QUERY+=" AND ( license IN $( $JQ -r '.allow.licenses|join( " " )' ) )";
+  _QUERY+="AND ( ( license IS NULL ) OR ";
+  _QUERY+="( license IN $( $JQ -r '.allow.licenses|join( " " )' ) ) )";
 fi
 
 _qname="$( echo "$_DESC"|$JQ -r '.name // ""'; )";
@@ -271,7 +284,7 @@ runQuery() {
   # If an input was explicitly indicated we only have to search one database.
   _qinput="$( echo "$_DESC"|$JQ -r '.input // ""'; )";
   if [[ -n "$_qinput" ]]; then
-    read -r -a matches < <( $SQLITE3 "${inputDBs["$_qinput"]}" "$_QUERY"; );
+    mapfile -t matches < <( $SQLITE3 "${inputDBs["$_qinput"]}" "$_QUERY"; );
     if [[ "${#matches[@]}" -lt 1 ]]; then
       echo "$_as_me: no satisfactory results" >&2;
       exit 1;
@@ -283,7 +296,7 @@ runQuery() {
 
   first=:;
   for i in "${inputs[@]}"; do
-    read -r -a matches < <( $SQLITE3 "${inputDBs["$i"]}" "$_QUERY"; );
+    mapfile -t matches < <( $SQLITE3 "${inputDBs["$i"]}" "$_QUERY"; );
     if [[ "${#matches[@]}" -gt 0 ]]; then
       if [[ -n "$_ONE" ]]; then
         show "$i" "${matches[0]}";
@@ -292,12 +305,11 @@ runQuery() {
         for p in "${matches[@]}"; do
           if [[ -z "$first" ]]; then
             printf ', ';
-            show "$i" "$p";
           else
-            printf '[\n  ';
-            show "$i" "$p";
+            printf '[ ';
             first=;
           fi
+          show "$i" "$p";
         done
       fi
     fi
