@@ -27,11 +27,21 @@ struct PkgPred {
 
   PkgPred() : pred( []( const Package & ) { return true; } ) {}
   PkgPred( const pred_fn & f ) : pred( f ) {}
+  PkgPred( const PkgPred & p ) : pred( p.pred ) {}
+
+  PkgPred( PkgPred && p ) : pred( std::move( p.pred ) ) {}
 
     PkgPred &
-  operator=( PkgPred other )
+  operator=( const PkgPred & other )
   {
-    std::swap( this->pred, other.pred );
+    this->pred = other.pred;
+    return * this;
+  }
+
+    PkgPred &
+  operator=( PkgPred && other )
+  {
+    this->pred = std::move( other.pred );
     return * this;
   }
 

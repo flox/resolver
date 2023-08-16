@@ -84,7 +84,7 @@ Preferences::compareInputs(
   if ( ( idA == idB ) && ( a == b ) ) { return 0; }
   int rankA = this->inputs.size();
   int rankB = this->inputs.size();
-  for ( int i = 0; i < this->inputs.size(); ++i )
+  for ( size_t i = 0; i < this->inputs.size(); ++i )
     {
       if ( this->inputs[i] == idA ) { rankA = i; }
       if ( this->inputs[i] == idB ) { rankB = i; }

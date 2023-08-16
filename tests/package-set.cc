@@ -42,16 +42,14 @@ test_RawPackageSet_iterator1()
   RawPackageMap pkgs {
     { { "hello" }
     , nix::make_ref<RawPackage>(
-        (std::vector<std::string_view>) {
-          "legacyPackages", "x86_64-linux", "hello"
-        }
+        std::vector<std::string> { "legacyPackages", "x86_64-linux", "hello" }
       , "hello-2.12.1"
       , "hello"
       , "2.12.1"
       , "2.12.1"
       , "GPL-3.0-or-later"
-      , (std::vector<std::string_view>) { "out" }
-      , (std::vector<std::string_view>) { "out" }
+      , std::vector<std::string> { "out" }
+      , std::vector<std::string> { "out" }
       , std::make_optional( false )
       , std::make_optional( false )
       , true
@@ -89,16 +87,14 @@ test_RawPackageSet_iterator1()
 test_RawPackageSet_addPackage1()
 {
   RawPackage pkg(
-    (std::vector<std::string_view>) {
-      "legacyPackages", "x86_64-linux", "hello"
-    }
+    std::vector<std::string> { "legacyPackages", "x86_64-linux", "hello" }
   , "hello-2.12.1"
   , "hello"
   , "2.12.1"
   , "2.12.1"
   , "GPL-3.0-or-later"
-  , (std::vector<std::string_view>) { "out" }
-  , (std::vector<std::string_view>) { "out" }
+  , std::vector<std::string> { "out" }
+  , std::vector<std::string> { "out" }
   , std::make_optional( false )
   , std::make_optional( false )
   , true
@@ -139,7 +135,7 @@ test_DbPackageSet_iterator1( std::shared_ptr<nix::flake::LockedFlake> flake )
   size_t c1 = 0;
   size_t c2 = 0;
   for ( auto it = ps.begin(); it != ps.end(); ++it, ++c1 ) {}
-  for ( auto & p : ps ) { ++c2; }
+  for ( auto & p : ps ) { (void) p; ++c2; }
   // TODO: after DB is populated by new routines change to `fullPkgCount'
   return ( c1 == c2 ) && ( c1 == unbrokenPkgCount );
 }
@@ -152,7 +148,7 @@ test_DbPackageSet_size1( std::shared_ptr<nix::flake::LockedFlake> flake )
 {
   DbPackageSet ps( flake, ST_LEGACY, "x86_64-linux" );
   size_t c = 0;
-  for ( auto & p : ps ) { ++c; }
+  for ( auto & p : ps ) { (void) p; ++c; }
   // TODO: after DB is populated by new routines change to `fullPkgCount'
   return ( c == ps.size() ) && ( c == unbrokenPkgCount );
 }
@@ -207,7 +203,7 @@ test_FlakePackageSet_iterator1(
 {
   FlakePackageSet ps( rs.getEvalState(), flake, ST_LEGACY, "x86_64-linux" );
   size_t c = 0;
-  for ( auto & p : ps ) { ++c; }
+  for ( auto & p : ps ) { (void) p; ++c; }
   // TODO: Find a way to eval broken packages, then use `fullPkgCount'
   return c == unbrokenPkgCount;
 }
@@ -216,7 +212,7 @@ test_FlakePackageSet_iterator1(
 /* -------------------------------------------------------------------------- */
 
   int
-main( int argc, char * argv[], char ** envp )
+main()
 {
   int ec = EXIT_SUCCESS;
 # define RUN_TEST( ... )  _RUN_TEST( ec, __VA_ARGS__ )
@@ -224,12 +220,12 @@ main( int argc, char * argv[], char ** envp )
   RUN_TEST( RawPackageSet_iterator1 );
   RUN_TEST( RawPackageSet_addPackage1 );
 
-  Inputs      inputs( (nlohmann::json) { { "nixpkgs", nixpkgsRef } } );
+  Inputs      inputs( nlohmann::json { { "nixpkgs", nixpkgsRef } } );
   Preferences prefs;
   ResolverState rs(
     inputs
   , prefs
-  , (std::list<std::string>) { "x86_64-linux" }
+  , std::list<std::string> { "x86_64-linux" }
   );
 
   std::shared_ptr<nix::flake::LockedFlake> flake  =

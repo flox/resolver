@@ -89,11 +89,11 @@ class FlakePackageSet : public PackageSet {
     , const subtree_type                             & subtree
     ,       std::string_view                           system
     , const std::optional<std::string_view>          & stability = std::nullopt
-    ) : _state( state )
-      , _subtree( subtree )
+    ) : _subtree( subtree )
       , _system( system )
       , _stability( stability )
       , _flake( flake )
+      , _state( state )
     {}
 
     FlakePackageSet(
@@ -102,7 +102,6 @@ class FlakePackageSet : public PackageSet {
     , const subtree_type                    & subtree
     ,       std::string_view                  system
     , const std::optional<std::string_view> & stability = std::nullopt
-    ,       bool                              trace     = false
     ) : FlakePackageSet(
           state
         , std::make_shared<nix::flake::LockedFlake>(
@@ -204,7 +203,7 @@ class FlakePackageSet : public PackageSet {
                                , nix::SymbolTable * symtab
                                , todo_queue         todo
                                )
-          : _subtree( subtree ), _todo( todo ), _symtab( symtab )
+          : _symtab( symtab ), _subtree( subtree ), _todo( todo )
         {
           if ( todo.empty() )
             {
@@ -226,9 +225,9 @@ class FlakePackageSet : public PackageSet {
         const_iterator()
           : _symtab( nullptr )
           , _subtree( ST_NONE )
-          , _ptr( nullptr )
           , _todo( todo_queue() )
           , _syms( symbol_queue() )
+          , _ptr( nullptr )
         {}
 
         std::string_view getType() const { return "flake"; }

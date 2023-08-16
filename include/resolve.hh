@@ -24,7 +24,10 @@
 
 /* -------------------------------------------------------------------------- */
 
-#define LIBFLOX_RESOLVE_VERSION  "0.2.0"
+/* This is passed in by `make' and is set by `<resolver>/version' */
+#ifndef FLOX_RESOLVER_VERSION
+#  define FLOX_RESOLVER_VERSION  "NO.VERSION"
+#endif
 
 
 /* -------------------------------------------------------------------------- */

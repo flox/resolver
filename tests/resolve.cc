@@ -21,7 +21,7 @@ using namespace nlohmann::literals;
   bool
 test_ResolverStateLocking1()
 {
-  Inputs      inputs( (nlohmann::json) { { "nixpkgs", nixpkgsRef } } );
+  Inputs      inputs( nlohmann::json { { "nixpkgs", nixpkgsRef } } );
   Preferences prefs;
   return ResolverState( inputs, prefs ).getInputs().at( "nixpkgs" )
            ->getLockedFlake()->flake.lockedRef.input.isLocked();
@@ -34,10 +34,10 @@ test_ResolverStateLocking1()
   bool
 test_resolveInInput1()
 {
-  Inputs        inputs( (nlohmann::json) { { "nixpkgs", nixpkgsRef } } );
+  Inputs        inputs( nlohmann::json { { "nixpkgs", nixpkgsRef } } );
   Preferences   prefs;
   ResolverState rs( inputs, prefs );
-  Descriptor    desc( (nlohmann::json) { { "path", { "hello" } } } );
+  Descriptor    desc( nlohmann::json { { "path", { "hello" } } } );
   std::list<Resolved> results = rs.resolveInInput( "nixpkgs", desc );
   return results.size() == 1;
 }
@@ -49,10 +49,10 @@ test_resolveInInput1()
   bool
 test_resolveInInput2()
 {
-  Inputs        inputs( (nlohmann::json) { { "nixpkgs", nixpkgsRef } } );
+  Inputs        inputs( nlohmann::json { { "nixpkgs", nixpkgsRef } } );
   Preferences   prefs;
   ResolverState rs( inputs, prefs );
-  Descriptor    desc( (nlohmann::json) { { "name", "hello" } } );
+  Descriptor    desc( nlohmann::json { { "name", "hello" } } );
   std::list<Resolved> results = rs.resolveInInput( "nixpkgs", desc );
   if ( results.empty() ) { return false; }
   for ( const nlohmann::json & i : results.front().info )
@@ -69,10 +69,10 @@ test_resolveInInput2()
   bool
 test_resolve_V2_1()
 {
-  Inputs        inputs( (nlohmann::json) { { "nixpkgs", nixpkgsRef } } );
+  Inputs        inputs( nlohmann::json { { "nixpkgs", nixpkgsRef } } );
   Preferences   prefs;
   ResolverState rs( inputs, prefs );
-  Descriptor    desc( (nlohmann::json) { { "name", "hello" } } );
+  Descriptor    desc( nlohmann::json { { "name", "hello" } } );
   std::list<Resolved> results = resolve_V2( rs, desc );
   if ( results.empty() ) { return false; }
   for ( const nlohmann::json & i : results.front().info )
@@ -86,7 +86,7 @@ test_resolve_V2_1()
 /* -------------------------------------------------------------------------- */
 
   int
-main( int argc, char * argv[], char ** envp )
+main()
 {
   int ec = EXIT_SUCCESS;
 # define RUN_TEST( ... )  _RUN_TEST( ec, __VA_ARGS__ )

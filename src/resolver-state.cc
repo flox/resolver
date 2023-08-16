@@ -308,21 +308,21 @@ ResolverState::resolveInInput( std::string_view id, const Descriptor & desc )
 
               for ( const nix::Symbol s : todos.front()->getAttrs() )
                 {
-                  FlakePackage * p = nullptr;
+                  FlakePackage * fp = nullptr;
                   try
                     {
                       Cursor c = todos.front()->getAttr( s );
                       if ( c->isDerivation() )
                         {
-                          p = new FlakePackage(
+                          fp = new FlakePackage(
                             c, this->getSymbolTable(), false
                           );
 
                           /* Cache the evaluated result. */
-                          cache.setDrvInfo( * p );
+                          cache.setDrvInfo( * fp );
 
-                          if ( pred( * p ) ) { goods.push( p ); }
-                          else               { delete p;        }
+                          if ( pred( * fp ) ) { goods.push( fp ); }
+                          else                { delete fp;        }
                         }
                       else if ( subtree != "packages" )
                         {
@@ -336,7 +336,7 @@ ResolverState::resolveInInput( std::string_view id, const Descriptor & desc )
                     }
                   catch( ... )
                     {
-                      if ( p != nullptr ) { delete p; }
+                      if ( fp != nullptr ) { delete fp; }
                       // TODO: Catch errors in `packages'.
                     }
                 }
@@ -348,16 +348,16 @@ ResolverState::resolveInInput( std::string_view id, const Descriptor & desc )
                 cache.getDrvInfos( subtree, system );
               for ( const nlohmann::json & info : infos )
                 {
-                  CachedPackage * p = new CachedPackage( info );
-                  if ( pred( * p ) ) { goods.push( p ); }
-                  else               { delete p;        }
+                  CachedPackage * cp = new CachedPackage( info );
+                  if ( pred( * cp ) ) { goods.push( cp ); }
+                  else                { delete cp;        }
                 }
             }
           /* Move on to the next one. */
           todos.pop();
         }
       /* Mark prefixes as complete in our cache. */
-      for ( const std::vector<std::string> absPath : tops )
+      for ( const std::vector<std::string> & absPath : tops )
         {
           cache.setProgress( absPath[0], absPath[1], DBPS_INFO_DONE );
         }

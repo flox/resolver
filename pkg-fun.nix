@@ -13,37 +13,33 @@
 , argparse
 , semver
 , sql-builder
+, sqlite3pp
 }: stdenv.mkDerivation {
   pname   = "flox-resolver";
-  version = "0.2.0";
+  version = builtins.replaceStrings ["\n"] [""] ( builtins.readFile ./version );
   src     = builtins.path {
     path = ./.;
     filter = name: type: let
       bname   = baseNameOf name;
       ignores = [
-        "default.nix"
-        "pkg-fun.nix"
-        "flake.nix"
-        "flake.lock"
-        ".ccls"
-        ".ccls-cache"
-        ".git"
-        ".gitignore"
-        "out"
-        "bin"
-        "lib"
+        "default.nix" "pkg-fun.nix" "flake.nix" "flake.lock"
+        ".ccls" ".ccls-cache"
+        ".git" ".gitignore"
+        "out" "bin" "lib"
+        "tests"  # Tests require internet so there's no point in including them
       ];
-      notIgnored = ! ( builtins.elem bname ignores );
-      notObject  = ( builtins.match ".*\\.o" name ) == null;
-      notResult  = ( builtins.match "result(-*)?" bname ) == null;
-      isSrc      = ( builtins.match ".*\\.cc" name ) != null;
-    in notIgnored && notObject && notResult && (
-      ( ( dirOf name ) == "tests" ) -> isSrc
-    );
+      ext = let
+        m = builtins.match ".*\\.([^.]+)" name;
+      in if m == null then "" else builtins.head m;
+      ignoredExts = ["o" "so" "dylib"];
+      notIgnored  = ( ! ( builtins.elem bname ignores ) ) &&
+                    ( ! ( builtins.elem ext ignoredExts ) );
+      notResult = ( builtins.match "result(-*)?" bname ) == null;
+    in notIgnored && notResult;
   };
   nativeBuildInputs = [pkg-config];
   buildInputs       = [
-    sqlite.dev nlohmann_json nix.dev boost argparse
+    sqlite.dev nlohmann_json nix.dev boost argparse sqlite3pp
   ];
   propagatedBuildInputs = [semver];
   nix_INCDIR            = nix.dev.outPath + "/include";

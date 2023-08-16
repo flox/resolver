@@ -52,7 +52,7 @@ class CmdInputsLock : virtual nix::EvalCommand, public virtual nix::Args
 
     CmdInputsLock()
     {
-      this->expectArgs( {
+      this->expectArgs( nix::Args::ExpectedArg {
         .label     = "inputs"
       , .optional  = true
       , .handler   = {
@@ -63,6 +63,7 @@ class CmdInputsLock : virtual nix::EvalCommand, public virtual nix::Args
             );
           }
         }
+      , .completer = { []( size_t, std::string_view ) {} }
       } );
     }
 
@@ -82,10 +83,8 @@ class CmdInputsLock : virtual nix::EvalCommand, public virtual nix::Args
 
 /* -------------------------------------------------------------------------- */
 
-    void run() override { this->run( this->getStore() ); }
-
       void
-    run( nix::ref<nix::Store> store ) override
+    run() override
     {
       nix::evalSettings.pureEval.setDefault( false );
       nix::ref<nix::EvalState> state = this->getEvalState();
@@ -93,7 +92,7 @@ class CmdInputsLock : virtual nix::EvalCommand, public virtual nix::Args
       nlohmann::json rsl = nlohmann::json::object();
       if ( this->_inputs == nullptr )
         {
-          this->_inputs = new Inputs( (nlohmann::json) {
+          this->_inputs = new Inputs( nlohmann::json {
             { "nixpkgs", "github:NixOS/nixpkgs" }
           } );
         }
@@ -111,8 +110,9 @@ class CmdInputsLock : virtual nix::EvalCommand, public virtual nix::Args
           );
         }
       nix::logger->cout( "%s", rsl.dump() );
-
     }
+
+    void run( nix::ref<nix::Store> ) override { this->run(); }
 
 /* -------------------------------------------------------------------------- */
 
@@ -130,7 +130,7 @@ mainWrapped( int argc, char * argv[] )
   nix::initGC();
   std::list<std::string> args;
   CmdInputsLock cmd;
-  for ( size_t i = 1; i < argc; ++i )
+  for ( int i = 1; i < argc; ++i )
     {
       if ( ( std::string_view( argv[i] ) == "-h" ) ||
            ( std::string_view( argv[i] ) == "--help" )
@@ -156,7 +156,7 @@ mainWrapped( int argc, char * argv[] )
 /* -------------------------------------------------------------------------- */
 
   int
-main( int argc, char * argv[], char ** envp )
+main( int argc, char * argv[] )
 {
   return nix::handleExceptions( argv[0], [&]() { mainWrapped( argc, argv ); } );
   return EXIT_SUCCESS;

@@ -57,16 +57,16 @@ test_iter2(
 /* -------------------------------------------------------------------------- */
 
   int
-main( int argc, char * argv[], char ** envp )
+main()
 {
   int ec = EXIT_SUCCESS;
 
-  Inputs      inputs( (nlohmann::json) { { "nixpkgs", nixpkgsRef } } );
+  Inputs      inputs( nlohmann::json { { "nixpkgs", nixpkgsRef } } );
   Preferences prefs;
   ResolverState rs(
     inputs
   , prefs
-  , (std::list<std::string>) { "x86_64-linux" }
+  , std::list<std::string> { "x86_64-linux" }
   );
 
   std::shared_ptr<nix::flake::LockedFlake> flake  =

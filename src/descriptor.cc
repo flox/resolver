@@ -18,14 +18,6 @@ namespace flox {
 
 /* -------------------------------------------------------------------------- */
 
-Descriptor::Descriptor( std::string_view desc )
-{
-  // TODO
-}
-
-
-/* -------------------------------------------------------------------------- */
-
 Descriptor::Descriptor( const nlohmann::json & desc )
 {
   if ( ! desc.is_object() )

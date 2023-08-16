@@ -116,7 +116,7 @@ test_mergeResolvedByAttrPathGlob1()
     lst.emplace_back( Resolved(
       "nixpkgs"
     , ref
-    , AttrPathGlob::fromStrings( (std::vector<std::string>) {
+    , AttrPathGlob::fromStrings( std::vector<std::string> {
         "packages", system, name
       } )
       , { { system, { { "foo", v } } } }
@@ -137,7 +137,7 @@ test_mergeResolvedByAttrPathGlob1()
 /* -------------------------------------------------------------------------- */
 
   int
-main( int argc, char * argv[], char ** envp )
+main()
 {
   int ec = EXIT_SUCCESS;
 # define RUN_TEST( ... )  _RUN_TEST( ec, __VA_ARGS__ )

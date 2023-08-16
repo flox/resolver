@@ -60,7 +60,7 @@ test_CachedPackageFromDb1( DrvDb * cache )
 test_CachedPackageFromDb2( DrvDb * cache, Preferences & prefs )
 {
   CachedPackage p( * cache, "legacyPackages", "x86_64-linux", { "hello" } );
-  Descriptor desc( (nlohmann::json) { { "name", "hello" } } );
+  Descriptor desc( nlohmann::json { { "name", "hello" } } );
   predicates::PkgPred pred = prefs.pred_V2();
   pred = pred && desc.pred( true );
   return pred( p );
@@ -100,13 +100,13 @@ test_CachedPackageFromInfo1( DrvDb * cache )
 /* -------------------------------------------------------------------------- */
 
   int
-main( int argc, char * argv[], char ** envp )
+main()
 {
   int ec = EXIT_SUCCESS;
 # define RUN_TEST( ... )  _RUN_TEST( ec, __VA_ARGS__ )
 
   /* Ensure that database is initialized */
-  Inputs          inputs( (nlohmann::json) { { "nixpkgs", nixpkgsRef } } );
+  Inputs          inputs( nlohmann::json { { "nixpkgs", nixpkgsRef } } );
   Preferences     prefs;
   ResolverState   rs( inputs, prefs );
   DrvDb         * cache = nullptr;

@@ -45,6 +45,7 @@ namespace flox {
  */
 class Package {
   public:
+    virtual ~Package() {}
     virtual std::vector<std::string>    getPathStrs()         const = 0;
     virtual std::string                 getFullName()         const = 0;
     virtual std::string                 getPname()            const = 0;
@@ -64,7 +65,7 @@ class Package {
       std::vector<std::string> pathS = this->getPathStrs();
       if ( pathS[0] == "legacyPackages" ) { return ST_LEGACY;   }
       if ( pathS[0] == "packages" )       { return ST_PACKAGES; }
-      if ( pathS[0] == "catalog" )        { return ST_PACKAGES; }
+      if ( pathS[0] == "catalog" )        { return ST_CATALOG;  }
       throw ResolverException(
         "Package::getSubtreeType(): Unrecognized subtree '" + pathS[0] + "'."
       );

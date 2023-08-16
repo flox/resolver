@@ -25,7 +25,7 @@ using namespace nlohmann::literals;
   bool
 test_predicates1()
 {
-  Inputs      inputs( (nlohmann::json) { { "nixpkgs", nixpkgsRef } } );
+  Inputs      inputs( nlohmann::json { { "nixpkgs", nixpkgsRef } } );
   Preferences prefs;
   ResolverState rs( inputs, prefs );
 
@@ -53,7 +53,7 @@ test_predicates1()
   bool
 test_predicates2()
 {
-  Inputs      inputs( (nlohmann::json) { { "nixpkgs", nixpkgsRef } } );
+  Inputs      inputs( nlohmann::json { { "nixpkgs", nixpkgsRef } } );
   Preferences prefs;
   ResolverState rs( inputs, prefs );
 
@@ -83,8 +83,8 @@ test_predicates2()
   bool
 test_Preferences_pred()
 {
-  Inputs      inputs( (nlohmann::json) { { "nixpkgs", nixpkgsRef } } );
-  Preferences prefs( (nlohmann::json) {
+  Inputs      inputs( nlohmann::json { { "nixpkgs", nixpkgsRef } } );
+  Preferences prefs( nlohmann::json {
     { "allow", { { "unfree", false } } }
   } );
   ResolverState rs( inputs, prefs );
@@ -137,7 +137,7 @@ test_isSubstitutable2()
 /* -------------------------------------------------------------------------- */
 
   int
-main( int argc, char * argv[], char ** envp )
+main()
 {
   int ec = EXIT_SUCCESS;
 # define RUN_TEST( ... )  _RUN_TEST( ec, __VA_ARGS__ )

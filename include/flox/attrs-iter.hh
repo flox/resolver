@@ -76,8 +76,8 @@ class AttrSetIterClosure {
       nix::ref<nix::EvalState>                 state
     , std::shared_ptr<nix::flake::LockedFlake> flake
     , Cursor                                   cur
-    ) : _state( (std::shared_ptr<nix::EvalState>) state )
-      , _flake( flake )
+    ) : _flake( flake )
+      , _state( (std::shared_ptr<nix::EvalState>) state )
       , _cur( (MaybeCursor) cur )
     {
       for ( const auto & str :
@@ -94,8 +94,8 @@ class AttrSetIterClosure {
             nix::ref<nix::EvalState>                   state
     ,       std::shared_ptr<nix::flake::LockedFlake>   flake
     , const std::list<std::string>                   & path
-    ) : _state( (std::shared_ptr<nix::EvalState>) state )
-      , _flake( flake )
+    ) : _flake( flake )
+      , _state( (std::shared_ptr<nix::EvalState>) state )
       , _path( path )
     {
       nix::ref<nix::eval_cache::EvalCache> cache = this->openEvalCache();
@@ -131,7 +131,7 @@ class AttrSetIterClosure {
     {
       std::list<std::string_view> rsl;
       for ( const auto & p : this->_path ) { rsl.emplace_back( p ); }
-      return std::move( rsl );
+      return rsl;
     }
 
 
@@ -211,13 +211,13 @@ class AttrSetIterClosure {
         }
 
           bool
-        operator==( const sentinel & other ) const
+        operator==( const sentinel ) const
         {
           return this->_ptr == nullptr;
         }
 
           bool
-        operator!=( const sentinel & other ) const
+        operator!=( const sentinel ) const
         {
           return this->_ptr != nullptr;
         }

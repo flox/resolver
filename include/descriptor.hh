@@ -49,7 +49,8 @@ class Descriptor {
 
     Descriptor() = default;
     Descriptor( const nlohmann::json & desc );
-    /**
+    // TODO
+    /* *
      * "hello"                  -> { name: "hello" }
      * "hello@18"               -> { name: "hello", semver: "18" }
      * "hello@=18"              -> { name: "hello", version: "18" }
@@ -57,7 +58,7 @@ class Descriptor {
      * "nixpkgs#hello"          -> { flake.id: "nixpkgs", name: "hello" }
      * "catalog:floxpkgs#hello" -> { catalog.id: "floxpkgs", name: "hello" }
      */
-    Descriptor( const std::string_view desc );
+    //Descriptor( const std::string_view desc );
 
     predicates::PkgPred pred( bool checkPath = false ) const;
 
