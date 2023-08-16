@@ -195,7 +195,6 @@ declare -A inputRefs inputRefsLocked inputDBs inputPrefixes inputStabilities;
 read -r -a inputs < <( echo "$_INPUTS"|$JQ -r 'keys[]'; );
 
 
-
 # ---------------------------------------------------------------------------- #
 
 # scrapeFlake INPUT-ID
@@ -220,17 +219,14 @@ scrapeFlake() {
 
 # ---------------------------------------------------------------------------- #
 
-# lookupByLockedRef LOCKED-REF
-# ----------------------------
-# Lookup an input id by its locked ref.
-lookupByLockedRef() {
-  for i in "${inputs[@]}"; do
-    if [[ "${inputRefsLocked["$i"]}" = "$1" ]]; then
-      echo "$i";
-      return 0;
-    fi
-  done
-  return 1;
+# show INPUT-ID PACKAGE-ID
+# ------------------------
+show() {
+  {
+    echo "{\"input\":\"$1\",\"path\":";
+    $PKGDB get path --pkg "${inputDBs["$1"]}" "$2";
+    echo '}';
+  }|$JQ -c;
 }
 
 
@@ -288,22 +284,7 @@ fi
 
 # ---------------------------------------------------------------------------- #
 
-# show INPUT-ID PACKAGE-ID
-# ------------------------
-show() {
-  {
-    echo "{\"input\":\"$1\",\"path\":";
-    $PKGDB get path --pkg "${inputDBs["$1"]}" "$2";
-    echo '}';
-  }|$JQ -c;
-}
-
-
-# ---------------------------------------------------------------------------- #
-
-if [[ -n "${VERBOSE:-}" ]]; then
-  echo "$_QUERY" >&2;
-fi
+if [[ -n "${VERBOSE:-}" ]]; then echo "$_QUERY" >&2; fi
 
 # TODO: path, stability, catalog, flake
 
@@ -312,6 +293,10 @@ fi
 #   # TODO
 # fi
 
+# runQuery
+# --------
+# Query SQL databases and print satisfactory packages as JSON.
+# If `--one' was given, print a single JSON object, otherwise print an array.
 runQuery() {
   _qinput="$( echo "$_DESC"|$JQ -r '.input // ""'; )";
   if [[ -n "$_qinput" ]]; then
