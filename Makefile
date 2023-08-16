@@ -92,44 +92,17 @@ endif
 
 # ---------------------------------------------------------------------------- #
 
-nljson_CFLAGS ?= $(shell $(PKG_CONFIG) --cflags nlohmann_json)
-nljson_CFLAGS := $(nljson_CFLAGS)
-
-argparse_CFLAGS ?= $(shell $(PKG_CONFIG) --cflags argparse)
-argparse_CFLAGS := $(argparse_CFLAGS)
-
-boost_CFLAGS    ?=                                                             \
-  -I$(shell $(NIX) build --no-link --print-out-paths 'nixpkgs#boost')/include
-boost_CFLAGS := $(boost_CFLAGS)
-
-sqlite3_CFLAGS  ?= $(shell $(PKG_CONFIG) --cflags sqlite3)
-sqlite3_CFLAGS  := $(sqlite3_CFLAGS)
-sqlite3_LDFLAGS ?= $(shell $(PKG_CONFIG) --libs sqlite3)
-sqlite3_LDLAGS  := $(sqlite3_LDLAGS)
 
 sql_builder_CFLAGS ?=                                      \
   -I$(shell $(NIX) build --no-link --print-out-paths       \
                    '$(MAKEFILE_DIR)#sql-builder')/include
 sql_builder_CFLAGS := $(sql_builder_CFLAGS)
 
-sqlite3pp_CFLAGS ?= $(shell $(PKG_CONFIG) --cflags sqlite3pp)
-sqlite3pp_CFLAGS := $(sqlite3pp_CFLAGS)
-
-nix_INCDIR  ?= $(shell $(PKG_CONFIG) --variable=includedir nix-cmd)
-nix_INCDIR  := $(nix_INCDIR)
-ifndef nix_CFLAGS
-nix_CFLAGS =  $(boost_CFLAGS)
-nix_CFLAGS += $(shell $(PKG_CONFIG) --cflags nix-main nix-cmd nix-expr)
-nix_CFLAGS += -isystem $(nix_INCDIR) -include $(nix_INCDIR)/nix/config.h
-endif
-nix_CFLAGS := $(nix_CFLAGS)
-
-ifndef nix_LDFLAGS
-nix_LDFLAGS =                                                        \
-  $(shell $(PKG_CONFIG) --libs nix-main nix-cmd nix-expr nix-store)
-nix_LDFLAGS += -lnixfetchers
-endif
-nix_LDFLAGS := $(nix_LDFLAGS)
+# This provides `sqlite', `sqlite3pp', `argparse', `nix', `nlohmann_json'
+pkgdb_CFLAGS ?= $(shell $(PKG_CONFIG) --cflags flox-pkgdb)
+pkgdb_CFLAGS := $(pkgdb_CFLAGS)
+pkgdb_LDFLAGS ?= $(shell $(PKG_CONFIG) --libs flox-pkgdb)
+pkgdb_LDFLAGS := $(pkgdb_CFLAGS)
 
 ifndef floxresolve_LDFLAGS
 floxresolve_LDFLAGS =  '-L$(MAKEFILE_DIR)/lib' -lflox-resolve
@@ -139,19 +112,18 @@ endif
 
 # ---------------------------------------------------------------------------- #
 
-lib_CXXFLAGS += $(sqlite3_CFLAGS) $(sql_builder_CFLAGS) $(sqlite3pp_CFLAGS)
-bin_CXXFLAGS += $(argparse_CFLAGS)
-CXXFLAGS     += $(nix_CFLAGS) $(nljson_CFLAGS)
+lib_CXXFLAGS += $(sql_builder_CFLAGS)
+CXXFLAGS     += $(pkgdb_CFLAGS)
 
 ifeq (Linux,$(OS))
-lib_LDFLAGS += -Wl,--as-needed
+LDFLAGS += -Wl,--as-needed
 endif
-lib_LDFLAGS += $(nix_LDFLAGS) $(sqlite3_LDFLAGS)
+LDFLAGS += $(pkgdb_LDFLAGS)
 ifeq (Linux,$(OS))
-lib_LDFLAGS += -Wl,--no-as-needed
+LDFLAGS += -Wl,--no-as-needed
 endif
 
-bin_LDFLAGS += $(nix_LDFLAGS) $(floxresolve_LDFLAGS)
+bin_LDFLAGS += $(floxresolve_LDFLAGS)
 
 
 # ---------------------------------------------------------------------------- #
@@ -235,10 +207,8 @@ install-include:                                                    \
 
 .PHONY: check
 
-tests/%: CXXFLAGS += $(sqlite3_CFLAGS) $(nljson_CFLAGS)
-tests/%: CXXFLAGS += $(nix_CFLAGS) $(nljson_CFLAGS) $(bin_CXXFLAGS)
-tests/%: LDFLAGS  += $(floxresolve_LDFLAGS) $(bin_LDFLAGS)
-tests/%: LDFLAGS  += $(sqlite3_LDFLAGS) $(nix_LDFLAGS)
+tests/%: CXXFLAGS += $(bin_CXXFLAGS)
+tests/%: LDFLAGS  += $(bin_LDFLAGS)
 $(TESTS:.cc=): %: %.o lib/$(LIBFLOXRESOLVE)
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) "$<" -o "$@"
 
@@ -271,14 +241,12 @@ ccls: .ccls
 
 .ccls: FORCE
 	echo 'clang' > "$@";
-	{                                                                     \
-	  if [[ -n "$(NIX_CC)" ]]; then                                       \
-	    $(CAT) "$(NIX_CC)/nix-support/libc-cflags";                       \
-	    $(CAT) "$(NIX_CC)/nix-support/libcxx-cxxflags";                   \
-	  fi;                                                                 \
-	  echo $(CXXFLAGS) $(sqlite3_CFLAGS) $(nljson_CFLAGS) $(nix_CFLAGS);  \
-	  echo $(nljson_CFLAGS) $(argparse_CFLAGS) $(sql_builder_CFLAGS);     \
-	  echo $(sqlite3pp_CFLAGS);                                           \
+	{                                                         \
+	  if [[ -n "$(NIX_CC)" ]]; then                           \
+	    $(CAT) "$(NIX_CC)/nix-support/libc-cflags";           \
+	    $(CAT) "$(NIX_CC)/nix-support/libcxx-cxxflags";       \
+	  fi;                                                     \
+	  echo $(CXXFLAGS) $(pkgdb_CFLAGS) $(sql_builder_CFLAGS)  \
 	}|$(TR) ' ' '\n'|$(SED) 's/-std=/%cpp -std=/' >> "$@";
 
 

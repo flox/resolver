@@ -4,17 +4,7 @@
 #
 # ---------------------------------------------------------------------------- #
 
-{ stdenv
-, sqlite
-, pkg-config
-, nlohmann_json
-, nix
-, boost
-, argparse
-, semver
-, sql-builder
-, sqlite3pp
-}: stdenv.mkDerivation {
+{ stdenv, pkg-config, flox-pkgdb, sql-builder }: stdenv.mkDerivation {
   pname   = "flox-resolver";
   version = builtins.replaceStrings ["\n"] [""] ( builtins.readFile ./version );
   src     = builtins.path {
@@ -37,17 +27,17 @@
       notResult = ( builtins.match "result(-*)?" bname ) == null;
     in notIgnored && notResult;
   };
-  nativeBuildInputs = [pkg-config];
-  buildInputs       = [
-    sqlite.dev nlohmann_json nix.dev boost argparse sqlite3pp
-  ];
-  propagatedBuildInputs = [semver];
-  nix_INCDIR            = nix.dev.outPath + "/include";
-  boost_CFLAGS          = "-I" + boost.outPath + "/include";
-  libExt                = stdenv.hostPlatform.extensions.sharedLibrary;
-  SEMVER_PATH           = semver.outPath + "/bin/semver";
-  sql_builder_CFLAGS    = "-I" + sql-builder.outPath + "/include";
-  configurePhase        = ''
+  inherit (flox-pkgdb)
+    nativeBuildInputs
+    propagatedBuildInputs
+    nix_INCDIR
+    boost_CFLAGS
+    libExt
+    SEMVER_PATH
+  ;
+  buildInputs        = flox-pkgdb.buildInputs ++ [flox-pkgdb sql-builder];
+  sql_builder_CFLAGS = "-I" + sql-builder.outPath + "/include";
+  configurePhase     = ''
     runHook preConfigure;
     export PREFIX="$out";
     if [[ "''${enableParallelBuilding:-1}" = 1 ]]; then
