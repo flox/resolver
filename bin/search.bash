@@ -1,7 +1,7 @@
 #! /usr/bin/env bash
 # ============================================================================ #
 #
-# Rapid prototype `resolver' using `pkgdb' utility.
+# Rapid prototype `search' using `pkgdb' utility.
 #
 #
 # ---------------------------------------------------------------------------- #
@@ -49,6 +49,7 @@ Environment:
   SEMVER      Command used as \`semver' executable.
   JQ          Command used as \`jq' executable.
   NIX         Command used as \`nix' executable.
+  COLUMN      Command used as \`column' executable.
 ";
 
 
@@ -75,6 +76,7 @@ usage() {
 : "${SEMVER:=semver}";
 : "${JQ:=jq}";
 : "${NIX:=nix}";
+: "${COLUMN:=column}";
 
 
 # ---------------------------------------------------------------------------- #
@@ -209,13 +211,13 @@ scrapeFlake() {
 # ------------------------
 show() {
   local _query;
-  printf "%s#%s: " "$1" "$(
+  printf "%s#%s:| " "$1" "$(
     $PKGDB get path --pkg "${inputDBs["$1"]}" "$2"|$JQ -r 'join( "." )';
   )";
-  _query='SELECT pname || "@" || version || " - " || description FROM Packages';
+  _query='SELECT pname || "@" || version || " | " || description FROM Packages';
   _query+=' INNER JOIN Descriptions ON';
   _query+=" Packages.descriptionId = Descriptions.id WHERE Packages.id = $2";
-  $SQLITE3 "${inputDBs["$1"]}" "$_query"
+  $SQLITE3 "${inputDBs["$1"]}" "$_query";
 }
 
 
@@ -343,7 +345,7 @@ runQuery() {
 
 # ---------------------------------------------------------------------------- #
 
-runQuery;
+runQuery|$COLUMN -t -s '|';
 exit;
 
 
