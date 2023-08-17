@@ -345,7 +345,12 @@ runQuery() {
 
 # ---------------------------------------------------------------------------- #
 
-runQuery|$COLUMN -t -s '|';
+if [[ -z "${_FUZZ:-}" ]]; then
+  runQuery|$COLUMN -t -s '|';
+else
+  runQuery|$COLUMN -t -s '|'  \
+    |GREP_COLORS='mt=01;32' $GREP --color=always -F "$_FUZZ";
+fi
 exit;
 
 
