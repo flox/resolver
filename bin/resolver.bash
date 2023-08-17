@@ -87,9 +87,19 @@ coerceJSON() { if [[ -r "$1" ]]; then $JQ -c "$1"; else echo "$1"|$JQ -c; fi }
 
 _ONE=;
 _QUIET=;
-_INPUTS='{"nixpkgs":"github:NixOS/nixpkgs",';
-_INPUTS+='"nixpkgs-flox":"github:flox/nixpkgs"}';
-_PREFS='{}';
+_INPUTS='{
+  "nixpkgs":      "github:NixOS/nixpkgs"
+, "nixpkgs-flox": "github:flox/nixpkgs-flox"
+}';
+_PREFS='{
+  "prefixes": {
+    "nixpkgs":      ["legacyPackages"]
+  , "nixpkgs-flox": ["catalog"]
+  }
+, "stabilities": {
+    "nixpkgs-flox": ["stable"]
+  }
+}';
 unset _DESC;
 
 while [[ "$#" -gt 0 ]]; do
